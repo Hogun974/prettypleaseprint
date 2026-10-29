@@ -24,6 +24,13 @@ export const THEMES = [
     name: "Diner after hours",
     description: "The same diner at night: a dark counter, the neon still lit.",
   },
+  // Fork only: the upstream design refuses blur. Never in `auto`, which
+  // follows the system between the diner and after hours.
+  {
+    id: "glass",
+    name: "Glass",
+    description: "Frosted panels over a soft, coloured room; the same signs.",
+  },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];

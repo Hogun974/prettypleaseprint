@@ -3,6 +3,8 @@
 /* Themes other than the diner: each file redefines tokens from the blocks
    below under its own `data-theme`, and nothing else. See src/lib/theme.ts. */
 @import "./themes/after-hours.css";
+/* Fork only: the upstream design refuses blur. */
+@import "./themes/glass.css";
 
 /*
  * Pretty Please Print — the counter at a 1950s diner, run by a 3D printer.
@@ -157,6 +159,28 @@
    */
   --color-board: var(--color-ink);
   --color-board-ink: var(--color-cream);
+
+  /*
+   * What the counter's fills and the band are painted in. Tailwind's bg-*
+   * utilities read the --background-color-* namespace before --color-*, so
+   * `bg-porcelain` paints this while `text-porcelain` still writes the colour.
+   * A theme can then frost a fill — give it `--color-fill-<name>`, its colour
+   * at an alpha — and the colour of the same name stays opaque for what
+   * reads it as a colour: `text-cream` on a red button, the 3D viewer's
+   * background. Only glass (a fork-only theme) sets one; everywhere else the
+   * fallback is the colour itself, which is what `bg-*` painted before.
+   * Resolved at the root, so a fill that must not be frosted in some place
+   * redeclares these, not the --color-fill-* ones.
+   */
+  --background-color-cream: var(--color-fill-cream, var(--color-cream));
+  --background-color-cream-2: var(--color-fill-cream-2, var(--color-cream-2));
+  --background-color-cream-3: var(--color-fill-cream-3, var(--color-cream-3));
+  --background-color-porcelain: var(--color-fill-porcelain, var(--color-porcelain));
+  --background-color-cherry-wash: var(--color-fill-cherry-wash, var(--color-cherry-wash));
+  --background-color-aqua-wash: var(--color-fill-aqua-wash, var(--color-aqua-wash));
+  --background-color-sun-wash: var(--color-fill-sun-wash, var(--color-sun-wash));
+  --background-color-mint-wash: var(--color-fill-mint-wash, var(--color-mint-wash));
+  --background-color-board: var(--color-fill-board, var(--color-board));
 }
 
 @layer base {

@@ -60,6 +60,25 @@ Notable changes. Every entry names a released version; deployments pin
   measures what every page renders into `contrast.json`. See
   [Themes](docs/theming.md).
 
+- **A third theme, "glass" — fork only** (never proposed upstream, whose
+  design refuses blur; nobody can choose it yet, and `auto` never picks it).
+  Frosted panels over a soft room of accent-coloured glows, in the app's
+  faces, keylines and accents. The counter's fills take an alpha through a
+  new `--background-color-*` hook in `globals.css` — the colour of the same
+  name stays opaque for text and the 3D viewer, and every other theme paints
+  exactly what it did. Blur only where something sharp can pass behind: the
+  sticky header, its two menus, the toast. Stamps become soft shadows.
+  Cherry and the `-dk` fills are deep enough to be read as text on frost,
+  and carry light ink as fills. `prefers-reduced-transparency: reduce` and
+  `prefers-contrast: more` draw every panel opaque, unblurred.
+
+  `check:contrast` now measures a translucent fill at its worst: over every
+  colour the room can be, over its veil on pure black and pure white when it
+  floats, and opaque. Glass clears AA on every pair. `SHOT_MEDIA` emulates
+  other media features for `npm run shots`, which measures glass the same
+  way and counts the blurred layers per page. See
+  [Glass](docs/theming.md#glass-fork-only).
+
 ### Changed
 
 - **Every colour the app draws with is a theme variable** (#105, step one; no
