@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { Locale } from "@/i18n/locales";
+
 export const COLOR_MODES = ["solid", "gradient", "whatever"] as const;
 export type ColorMode = (typeof COLOR_MODES)[number];
 export type CatalogColorChoice = {
@@ -101,11 +103,28 @@ export type Wish = z.infer<typeof WishSchema>;
 /** "4 prints" / "1 print" */
 export const quantityText = (n: number) => `${n} ${n === 1 ? "print" : "prints"}`;
 
+/**
+ * The two things `relativeTime` needs from a language: the locale `Intl`
+ * formats in, and the phrase for "under 45 seconds", which `Intl` has no word
+ * for ("now" is not "just now").
+ */
+export type RelativeTimeWords = { locale: Locale; justNow: string };
+
+/**
+ * English unless told otherwise, and deliberately so: a screen that has been
+ * translated passes its words (`getRelativeTime` in src/i18n/server.ts does),
+ * and every screen that has not stays English from end to end rather than
+ * carrying one French phrase. The words are passed in rather than looked up
+ * because this module is imported by client components, which cannot read the
+ * request.
+ */
+const ENGLISH: RelativeTimeWords = { locale: "en", justNow: "just now" };
+
 /** Relative time, the way every card in the handoff shows it. */
-export function relativeTime(date: Date): string {
+export function relativeTime(date: Date, words: RelativeTimeWords = ENGLISH): string {
   const diff = date.getTime() - Date.now();
   const abs = Math.abs(diff);
-  if (abs < 45_000) return "just now";
+  if (abs < 45_000) return words.justNow;
   const units: [number, Intl.RelativeTimeFormatUnit][] = [
     [86_400_000 * 365, "year"],
     [86_400_000 * 30, "month"],
@@ -114,11 +133,11 @@ export function relativeTime(date: Date): string {
     [3_600_000, "hour"],
     [60_000, "minute"],
   ];
-  const fmt = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const fmt = new Intl.RelativeTimeFormat(words.locale, { numeric: "auto" });
   for (const [ms, unit] of units) {
     if (abs >= ms) return fmt.format(Math.round(diff / ms), unit);
   }
-  return "just now";
+  return words.justNow;
 }
 
 // ---------------------------------------------------------------------------

@@ -76,6 +76,10 @@ async function main() {
       args: ["--no-sandbox", "--disable-dev-shm-usage"],
     });
     const page = await browser.newPage();
+    // The checks below read English copy, and Chrome would otherwise ask for
+    // whatever the machine's locale is — a developer in France would see this
+    // suite fail on a sentence the app translated correctly.
+    await page.setExtraHTTPHeaders({ "accept-language": "en" });
     const cdp = await page.createCDPSession();
 
     // A virtual platform authenticator: resident keys so the credential is

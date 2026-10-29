@@ -625,6 +625,78 @@ async function main() {
   check("a second admin row is rejected by the partial unique index", rejected);
 
   // ------------------------------------------------------------------------
+  section("15. the sign-in page and the header speak the reader's language");
+  // English is what every other check in every suite reads, so the first job
+  // here is to pin it: the same words as before translation existed, whatever
+  // a browser that is not asking for French sends. Then French, for the two
+  // screens that have it.
+  const signinIn = async (acceptLanguage?: string, query = "") => {
+    const headers: Record<string, string> = acceptLanguage ? { "accept-language": acceptLanguage } : {};
+    return (await new Browser().go(`${APP}/signin${query}`, { headers })).text();
+  };
+  const ENGLISH_SIGNIN = [
+    "Open · come on in",
+    "Members only · ask at the counter",
+    "What’ll it be?",
+    "Use the passkey on this device, or your username and password.",
+    "Username",
+    "Password",
+    "Sign in",
+    "Pretty Please Print is invite-only — there is no sign-up. If you have not " +
+      "been invited yet, or you have forgotten your password, ask whoever owns the printer.",
+  ];
+
+  const plain = await signinIn();
+  const plainText = visibleText(plain);
+  const missingEnglish = ENGLISH_SIGNIN.filter((s) => !plainText.includes(s));
+  check("with no Accept-Language the page is English, word for word",
+        missingEnglish.length === 0, `missing: ${missingEnglish.join(" | ")}`);
+  check("and says so: <html lang=\"en\">", htmlLang(plain) === "en", `lang=${htmlLang(plain)}`);
+  for (const header of ["en-GB,en;q=0.9", "de-DE,de;q=0.9", "*", "fr;q=0, en"]) {
+    const text = visibleText(await signinIn(header));
+    check(`Accept-Language "${header}" renders exactly the same English text`,
+          text === plainText, firstDifference(plainText, text));
+  }
+
+  const french = await signinIn("fr-FR,fr;q=0.9,en;q=0.8");
+  const frenchText = visibleText(french);
+  check("Accept-Language fr renders <html lang=\"fr\">", htmlLang(french) === "fr", `lang=${htmlLang(french)}`);
+  check("and the sign-in page in French",
+        frenchText.includes("Qu’est-ce que je vous sers") && frenchText.includes("Nom d’utilisateur"),
+        frenchText.slice(0, 200));
+  const leftInEnglish = ENGLISH_SIGNIN.filter((s) => frenchText.includes(s));
+  check("with none of the English copy left in it", leftInEnglish.length === 0, leftInEnglish.join(" | "));
+  check("a language this app lacks, ranked above French, still gets French",
+        htmlLang(await signinIn("de, fr;q=0.5")) === "fr");
+
+  check("an error code is explained in English by default",
+        visibleText(await signinIn(undefined, "?error=INVALID_TOKEN"))
+          .includes("That link is no longer valid. Ask the printer owner for a fresh one."));
+  check("and in French to a French reader",
+        visibleText(await signinIn("fr", "?error=INVALID_TOKEN")).includes("Ce lien n’est plus valable."));
+  check("an unknown code gets the generic sentence, even one that names a property",
+        visibleText(await signinIn(undefined, "?error=toString"))
+          .includes("That sign-in attempt did not go through."));
+
+  // The header, as the printer owner: it carries most of the diner's words.
+  const queueIn = async (acceptLanguage?: string) =>
+    (await ownerIn.go(`${APP}/queue`, {
+      headers: acceptLanguage ? { "accept-language": acceptLanguage } : {},
+    })).text();
+  const ownerEnglish = visibleText(await queueIn());
+  check("the header's navigation is English by default",
+        ["The pass", "The rail", "The books", "Guest list", "Activity"].every((s) => ownerEnglish.includes(s)),
+        ownerEnglish.slice(0, 300));
+  const ownerFrenchHtml = await queueIn("fr");
+  const ownerFrench = visibleText(ownerFrenchHtml);
+  check("and French to a French reader",
+        htmlLang(ownerFrenchHtml) === "fr" &&
+          ["Le passe", "Le rail", "La caisse", "Liste des invités", "Activité"].every((s) => ownerFrench.includes(s)),
+        ownerFrench.slice(0, 300));
+  check("with none of the English navigation left in it",
+        !["The pass", "The rail", "The books", "Guest list"].some((s) => ownerFrench.includes(s)));
+
+  // ------------------------------------------------------------------------
   console.info(
     "\n" + (failures.length === 0
       ? "ALL CHECKS PASSED"
@@ -641,6 +713,33 @@ async function passwordIsHashed(userId: string): Promise<boolean> {
   });
   const stored = account?.password ?? "";
   return stored.length > 0 && !stored.includes(TEST_PASSWORD);
+}
+
+/**
+ * What a reader sees: the markup without scripts, styles or tags, entities
+ * decoded, whitespace collapsed. Scripts go first because the RSC payload in
+ * them carries every message string, so a check on the raw HTML would find
+ * English in a French page that shows none.
+ */
+function visibleText(html: string): string {
+  return unescapeHtml(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/g, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/g, " ")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[^>]+>/g, " "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const htmlLang = (html: string) => /<html\b[^>]*\blang="([^"]*)"/.exec(html)?.[1] ?? null;
+
+/** Where two texts part, for a failure message that says what changed. */
+function firstDifference(a: string, b: string): string {
+  let i = 0;
+  while (i < a.length && a[i] === b[i]) i++;
+  return `differs at ${i}: "${a.slice(Math.max(0, i - 30), i + 40)}" vs "${b.slice(Math.max(0, i - 30), i + 40)}"`;
 }
 
 /** The one `<form>` on the page whose markup contains a marker. */

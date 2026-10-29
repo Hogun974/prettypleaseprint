@@ -38,6 +38,35 @@ Notable changes. Every entry names a released version; deployments pin
   upload. `npm run verify:import` is the eleventh suite, and runs against a
   stand-in for Printables so that the far end can be made to misbehave.
 
+- **The sign-in page and the header speak French to a browser that asks for
+  it** (#103). The first step of translation, and deliberately a small one: two
+  screens, in the diner's voice rather than word for word — the owner's queue
+  is *le passe*, the rail stays *le rail*, *the books* are *la caisse*.
+  Everything else is still English, and so is anyone whose browser asks for
+  anything but French: a request without `Accept-Language: fr` renders exactly
+  the English it did before.
+
+  There is no locale in the URL, so no link, redirect or bookmark changes. The
+  language is chosen per request in one function, which is where a person's own
+  choice and an instance default will plug in later. `messages/en.json` is the
+  source of truth, every key is a type, and a key French has not caught up with
+  shows in English rather than as its own name. `<html lang>` follows the
+  language, and so do relative times on the translated screens. The API, the
+  OpenAPI document, audit verbs, logs, e-mails and the slicer helper stay
+  English on purpose.
+
+  `npm run check:messages` holds every translation against English — missing
+  and stale keys, placeholders that differ, the ICU apostrophe trap — and runs
+  in CI's `guard` job and in `scripts/full-test.sh`. `verify:auth` checks that
+  French is served when asked for and that English is unchanged otherwise.
+  [Translation](docs/i18n.md) covers adding a key or a language and keeps the
+  French glossary with the reasoning for each word.
+
+  One new dependency, `next-intl`, pinned at 4.14.9 (MIT). It brings `@swc/core`
+  and `@parcel/watcher` into the lockfile for an extractor this app does not
+  use; neither reaches the runtime image. The guide says why that version and
+  not a leaner one.
+
 ### Changed
 
 - **Opening a ticket from a model's bytes lives in one place.** It was the body

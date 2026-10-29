@@ -109,6 +109,7 @@ Checks that need no server, all of them in CI's `guard` job:
 npm run typecheck                  # tsc --noEmit
 npm run check:secrets -- --all     # credential shapes across every tracked file
 npm run check:links                # internal markdown links and heading anchors
+npm run check:messages             # every translation against messages/en.json
 for t in scripts/tests/*.test.sh; do bash "$t"; done   # the three shell tools, sandboxed
 ```
 
@@ -124,6 +125,12 @@ once when a directory was renamed out from under references pointing into it.
 It resolves anchors with GitHub's own slug rules rather than an approximation,
 and deliberately does not fetch external URLs: a gate that depends on somebody
 else's uptime fails for reasons unrelated to the change and gets ignored.
+
+`check:messages` is the same idea for translations: a key added in English
+shows in English to a French reader, a key removed from English lingers in
+`fr.json`, and nothing else notices either. It lists what is missing, stale or
+malformed per language — [Translation](i18n.md#what-checkmessages-reports) says
+what each finding means.
 
 ### The full local run
 

@@ -4,6 +4,11 @@
  *
  *   npm run shots            # writes to ./shots (gitignored)
  *   SHOT_DIR=/tmp/x npm run shots
+ *   SHOT_LANG=fr npm run shots   # as a browser asking for French sees it
+ *
+ * The language is sent as Accept-Language on every request, English unless
+ * SHOT_LANG says otherwise — not left to Chrome, which asks for the machine's
+ * locale, so the same command gives the same pictures on any machine.
  *
  * Seeds a handful of tickets first, because an empty rail says nothing about
  * whether the rail works.
@@ -18,6 +23,7 @@ import { TEST_PASSWORD, ensureCredentials, usernameFor } from "./_accounts";
 
 const APP = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 const OUT = process.env.SHOT_DIR ?? "shots";
+const LANG = process.env.SHOT_LANG ?? "en";
 
 const CHROME =
   process.env.CHROME_PATH ??
@@ -179,6 +185,7 @@ async function main() {
     args: ["--no-sandbox", "--disable-dev-shm-usage"],
   });
   const page = await browser.newPage();
+  await page.setExtraHTTPHeaders({ "accept-language": LANG });
   await page.setViewport({ width: 1280, height: 980, deviceScaleFactor: 1 });
 
   // Signed out first, while there is no session.
@@ -203,6 +210,7 @@ async function main() {
   // out: /api/auth/sign-out is POST-only, so navigating to it just hangs.
   const adminCtx = await browser.createBrowserContext();
   const adminPage = await adminCtx.newPage();
+  await adminPage.setExtraHTTPHeaders({ "accept-language": LANG });
   await adminPage.setViewport({ width: 1280, height: 980, deviceScaleFactor: 1 });
   await signIn(adminPage, admin);
   {

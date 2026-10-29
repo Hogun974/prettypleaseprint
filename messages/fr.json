@@ -1,0 +1,76 @@
+{
+  "time": {
+    "justNow": "à l’instant"
+  },
+  "authShell": {
+    "sign": "Ouvert · entrez donc"
+  },
+  "signin": {
+    "kicker": "Réservé aux habitués · demandez au comptoir",
+    "title": "Qu’est-ce que je vous sers ?",
+    "lead": "Utilisez la clé d’accès de cet appareil, ou votre nom d’utilisateur et votre mot de passe.",
+    "passwordSet": "Mot de passe enregistré. Connectez-vous avec.",
+    "errors": {
+      "inviteRequired": "Cette adresse n’a pas été invitée. Pretty Please Print fonctionne sur invitation — demandez un lien à la personne qui s’occupe de l’imprimante.",
+      "invalidToken": "Ce lien n’est plus valable. Demandez-en un nouveau à la personne qui s’occupe de l’imprimante.",
+      "tokenExpired": "Ce lien a expiré. Demandez-en un autre à la personne qui s’occupe de l’imprimante.",
+      "suspended": "Ce compte a été suspendu. Voyez avec la personne qui s’occupe de l’imprimante.",
+      "other": "Cette tentative de connexion n’a pas abouti."
+    },
+    "form": {
+      "withPasskey": "Se connecter avec une clé d’accès",
+      "or": "ou",
+      "username": "Nom d’utilisateur",
+      "password": "Mot de passe",
+      "checking": "Vérification…",
+      "submit": "Se connecter",
+      "refused": "Ce nom d’utilisateur et ce mot de passe ne correspondent pas. Réessayez.",
+      "tooManyAttempts": "Trop de tentatives. Patientez une minute, puis réessayez.",
+      "passkeyRefused": "Cette clé d’accès n’a pas été acceptée. Utilisez plutôt votre mot de passe.",
+      "inviteOnly": "Pretty Please Print fonctionne sur invitation — on ne s’inscrit pas soi-même. Si vous n’avez pas encore été invité, ou si vous avez oublié votre mot de passe, voyez avec la personne qui s’occupe de l’imprimante."
+    }
+  },
+  "header": {
+    "home": "Pretty Please Print, accueil",
+    "nav": {
+      "rail": "Le rail",
+      "orderUp": "Passer commande",
+      "myOrders": "Mes commandes",
+      "history": "Historique",
+      "featureRequests": "Boîte à idées",
+      "pass": "Le passe",
+      "books": "La caisse",
+      "materials": "Matières",
+      "byPerson": "Par personne",
+      "benefits": "Pourboires",
+      "guestList": "Liste des invités",
+      "audit": "Journal"
+    },
+    "activity": {
+      "button": "Activité",
+      "titleOwner": "Du nouveau en salle",
+      "titleMember": "Où en sont vos impressions",
+      "markAllRead": "Tout marquer comme lu",
+      "empty": "Rien pour l’instant.",
+      "unread": "non lu"
+    },
+    "account": {
+      "menuFor": "Menu du compte de {name}",
+      "owner": "Propriétaire de l’imprimante",
+      "member": "Membre invité",
+      "withPassword": "Connexion par mot de passe",
+      "passkeys": "{count, plural, one {# clé d’accès sur ce compte} other {# clés d’accès sur ce compte}}",
+      "addFirst": "Ajouter une clé d’accès →",
+      "addAnother": "En ajouter une autre →",
+      "docs": "API et documentation →",
+      "docsHint": "Chaque point d’accès, et une console pour les appeler.",
+      "signOut": "Se déconnecter"
+    },
+    "nudge": {
+      "title": "Marre de taper votre mot de passe ?",
+      "body": "Enregistrez une clé d’accès et cet appareil vous connecte d’une empreinte — rien à retenir, rien à se faire voler.",
+      "setUp": "C’est parti — 30 secondes",
+      "notNow": "Pas maintenant"
+    }
+  }
+}
