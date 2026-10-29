@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/authz";
@@ -34,15 +35,16 @@ export default async function ReauthPage({
     select: { username: true, displayUsername: true },
   });
 
+  const [t, shell] = await Promise.all([
+    getTranslations("auth.reauth"),
+    getTranslations("authShell"),
+  ]);
+
   return (
-    <AuthShell>
-      <Kicker>One more time, please</Kicker>
-      <H1>Is that still you?</H1>
-      <Lead>
-        You are about to change who can get in, or how the app behaves for
-        everyone. A password or a passkey confirms
-        it is you at the keyboard and not a browser somebody left open.
-      </Lead>
+    <AuthShell sign={shell("sign")}>
+      <Kicker>{t("kicker")}</Kicker>
+      <H1>{t("title")}</H1>
+      <Lead>{t("lead")}</Lead>
 
       <ReauthForm
         next={target}

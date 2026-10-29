@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { requireUser, printerName } from "@/lib/authz";
-import { FEATURE_BOARD, featureLabel } from "@/lib/scope";
+import { FEATURE_BOARD } from "@/lib/scope";
 import { coerceFeatureFilter, hasFeatureFilter, listFeatures } from "@/lib/features";
 import { AppHeader } from "@/components/app-header";
 import { FeatureCard } from "@/components/feature-card";
@@ -21,12 +22,13 @@ export const dynamic = "force-dynamic";
  * Scoped by `featureScope` in the query: a client's own requests never leave
  * the database, the owner sees everyone's.
  */
-const RAIL: Record<string, { bar: string; note: string }> = {
-  Requested: { bar: "bg-chrome", note: "waiting on a yes" },
-  Accepted: { bar: "bg-aqua", note: "agreed, queued" },
-  InProgress: { bar: "bg-sun", note: "being built" },
-  Shipped: { bar: "bg-cherry", note: "released — go and check" },
-};
+const RAIL = {
+  Requested: "bg-chrome",
+  Accepted: "bg-aqua",
+  InProgress: "bg-sun",
+  Shipped: "bg-cherry",
+} as const;
+type RailStatus = keyof typeof RAIL;
 
 export default async function FeatureBoardPage({
   searchParams,
@@ -36,6 +38,7 @@ export default async function FeatureBoardPage({
   const [params, user] = await Promise.all([searchParams, requireUser("/frr")]);
   const { toast } = params;
   const owner = await printerName();
+  const t = await getTranslations("frr");
 
   const filter = coerceFeatureFilter(params);
   const features = await listFeatures(user, filter);
@@ -52,13 +55,12 @@ export default async function FeatureBoardPage({
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
         <div className="mb-[26.4px] flex flex-wrap items-end justify-between gap-[13.2px]">
           <div>
-            <Kicker>Feature requests</Kicker>
+            <Kicker>{t("kicker")}</Kicker>
             <h1 className="m-0 mt-[6px] font-display text-[30px] leading-[1.05] text-ink">
-              {isAdmin ? "Everything asked for" : "What you've asked for"}
+              {isAdmin ? t("board.titleOwner") : t("board.titleMember")}
             </h1>
             <p className="m-0 mt-[8px] max-w-[60ch] text-[15px] text-ink-2">
-              Ask for a change to Pretty Please Print, and follow it through the same
-              stages a print goes through. {owner} sees each one and moves it along.
+              {t("board.lead", { owner })}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-[8.8px]">
@@ -70,14 +72,14 @@ export default async function FeatureBoardPage({
                 href="/frr/queue"
                 className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-porcelain px-[18px] py-[11px] text-[15px] font-bold text-ink hover:bg-sun"
               >
-                Triage
+                {t("board.triage")}
               </Link>
             )}
             <Link
               href="/frr/new"
               className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[22px] py-[11px] text-[15px] font-bold text-cream hover:bg-cherry"
             >
-              + New request
+              {t("board.newRequest")}
             </Link>
           </div>
         </div>
@@ -88,19 +90,22 @@ export default async function FeatureBoardPage({
           <div className="rounded-panel border-[3px] border-dashed border-ink-3 bg-cream-2 px-[26.4px] py-[35.2px] text-center">
             {filtered ? (
               <>
-                <p className="m-0 font-display text-[19px] text-ink">Nothing matches those filters</p>
+                <p className="m-0 font-display text-[19px] text-ink">{t("board.noMatch")}</p>
                 <p className="m-0 mt-[6px] text-[15px] text-ink-2">
-                  <Link href="/frr" className="underline underline-offset-2 hover:text-cherry-dk">
-                    Clear the filters
-                  </Link>{" "}
-                  to see everything.
+                  {t.rich("board.clearFilters", {
+                    clear: (chunks) => (
+                      <Link href="/frr" className="underline underline-offset-2 hover:text-cherry-dk">
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
                 </p>
               </>
             ) : (
               <>
-                <p className="m-0 font-display text-[19px] text-ink">Nothing here yet</p>
+                <p className="m-0 font-display text-[19px] text-ink">{t("board.empty")}</p>
                 <p className="m-0 mt-[6px] text-[15px] text-ink-2">
-                  The first idea goes on the board the moment you file it.
+                  {t("board.emptyHelp")}
                 </p>
               </>
             )}
@@ -108,23 +113,23 @@ export default async function FeatureBoardPage({
         ) : (
           <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-[17.6px]">
             {FEATURE_BOARD.map((status) => {
-              const rail = RAIL[status]!;
+              const rail = status as RailStatus;
               const items = byStatus(status);
               return (
                 <section key={status} className="flex flex-col gap-[11px]">
                   <div className="rounded-card border-[3px] border-ink bg-porcelain">
-                    <div className={`h-[8px] rounded-t-[5px] border-b-[3px] border-ink ${rail.bar}`} />
+                    <div className={`h-[8px] rounded-t-[5px] border-b-[3px] border-ink ${RAIL[rail]}`} />
                     <div className="px-[13.2px] py-[8.8px]">
                       <div className="flex items-baseline justify-between gap-[8px]">
                         <span className="font-display text-[16px] text-ink">
-                          {featureLabel(status)}
+                          {t(`status.${status}`)}
                         </span>
                         <span className="font-mono text-[12px] font-bold text-ink-3">
                           {items.length}
                         </span>
                       </div>
                       <p className="m-0 font-mono text-[11px] uppercase tracking-[0.05em] text-ink-3">
-                        {rail.note}
+                        {t(`board.rail.${rail}`)}
                       </p>
                     </div>
                   </div>
@@ -139,7 +144,7 @@ export default async function FeatureBoardPage({
 
         {closed.length > 0 && (
           <section className="mt-[35.2px]">
-            <h2 className="m-0 mb-[13.2px] font-display text-[20px] text-ink">Closed</h2>
+            <h2 className="m-0 mb-[13.2px] font-display text-[20px] text-ink">{t("board.closed")}</h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-[17.6px] opacity-80">
               {closed.map((f) => (
                 <FeatureCard key={f.id} feature={f} showRequester={isAdmin} />

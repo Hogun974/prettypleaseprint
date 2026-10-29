@@ -142,14 +142,24 @@ export const DEFAULT_FEATURE_PRIORITY = "medium";
 export const FEATURE_CATEGORIES = ["ui", "api", "bug", "other"] as const;
 export const DEFAULT_FEATURE_CATEGORY = "other";
 
-/** How each priority reads and colours, loudest first. */
+/**
+ * How each priority reads and colours, loudest first.
+ *
+ * `label` is the English word. A page says it in the reader's language with
+ * the `common.priority` keys instead (the same English in en.json) —
+ * `PriorityChip` in src/components/ui.tsx does, from a server component or a
+ * client one.
+ */
 export const PRIORITY_CHIP: Record<string, { bg: string; label: string }> = {
   high: { bg: "bg-cherry", label: "High" },
   medium: { bg: "bg-sun", label: "Medium" },
   low: { bg: "bg-chrome", label: "Low" },
 };
 
-/** Human labels for the category enum. */
+/**
+ * Human labels for the category enum, in English; a page in the reader's
+ * language uses the `common.category` keys.
+ */
 export const CATEGORY_LABEL: Record<string, string> = {
   ui: "UI",
   api: "API",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { readResetToken } from "@/lib/password-reset";
 import { AuthShell, H1, Kicker, Lead, Notice } from "@/components/ui";
@@ -21,21 +22,23 @@ export default async function SetPasswordPage({
 }) {
   const { token } = await searchParams;
   const resolved = token ? await readResetToken(token) : null;
+  const [t, auth, shell] = await Promise.all([
+    getTranslations("auth.setPassword"),
+    getTranslations("auth"),
+    getTranslations("authShell"),
+  ]);
 
   if (!resolved) {
     return (
-      <AuthShell>
-        <Kicker>New key, cut fresh</Kicker>
-        <H1>That link is spent</H1>
-        <Lead>
-          Set-password links work once and expire quickly. Ask whoever owns the
-          printer for another — it takes them a moment.
-        </Lead>
+      <AuthShell sign={shell("sign")}>
+        <Kicker>{t("kicker")}</Kicker>
+        <H1>{t("spentTitle")}</H1>
+        <Lead>{t("spentBody")}</Lead>
         <Link
           href="/signin"
           className="font-bold text-[15px] text-cherry-dk underline underline-offset-2 hover:text-cherry"
         >
-          Go to sign in →
+          {auth("goSignIn")}
         </Link>
       </AuthShell>
     );
@@ -45,24 +48,17 @@ export default async function SetPasswordPage({
   const needsUsername = !user.username;
 
   return (
-    <AuthShell>
-      <Kicker>New key, cut fresh</Kicker>
+    <AuthShell sign={shell("sign")}>
+      <Kicker>{t("kicker")}</Kicker>
       <H1>
-        {needsUsername ? "Set yourself up" : `Pick a password, ${user.name.split(" ")[0]}`}
+        {needsUsername ? t("titleSetUp") : t("titlePick", { name: user.name.split(" ")[0]! })}
       </H1>
-      <Lead>
-        {needsUsername
-          ? "Nobody invited this account, so it has no username yet. Pick one, and a password to go with it."
-          : "This link sets a password and nothing else — you will sign in with it on the next screen. Anything you were signed in on with the old one is signed out."}
-      </Lead>
+      <Lead>{needsUsername ? t("leadSetUp") : t("leadPick")}</Lead>
 
       <SetPasswordForm token={token!} needsUsername={needsUsername} />
 
       <div className="mt-[22px]">
-        <Notice>
-          Did not ask for this? Have a word with whoever runs the printer before
-          you use it.
-        </Notice>
+        <Notice label={auth("notice.note")}>{t("notice")}</Notice>
       </div>
     </AuthShell>
   );

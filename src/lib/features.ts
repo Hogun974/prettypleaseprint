@@ -18,6 +18,7 @@ import {
 } from "@/lib/scope";
 import { FEATURE_CATEGORIES, FEATURE_PRIORITIES, FeatureWishSchema } from "@/lib/catalog";
 import { BodySchema } from "@/lib/stories";
+import type { Spoken } from "@/i18n/spoken";
 
 /**
  * Everything that can happen to a feature request — the 'frr' track.
@@ -32,21 +33,45 @@ import { BodySchema } from "@/lib/stories";
  *
  * As in `stories.ts`, nothing here knows about redirects or HTTP status pages.
  * A refusal leaves as a `FeatureProblem` carrying a sentence for a person; the
- * server action turns it into a toast.
+ * server action turns it into a toast. The sentence is English, and is what
+ * the API answers with; `spoken` is the key of the same sentence in the
+ * catalogue, which a page says in the reader's language (src/i18n/spoken.ts).
  */
 
 export class FeatureProblem extends Error {
-  constructor(readonly status: number, message: string) {
+  constructor(readonly status: number, message: string, readonly spoken?: Spoken) {
     super(message);
     this.name = "FeatureProblem";
   }
 }
 
-const problem = (status: number, message: string) => new FeatureProblem(status, message);
+const problem = (status: number, message: string, spoken?: Spoken) =>
+  new FeatureProblem(status, message, spoken);
 
-function asProblem(error: unknown): never {
-  if (error instanceof AuthzError) throw problem(403, error.message);
+const said = (key: string, values?: Spoken["values"]): Spoken => ({
+  key: `problems.feature.${key}`,
+  values,
+});
+
+function asProblem(error: unknown, spoken?: Spoken): never {
+  if (error instanceof AuthzError) throw problem(403, error.message, spoken);
   throw error;
+}
+
+/**
+ * The key for a form's first refusal, when it is one of the sentences written
+ * for it: `FeatureWishSchema` and `BodySchema` stay English for the API, and
+ * are matched here by field and kind rather than by their words. Anything else
+ * — a value no form offers — has no key and stays in Zod's English.
+ */
+function issueSpoken(field: PropertyKey | undefined, code: string): Spoken | undefined {
+  const keys: Record<string, Partial<Record<string, string>>> = {
+    title: { too_small: "titleShort", too_big: "titleLong" },
+    description: { too_small: "descriptionEmpty", too_big: "descriptionLong" },
+    body: { too_small: "commentEmpty", too_big: "commentLong" },
+  };
+  const key = typeof field === "string" ? keys[field]?.[code] : undefined;
+  return key ? said(key) : undefined;
 }
 
 export const FeatureIdSchema = z.coerce.number().int().positive();
@@ -54,7 +79,7 @@ export const FeatureIdSchema = z.coerce.number().int().positive();
 /** Parse a path segment or form field into a feature id, or refuse it. */
 export function featureIdOr400(raw: unknown): number {
   const parsed = FeatureIdSchema.safeParse(raw);
-  if (!parsed.success) throw problem(400, "That is not a request.");
+  if (!parsed.success) throw problem(400, "That is not a request.", said("notARequest"));
   return parsed.data;
 }
 
@@ -158,20 +183,20 @@ export function findFeature(actor: Actor, id: number): Promise<FeatureRow | null
 
 export async function getFeature(actor: Actor, id: number): Promise<FeatureRow> {
   const feature = await findFeature(actor, id);
-  if (!feature) throw problem(404, "That request no longer exists.");
+  if (!feature) throw problem(404, "That request no longer exists.", said("gone"));
   return feature;
 }
 
 /** The owner's view of a request for an action on it. Role is the control. */
 async function loadForAdmin(actor: Actor, id: number) {
   if (actor.role !== "admin") {
-    throw problem(403, "Only the printer owner moves a request along.");
+    throw problem(403, "Only the printer owner moves a request along.", said("ownerOnly"));
   }
   const feature = await db.featureRequest.findUnique({
     where: { id },
     include: { requester: { select: { id: true, name: true } } },
   });
-  if (!feature) throw problem(404, "That request no longer exists.");
+  if (!feature) throw problem(404, "That request no longer exists.", said("gone"));
   return feature;
 }
 
@@ -186,7 +211,9 @@ async function loadForAdmin(actor: Actor, id: number) {
 export async function createFeature(actor: Actor, input: unknown) {
   const parsed = FeatureWishSchema.safeParse(input);
   if (!parsed.success) {
-    throw problem(400, parsed.error.issues[0]?.message ?? "Check the form.");
+    const issue = parsed.error.issues[0];
+    if (!issue) throw problem(400, "Check the form.", said("checkForm"));
+    throw problem(400, issue.message, issueSpoken(issue.path[0], issue.code));
   }
   const { title, description, priority, category } = parsed.data;
 
@@ -233,17 +260,21 @@ export async function withdrawFeature(actor: Actor, id: number) {
     where: { AND: [{ id }, featureScope(actor)] },
     select: { id: true, title: true, status: true, requesterId: true },
   });
-  if (!feature) throw problem(404, "That request no longer exists.");
+  if (!feature) throw problem(404, "That request no longer exists.", said("gone"));
 
   if (feature.requesterId !== actor.id) {
-    throw problem(403, "Only the person who asked for it can withdraw it.");
+    throw problem(403, "Only the person who asked for it can withdraw it.", said("requesterOnly"));
   }
 
   if (feature.status !== "Requested" && feature.status !== "Declined") {
+    const ref = featureRef(feature.id);
+    const owner = await printerName();
     throw problem(
       409,
-      `${featureRef(feature.id)} is already ${featureLabel(feature.status).toLowerCase()} — ` +
-        `ask ${await printerName()} instead.`,
+      `${ref} is already ${featureLabel(feature.status).toLowerCase()} — ` +
+        `ask ${owner} instead.`,
+      // A key per status, so that a language can make the word agree.
+      said(`alreadyStarted.${feature.status}`, { ref, owner }),
     );
   }
 
@@ -281,7 +312,7 @@ export async function withdrawFeature(actor: Actor, id: number) {
 export async function changeFeaturePriority(actor: Actor, id: number, rawPriority: unknown) {
   const priority = typeof rawPriority === "string" ? rawPriority : "";
   if (!(FEATURE_PRIORITIES as readonly string[]).includes(priority)) {
-    throw problem(400, "That is not a priority.");
+    throw problem(400, "That is not a priority.", said("notAPriority"));
   }
 
   // Scoped read: a client asking after another's request is told it does not
@@ -290,10 +321,14 @@ export async function changeFeaturePriority(actor: Actor, id: number, rawPriorit
     where: { AND: [{ id }, featureScope(actor)] },
     select: { id: true, title: true, status: true, priority: true, requesterId: true },
   });
-  if (!feature) throw problem(404, "That request no longer exists.");
+  if (!feature) throw problem(404, "That request no longer exists.", said("gone"));
 
   if (actor.role !== "admin" && feature.requesterId !== actor.id) {
-    throw problem(403, "Only the person who asked for it, or the printer owner, can reprioritise it.");
+    throw problem(
+      403,
+      "Only the person who asked for it, or the printer owner, can reprioritise it.",
+      said("reprioritiseRefused"),
+    );
   }
 
   if (priority === feature.priority) {
@@ -340,7 +375,13 @@ export async function advanceFeature(actor: Actor, id: number) {
   const feature = await loadForAdmin(actor, id);
 
   const next = nextFeatureStatus(feature.status);
-  if (!next) throw problem(409, `${featureLabel(feature.status)} is the end of the line.`);
+  if (!next) {
+    throw problem(
+      409,
+      `${featureLabel(feature.status)} is the end of the line.`,
+      said(`endOfLine.${feature.status}`),
+    );
+  }
 
   try {
     assertFeatureTransition(actor, feature.status, next);
@@ -380,7 +421,9 @@ export async function declineFeature(actor: Actor, id: number) {
   try {
     assertFeatureTransition(actor, feature.status, "Declined");
   } catch (e) {
-    asProblem(e);
+    // The owner was checked by `loadForAdmin`, so the one refusal left is a
+    // request that has already moved on.
+    asProblem(e, said(`cannotDecline.${feature.status}`));
   }
 
   await db.featureRequest.update({ where: { id: feature.id }, data: { status: "Declined" } });
@@ -442,7 +485,10 @@ export async function listFeatureComments(actor: Actor, id: number): Promise<Fea
 export async function addFeatureComment(actor: Actor, id: number, rawBody: unknown) {
   const parsed = BodySchema.safeParse(typeof rawBody === "string" ? rawBody : "");
   if (!parsed.success) {
-    throw problem(400, parsed.error.issues[0]?.message ?? "Check that again.");
+    const issue = parsed.error.issues[0];
+    if (!issue) throw problem(400, "Check that again.", said("checkAgain"));
+    // A bare string schema: its issues have no path, the field is the body.
+    throw problem(400, issue.message, issueSpoken("body", issue.code));
   }
   const body = parsed.data;
 
@@ -450,7 +496,7 @@ export async function addFeatureComment(actor: Actor, id: number, rawBody: unkno
     where: { AND: [{ id }, featureScope(actor)] },
     select: { id: true, title: true, requesterId: true },
   });
-  if (!feature) throw problem(404, "That request no longer exists.");
+  if (!feature) throw problem(404, "That request no longer exists.", said("gone"));
 
   const comment = await db.featureComment.create({
     data: { featureId: feature.id, authorId: actor.id, body },

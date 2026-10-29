@@ -94,8 +94,9 @@ class Browser {
   /**
    * Submit a server-action form the way a browser without JavaScript does:
    * replay every hidden input React rendered, plus the visible values.
+   * `headers` is for the language a check asks in.
    */
-  async submit(url: string, html: string, values: Record<string, string>) {
+  async submit(url: string, html: string, values: Record<string, string>, headers: Record<string, string> = {}) {
     const form = /<form\b[\s\S]*?<\/form>/.exec(html)?.[0] ?? "";
     const body = new FormData();
     for (const tag of form.match(/<input\b[^>]*>/g) ?? []) {
@@ -105,9 +106,17 @@ class Browser {
       if (name) body.append(unescapeHtml(name), unescapeHtml(value));
     }
     for (const [k, v] of Object.entries(values)) body.set(k, v);
-    return this.raw(url, { method: "POST", body });
+    return this.raw(url, { method: "POST", body, headers });
+  }
+
+  /** The session row's token, from the signed cookie. */
+  sessionToken(): string {
+    const raw = this.jar.get("ppp.session_token") ?? this.jar.get("__Secure-ppp.session_token") ?? "";
+    return decodeURIComponent(raw).split(".")[0]!;
   }
 }
+
+const FRENCH = { "accept-language": "fr-FR,fr;q=0.9,en;q=0.8" };
 
 const unescapeHtml = (s: string) =>
   s.replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'")
@@ -462,12 +471,46 @@ async function main() {
   check("and it does NOT sign anybody in", !signedIn(recovering),
         "following a reset link established a session");
 
+  // The same page in both languages; opening it does not spend the link.
+  const ENGLISH_SET = [
+    "New key, cut fresh",
+    "Pick a password, Ayla",
+    "New password",
+    "At least 10 characters, and not a breached one.",
+    "Save this password",
+    "Did not ask for this? Have a word with whoever runs the printer before you use it.",
+  ];
+  const setEnglish = visibleText(setPage);
+  const setMissing = ENGLISH_SET.filter((s) => !setEnglish.includes(s));
+  check("the set-password page is English by default, word for word",
+        setMissing.length === 0, `missing: ${setMissing.join(" | ")}`);
+  const setFrenchHtml = await (await new Browser().go(setUrl, { headers: FRENCH })).text();
+  const setFrench = visibleText(setFrenchHtml);
+  check("and French to a French reader",
+        htmlLang(setFrenchHtml) === "fr" &&
+          ["Une clé toute neuve", "Choisissez un mot de passe, Ayla", "Nouveau mot de passe",
+           "Enregistrer ce mot de passe", "Vous n’avez rien demandé"].every((s) => setFrench.includes(s)),
+        setFrench.slice(0, 300));
+  const setLeft = ENGLISH_SET.filter((s) => setFrench.includes(s));
+  check("with none of its English left", setLeft.length === 0, setLeft.join(" | "));
+  // Refused by the schema, before the link is even looked up.
+  const tooShort = unescapeHtml(await (await recovering.submit(setUrl, setPage, { password: "short" }, FRENCH)).text());
+  check("a password that is too short is refused in French to a French reader",
+        tooShort.includes("Un mot de passe compte au moins 10 caractères."));
+
   // A breached password is refused here too — and, crucially, does not burn
   // the link on the way out.
   const refused = await recovering.submit(setUrl, setPage, { password: "Password123!" });
   check("a breached password is refused at the set-password form",
         /breach|compromis/i.test(await refused.clone().text()),
         "a corpus password was accepted");
+  // Better Auth's refusal, by its code: the library's English above, the
+  // catalogue's French here. The link survives this one too (checked next).
+  const refusedFr = unescapeHtml(await (await recovering.submit(
+    setUrl, await (await recovering.go(setUrl)).text(), { password: "Password123!" }, FRENCH)).text());
+  check("and refused in French to a French reader",
+        refusedFr.includes("Ce mot de passe figure dans une fuite connue.") &&
+          !refusedFr.includes("appears in a known breach"));
 
   const NEW_PASSWORD = "ppp-suite-second-key-parked-outside";
   const stillGood = await (await recovering.go(setUrl)).text();
@@ -551,6 +594,48 @@ async function main() {
   const handoverPage = await (await handoverBrowser.go(noMail.handoverUrl!)).text();
   check("a handed-over invite link opens the claim page",
         handoverPage.includes("will print things for you"));
+
+  // The claim page in both languages, while this invitation is still open.
+  // A GET does not spend it, and a refused form does not either.
+  const ENGLISH_CLAIM = [
+    "Your table is ready",
+    "will print things for you",
+    "Your email",
+    "What should we call you?",
+    "Pick a username",
+    "And a password",
+    "At least 10 characters. Length beats punctuation.",
+    "Create your account",
+    "This link registers the account — there is no second email.",
+  ];
+  const claimEnglish = visibleText(handoverPage);
+  const claimMissing = ENGLISH_CLAIM.filter((s) => !claimEnglish.includes(s));
+  check("the claim page is English by default, word for word",
+        claimMissing.length === 0, `missing: ${claimMissing.join(" | ")}`);
+  const claimFrenchHtml = await (await new Browser().go(noMail.handoverUrl!, { headers: FRENCH })).text();
+  const claimFrench = visibleText(claimFrenchHtml);
+  check("and French to a French reader, the form included",
+        htmlLang(claimFrenchHtml) === "fr" &&
+          ["Votre table est prête", "imprimera des choses pour vous", "Comment doit-on vous appeler",
+           "Choisissez un nom d’utilisateur", "Créer votre compte", "Ouvert · entrez donc"]
+            .every((s) => claimFrench.includes(s)),
+        claimFrench.slice(0, 300));
+  const claimLeft = ENGLISH_CLAIM.filter((s) => claimFrench.includes(s));
+  check("with none of its English left", claimLeft.length === 0, claimLeft.join(" | "));
+  const shortName = { name: "Handover", username: "ab", password: TEST_PASSWORD };
+  // Read raw rather than as visible text: what matters is what the action
+  // answered, wherever in the response it lands.
+  const refusedEnglish = unescapeHtml(await (await handoverBrowser.submit(
+    noMail.handoverUrl!, handoverPage, shortName)).text());
+  check("a refused username is explained in English by default",
+        refusedEnglish.includes("A username needs at least 3 characters."));
+  const refusedFrench = unescapeHtml(await (await handoverBrowser.submit(
+    noMail.handoverUrl!, handoverPage, shortName, FRENCH)).text());
+  check("and in French to a French reader",
+        refusedFrench.includes("Un nom d’utilisateur compte au moins 3 caractères.") &&
+          !refusedFrench.includes("A username needs at least 3 characters."));
+  check("neither refusal opened the account",
+        (await db.user.count({ where: { email: "handover@office.example" } })) === 0);
 
   await db.invite.deleteMany({
     where: { email: { in: ["mailed@office.example", "handover@office.example"] } },
@@ -695,6 +780,76 @@ async function main() {
         ownerFrench.slice(0, 300));
   check("with none of the English navigation left in it",
         !["The pass", "The rail", "The books", "Guest list"].some((s) => ownerFrench.includes(s)));
+
+  // ------------------------------------------------------------------------
+  section("16. the entry screens speak the reader's language");
+  // Each one the same way as the sign-in page above: the English pinned word
+  // for word, the same English whatever a browser not asking for French
+  // sends, then French with none of that English left.
+  const inBoth = async (
+    name: string,
+    open: (headers: Record<string, string>) => Promise<string>,
+    english: string[],
+    french: string[],
+  ) => {
+    const plainHtml = await open({});
+    const plainText = visibleText(plainHtml);
+    const missing = english.filter((s) => !plainText.includes(s));
+    check(`${name}: English by default, word for word`, missing.length === 0,
+          `missing: ${missing.join(" | ")}`);
+    for (const header of ["en-GB,en;q=0.9", "de-DE,de;q=0.9", "*"]) {
+      const text = visibleText(await open({ "accept-language": header }));
+      check(`${name}: Accept-Language "${header}" renders the same English`,
+            text === plainText, firstDifference(plainText, text));
+    }
+    const frenchHtml = await open(FRENCH);
+    const frenchText = visibleText(frenchHtml);
+    const absent = french.filter((s) => !frenchText.includes(s));
+    check(`${name}: French to a French reader`,
+          htmlLang(frenchHtml) === "fr" && absent.length === 0,
+          `missing: ${absent.join(" | ")} — ${frenchText.slice(0, 200)}`);
+    const left = english.filter((s) => frenchText.includes(s));
+    check(`${name}: with none of the English left`, left.length === 0, left.join(" | "));
+  };
+  const anonymous = (path: string) => async (headers: Record<string, string>) =>
+    (await new Browser().go(`${APP}${path}`, { headers })).text();
+
+  await inBoth("an invitation link that means nothing", anonymous("/invite/no-such-token"),
+    ["Open · come on in", "Your table is ready", "That link means nothing to us",
+     "Ask whoever owns the printer to send a fresh one.", "Go to sign in →"],
+    ["Ouvert · entrez donc", "Votre table est prête", "Ce lien ne nous dit rien", "Aller à la connexion →"]);
+  await inBoth("a spent set-password link", anonymous("/set-password"),
+    ["New key, cut fresh", "That link is spent", "Set-password links work once and expire quickly.",
+     "Go to sign in →"],
+    ["Une clé toute neuve", "Ce lien a déjà servi", "Aller à la connexion →"]);
+
+  // /welcome, as the member who registered above. Rendered on the server, the
+  // passkey prompt has not looked for passkey support yet, so it offers the
+  // way in without one.
+  await clearRateLimit();
+  const member = new Browser();
+  await signInWithPassword(member, APP, "ayla", NEW_PASSWORD);
+  const asMember = (path: string) => async (headers: Record<string, string>) =>
+    (await member.go(`${APP}${path}`, { headers })).text();
+  await inBoth("the welcome page", asMember("/welcome"),
+    ["You’re in", "Welcome, Ayla", "One last thing worth thirty seconds: save a passkey.",
+     "This browser does not do passkeys.", "Take me in"],
+    ["Vous êtes des nôtres", "Bienvenue, Ayla", "Une dernière chose qui vaut trente secondes",
+     "Ce navigateur ne gère pas les clés d’accès.", "Entrer"]);
+
+  // /reauth only shows to a sign-in older than the sudo window: age this one.
+  await db.session.updateMany({
+    where: { token: member.sessionToken() },
+    data: { createdAt: new Date(Date.now() - 60 * 60 * 1000) },
+  });
+  await inBoth("the re-authentication page", asMember("/reauth?next=%2Fme"),
+    ["One more time, please", "Is that still you?",
+     "A password or a passkey confirms it is you at the keyboard and not a browser somebody left open.",
+     "Password for Ayla"],
+    ["Encore une fois, s’il vous plaît", "C’est toujours vous", "Mot de passe du compte Ayla", "Confirmer"]);
+
+  check("the sign-in page's notice says its tone in French too",
+        visibleText(await signinIn("fr", "?reset=1")).includes("C’est bon Mot de passe enregistré."));
 
   // ------------------------------------------------------------------------
   console.info(

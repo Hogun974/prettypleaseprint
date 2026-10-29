@@ -15,6 +15,8 @@ import {
   USERNAME_RULE,
 } from "@/lib/auth-rules";
 import { checkInviteToken, claimingInvite } from "@/lib/invites";
+import { REFUSAL, USERNAME_RULE_SPOKEN, sayBetterAuth, sayIssue } from "@/lib/auth-refusals";
+import { say } from "@/i18n/spoken";
 
 const ClaimSchema = z.object({
   token: z.string().min(1),
@@ -40,23 +42,26 @@ export type ClaimState = {
   field?: "name" | "username" | "password";
 };
 
-/** Better Auth's codes, in the words the person at the keyboard needs. */
-function claimFailure(code: string | undefined, message: string): ClaimState {
+/**
+ * Better Auth's codes, in the words the person at the keyboard needs — and in
+ * their language (src/lib/auth-refusals.ts).
+ */
+async function claimFailure(code: string | undefined, message: string): Promise<ClaimState> {
   switch (code) {
     case "USERNAME_IS_ALREADY_TAKEN":
-      return { error: "Somebody already has that username. Try another.", field: "username" };
+      return { error: await say(REFUSAL.usernameTaken), field: "username" };
     case "USERNAME_TOO_SHORT":
     case "USERNAME_TOO_LONG":
     case "INVALID_USERNAME":
-      return { error: USERNAME_RULE, field: "username" };
+      return { error: await say({ message: USERNAME_RULE, spoken: USERNAME_RULE_SPOKEN }), field: "username" };
     case "PASSWORD_COMPROMISED":
-      return { error: message, field: "password" };
+      return { error: await sayBetterAuth({ code, message }, REFUSAL.failed), field: "password" };
     case "PASSWORD_TOO_SHORT":
-      return { error: `A password needs at least ${PASSWORD_MIN} characters.`, field: "password" };
+      return { error: await say(REFUSAL.passwordShort), field: "password" };
     case "PASSWORD_TOO_LONG":
-      return { error: `That password is longer than ${PASSWORD_MAX} characters.`, field: "password" };
+      return { error: await say(REFUSAL.passwordLong), field: "password" };
     default:
-      return { error: message || "That did not go through. Try again." };
+      return { error: await sayBetterAuth({ code, message: message || null }, REFUSAL.failed) };
   }
 }
 
@@ -85,7 +90,7 @@ export async function acceptInvite(
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     return {
-      error: issue?.message ?? "Check the form.",
+      error: await sayIssue(issue),
       field: issue?.path[0] as ClaimState["field"],
     };
   }

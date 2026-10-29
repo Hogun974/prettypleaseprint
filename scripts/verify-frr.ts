@@ -66,8 +66,14 @@ class Browser {
     }
     return r;
   }
-  /** Replay a server-action form the way a JS-less browser does. */
-  async submit(url: string, html: string, formIndex: number, values: Record<string, string>) {
+  /** Replay a server-action form the way a JS-less browser does, in a language if asked. */
+  async submit(
+    url: string,
+    html: string,
+    formIndex: number,
+    values: Record<string, string>,
+    headers: Record<string, string> = {},
+  ) {
     const forms = html.match(/<form\b[\s\S]*?<\/form>/g) ?? [];
     const form = forms[formIndex];
     if (!form) throw new Error(`no form #${formIndex} on ${url}`);
@@ -79,11 +85,31 @@ class Browser {
       if (n) body.append(unescapeHtml(n), unescapeHtml(v));
     }
     for (const [k, v] of Object.entries(values)) body.set(k, v);
-    return this.raw(url, { method: "POST", body });
+    return this.raw(url, { method: "POST", body, headers });
   }
 }
 
 const rendered = (html: string) => html.replace(/<!--\s*-->/g, "");
+
+/**
+ * What a reader sees: no scripts (the RSC payload carries message strings),
+ * no styles, no tags, entities decoded, whitespace collapsed.
+ */
+const visibleText = (html: string) =>
+  unescapeHtml(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/g, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/g, " ")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[^>]+>/g, " "),
+  ).replace(/\s+/g, " ").trim();
+
+/** Where two texts part, for a failure message that says what changed. */
+function firstDifference(a: string, b: string): string {
+  let i = 0;
+  while (i < a.length && a[i] === b[i]) i++;
+  return `differs at ${i}: "${a.slice(Math.max(0, i - 30), i + 40)}" vs "${b.slice(Math.max(0, i - 30), i + 40)}"`;
+}
 function paramOf(location: string | null, key: string): string {
   if (!location) return "";
   const q = location.split("?")[1] ?? "";
@@ -472,6 +498,124 @@ async function main() {
     check(`the board draws the ${label} rail`, board.includes(label));
   }
   check("Done is not a rail (it is under Closed)", board.includes("Closed"));
+
+  // ------------------------------------------------------------------
+  section("the requests speak the reader's language");
+  // English is what every check above reads, so it is pinned first: the same
+  // words whatever a browser not asking for French sends. Then French, with
+  // none of that English left. Owner data (titles, names) is never translated
+  // and is kept out of both lists.
+  const FRENCH = { "accept-language": "fr-FR,fr;q=0.9,en;q=0.8" };
+  const inBoth = async (
+    name: string,
+    open: (headers: Record<string, string>) => Promise<string>,
+    english: string[],
+    french: string[],
+  ) => {
+    let plain = visibleText(await open({}));
+    const missing = english.filter((s) => !plain.includes(s));
+    check(`${name}: English by default, word for word`, missing.length === 0,
+          `missing: ${missing.join(" | ")}`);
+    for (const header of ["en-GB,en;q=0.9", "de-DE,de;q=0.9", "*"]) {
+      let text = visibleText(await open({ "accept-language": header }));
+      // A card's "3 minutes ago" can tick over between two requests: once more.
+      if (text !== plain) {
+        plain = visibleText(await open({}));
+        text = visibleText(await open({ "accept-language": header }));
+      }
+      check(`${name}: Accept-Language "${header}" renders the same English`, text === plain,
+            firstDifference(plain, text));
+    }
+    const frenchHtml = await open(FRENCH);
+    const french_ = visibleText(frenchHtml);
+    const absent = french.filter((s) => !french_.includes(s));
+    check(`${name}: French to a French reader`,
+          /<html\b[^>]*\blang="fr"/.test(frenchHtml) && absent.length === 0,
+          `missing: ${absent.join(" | ")} — ${french_.slice(0, 200)}`);
+    const left = english.filter((s) => french_.includes(s));
+    check(`${name}: with none of the English left`, left.length === 0, left.join(" | "));
+  };
+  const as = (b: Browser, path: string) => async (headers: Record<string, string>) =>
+    (await b.go(`${APP}${path}`, { headers })).text();
+
+  await inBoth("the board", as(ruben, "/frr"),
+    ["Everything asked for", "Triage", "+ New request", "Requested", "In progress",
+     "waiting on a yes", "being built", "released — go and check", "Closed", "Apply"],
+    ["Boîte à idées", "Tout ce qui a été demandé", "Trier", "+ Nouvelle demande", "Demandée",
+     "En cours", "attend un oui", "en cuisine", "Classées", "Appliquer"]);
+
+  const ask = await makeFeature(ayla.id, "Ask in two languages");
+  await inBoth("a request's page", as(client, `/frr/${ask.id}`),
+    ["← Back to requests", "Asked by", "Change priority", "Where it’s at", "Withdraw this request",
+     "Talk it over", "Nothing said yet", "Medium", "Other"],
+    ["← Retour aux demandes", "Demandée par", "Changer la priorité", "Où elle en est",
+     "Retirer cette demande", "Parlons-en", "Rien de dit pour l’instant", "Moyenne", "Autre"]);
+
+  await inBoth("the new-request form", as(client, "/frr/new"),
+    ["New request", "Ask for a feature", "What & why", "File the request", "High", "Low"],
+    ["Nouvelle demande", "Demander une fonctionnalité", "Quoi et pourquoi", "Déposer la demande",
+     "Haute", "Basse"]);
+
+  await inBoth("the triage queue", as(ruben, "/frr/queue"),
+    ["Requests to triage", "Waiting on you", "In flight", "Accept it", "Yes, decline it",
+     "Move to In progress"],
+    ["Demandes à trier", "Elles vous attendent", "Sur le feu", "L’accepter", "Oui, la refuser",
+     "Passer à « En cours »"]);
+
+  // What the actions say travels in the URL, already in the reader's words.
+  const filePage = await (await client.go(`${APP}/frr/new`)).text();
+  const fileForm = formIndexContaining(filePage, 'name="title"');
+  const tooShort = { title: "ab", description: "x", priority: "low", category: "other" };
+  const refusedEn = paramOf((await client.submit(`${APP}/frr/new`, filePage, fileForm, tooShort))
+    .headers.get("location"), "error");
+  check("a refused request is explained in English by default",
+        refusedEn === "Give it a title — a few words is plenty.", refusedEn);
+  const refusedFr = paramOf((await client.submit(`${APP}/frr/new`, filePage, fileForm, tooShort, FRENCH))
+    .headers.get("location"), "error");
+  check("and in French to a French reader",
+        refusedFr === "Donnez-lui un titre — quelques mots suffisent.", refusedFr);
+
+  const twice = await makeFeature(ayla.id, "Accepted twice over");
+  const twiceAgain = await makeFeature(ayla.id, "Accepted in French");
+  const acceptEn = await (await ruben.go(`${APP}/frr/${twice.id}`)).text();
+  const toastEn = paramOf((await ruben.submit(`${APP}/frr/${twice.id}`, acceptEn,
+    formIndexContaining(acceptEn, "Accept it"), {})).headers.get("location"), "toast");
+  check("the owner's toast is the same English as before",
+        toastEn === "“Accepted twice over” → Accepted · Ayla Berg notified", toastEn);
+  const acceptFr = await (await ruben.go(`${APP}/frr/${twiceAgain.id}`, { headers: FRENCH })).text();
+  const toastFr = paramOf((await ruben.submit(`${APP}/frr/${twiceAgain.id}`, acceptFr,
+    formIndexContaining(acceptFr, "L’accepter"), {}, FRENCH)).headers.get("location"), "toast");
+  check("and French to a French owner, the title left as it was typed",
+        // Guillemets with no-break spaces inside, as the French catalogue writes them.
+        toastFr === "« Accepted in French » → Acceptée · Ayla Berg est au courant", toastFr);
+
+  // A refusal carrying values: the withdraw form replayed against a request
+  // already accepted, as in the withdraw section above.
+  const keep = await makeFeature(ayla.id, "Still withdrawable");
+  const keepPage = await (await client.go(`${APP}/frr/${keep.id}`)).text();
+  const keepForm = formIndexContaining(keepPage, "Yes, withdraw it");
+  const lateEn = paramOf((await client.submit(`${APP}/frr/${keep.id}`, keepPage, keepForm,
+    { id: String(twice.id) })).headers.get("location"), "toast");
+  check("a refused withdrawal says why in English by default",
+        lateEn.startsWith(`${refOf(twice.id)} is already accepted — ask `), lateEn);
+  const lateFr = paramOf((await client.submit(`${APP}/frr/${keep.id}`, keepPage, keepForm,
+    { id: String(twice.id) }, FRENCH)).headers.get("location"), "toast");
+  check("and in French, the word agreeing, to a French reader",
+        lateFr.startsWith(`${refOf(twice.id)} est déjà acceptée — demandez plutôt à `), lateFr);
+
+  const prioPage = await (await client.go(`${APP}/frr/${keep.id}`)).text();
+  const prioForm = formIndexContaining(prioPage, 'name="priority"');
+  const prioEn = paramOf((await client.submit(`${APP}/frr/${keep.id}`, prioPage, prioForm,
+    { id: String(keep.id), priority: "high" })).headers.get("location"), "toast");
+  check("a new priority is announced in English by default", prioEn === "Priority → high.", prioEn);
+  const prioFr = paramOf((await client.submit(`${APP}/frr/${keep.id}`, prioPage, prioForm,
+    { id: String(keep.id), priority: "high" }, FRENCH)).headers.get("location"), "toast");
+  check("and in French to a French reader", prioFr === "Déjà en priorité haute.", prioFr);
+
+  const blank = paramOf((await client.submit(`${APP}/frr/${keep.id}`, prioPage,
+    formIndexContaining(prioPage, 'name="body"'), { body: "   " }, FRENCH)).headers.get("location"), "error");
+  check("an empty comment is refused in French to a French reader",
+        blank === "Dites d’abord quelque chose.", blank);
 
   console.info(
     `\n${passed} checks passed, ${failures.length} failed` +

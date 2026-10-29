@@ -21,4 +21,14 @@ export const CLIENT_GROUPS = [
   "header.account",
   "header.nudge",
   "setup.passkey",
+  // PriorityChip lives in src/components/ui.tsx, which client components
+  // import; its words are here so that it reads right wherever it is drawn.
+  "common.priority",
+  "invite.form",
+  "auth.fields",
+  "auth.notice",
+  "auth.setPassword.form",
+  "auth.reauth.form",
+  "auth.welcome.prompt",
+  "problems.auth.betterAuth",
 ] as const;

@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
+import { betterAuthMessage } from "@/i18n/better-auth";
 import { Button, Input, Label, Notice } from "@/components/ui";
 
 export function SignInForm({ next }: { next: string }) {
   const t = useTranslations("signin.form");
+  const library = useTranslations("problems.auth.betterAuth");
+  const notice = useTranslations("auth.notice");
+  const locale = useLocale();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -30,9 +34,9 @@ export function SignInForm({ next }: { next: string }) {
     setError(null);
     const res = await authClient.signIn.passkey();
     if (res?.error) {
-      // Better Auth's own message when it has one, which is English: it comes
-      // from the library, not from a catalogue this app owns.
-      setError(res.error.message ?? t("passkeyRefused"));
+      // Better Auth's own sentence for an English reader, as before; its code
+      // in the reader's language otherwise (src/i18n/better-auth.ts).
+      setError(betterAuthMessage(res.error, { locale, t: library, fallback: t("passkeyRefused") }));
       return;
     }
     window.location.assign(next);
@@ -119,7 +123,7 @@ export function SignInForm({ next }: { next: string }) {
         </Button>
       </form>
 
-      {error && <Notice tone="warn">{error}</Notice>}
+      {error && <Notice tone="warn" label={notice("holdOn")}>{error}</Notice>}
 
       <p className="m-0 border-t-2 border-dashed border-rule pt-[13.2px] text-[13.5px] leading-[1.5] text-ink-2">
         {t("inviteOnly")}

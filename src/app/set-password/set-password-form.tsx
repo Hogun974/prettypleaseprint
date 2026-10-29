@@ -2,16 +2,18 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { useTranslations } from "next-intl";
 
 import { setPassword, type SetPasswordState } from "./actions";
 import { PASSWORD_MIN, USERNAME_MAX, USERNAME_MIN } from "@/lib/auth-rules";
 import { Button, Input, Label, Notice } from "@/components/ui";
 
 function Submit() {
+  const t = useTranslations("auth.setPassword.form");
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending} className="w-full">
-      {pending ? "Saving…" : "Save this password"}
+      {pending ? t("working") : t("submit")}
     </Button>
   );
 }
@@ -24,6 +26,9 @@ export function SetPasswordForm({
   /** True only for an account that has never had one — the seeded admin. */
   needsUsername?: boolean;
 }) {
+  const t = useTranslations("auth.setPassword.form");
+  const fields = useTranslations("auth.fields");
+  const notice = useTranslations("auth.notice");
   const [state, formAction] = useActionState<SetPasswordState, FormData>(
     setPassword,
     {},
@@ -35,7 +40,7 @@ export function SetPasswordForm({
 
       {needsUsername && (
         <div>
-          <Label htmlFor="username">Pick a username</Label>
+          <Label htmlFor="username">{fields("pickUsername")}</Label>
           <Input
             id="username"
             name="username"
@@ -59,15 +64,13 @@ export function SetPasswordForm({
                 : "font-mono uppercase tracking-[0.04em] text-ink-3"
             }`}
           >
-            {state.field === "username"
-              ? state.error
-              : "What you sign in with — letters, digits, - and _"}
+            {state.field === "username" ? state.error : fields("usernameHelp")}
           </p>
         </div>
       )}
 
       <div>
-        <Label htmlFor="password">New password</Label>
+        <Label htmlFor="password">{t("newPassword")}</Label>
         <Input
           id="password"
           name="password"
@@ -87,13 +90,13 @@ export function SetPasswordForm({
               : "font-mono uppercase tracking-[0.04em] text-ink-3"
           }`}
         >
-          {state.field === "password"
-            ? state.error
-            : `At least ${PASSWORD_MIN} characters, and not a breached one.`}
+          {state.field === "password" ? state.error : t("passwordHelp", { min: PASSWORD_MIN })}
         </p>
       </div>
 
-      {state.error && !state.field && <Notice tone="warn">{state.error}</Notice>}
+      {state.error && !state.field && (
+        <Notice tone="warn" label={notice("holdOn")}>{state.error}</Notice>
+      )}
 
       <Submit />
     </form>

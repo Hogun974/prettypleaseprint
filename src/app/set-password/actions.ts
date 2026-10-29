@@ -17,6 +17,8 @@ import { db } from "@/lib/db";
 import { record } from "@/lib/audit";
 import { isUniqueViolation } from "@/lib/invites";
 import { readResetToken, restorePasswordSetupLink } from "@/lib/password-reset";
+import { REFUSAL, sayBetterAuth, sayIssue } from "@/lib/auth-refusals";
+import { say } from "@/i18n/spoken";
 
 const SetPasswordSchema = z.object({
   token: z.string().min(1),
@@ -34,10 +36,10 @@ const SetPasswordSchema = z.object({
     .optional(),
 });
 
+/** `error` is in the reader's language (src/lib/auth-refusals.ts). */
 export type SetPasswordState = { error?: string; field?: "username" | "password" };
 
-const SPENT =
-  "That link has already been used, or it expired. Ask the printer owner for another.";
+const SPENT = REFUSAL.linkSpent;
 
 /**
  * Redeem a set-password link.
@@ -66,7 +68,7 @@ export async function setPassword(
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     return {
-      error: issue?.message ?? "Check the form.",
+      error: await sayIssue(issue),
       field: issue?.path[0] as SetPasswordState["field"],
     };
   }
@@ -74,7 +76,7 @@ export async function setPassword(
   // Resolved before redeeming: the row is gone afterwards, and an audit line
   // that cannot name its subject is not much of an audit line.
   const resolved = await readResetToken(parsed.data.token);
-  if (!resolved) return { error: SPENT };
+  if (!resolved) return { error: await say(SPENT) };
   const { user, expiresAt } = resolved;
 
   // The username goes first, and on purpose. Claiming it before the password
@@ -85,7 +87,7 @@ export async function setPassword(
   // reset link is not the place to change it.
   if (!user.username) {
     if (!parsed.data.username) {
-      return { error: "Pick a username to sign in with.", field: "username" };
+      return { error: await say(REFUSAL.usernameNeeded), field: "username" };
     }
     try {
       // Written straight through Prisma, so the folding the username plugin
@@ -102,7 +104,7 @@ export async function setPassword(
     } catch (error) {
       if (isUniqueViolation(error)) {
         return {
-          error: "Somebody already has that username. Try another.",
+          error: await say(REFUSAL.usernameTaken),
           field: "username",
         };
       }
@@ -119,7 +121,7 @@ export async function setPassword(
     const e = error as { body?: { code?: string; message?: string }; message?: string };
     const code = e.body?.code;
 
-    if (code === "INVALID_TOKEN") return { error: SPENT };
+    if (code === "INVALID_TOKEN") return { error: await say(SPENT) };
 
     // Everything else happened after the token was consumed. Put it back so
     // the person can correct the password they were just told to correct.
@@ -127,20 +129,17 @@ export async function setPassword(
 
     switch (code) {
       case "PASSWORD_COMPROMISED":
-        return { error: e.body?.message ?? "Pick a different password.", field: "password" };
+        return {
+          error: await sayBetterAuth({ code, message: e.body?.message }, REFUSAL.pickDifferent),
+          field: "password",
+        };
       case "PASSWORD_TOO_SHORT":
-        return {
-          error: `A password needs at least ${PASSWORD_MIN} characters.`,
-          field: "password",
-        };
+        return { error: await say(REFUSAL.passwordShort), field: "password" };
       case "PASSWORD_TOO_LONG":
-        return {
-          error: `That password is longer than ${PASSWORD_MAX} characters.`,
-          field: "password",
-        };
+        return { error: await say(REFUSAL.passwordLong), field: "password" };
       default:
         console.error("set-password failed", error);
-        return { error: "That did not go through. Try again in a moment." };
+        return { error: await say(REFUSAL.failedMoment) };
     }
   }
 

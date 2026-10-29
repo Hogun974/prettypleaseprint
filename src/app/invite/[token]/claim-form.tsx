@@ -2,15 +2,17 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { useTranslations } from "next-intl";
 import { acceptInvite, type ClaimState } from "./actions";
 import { PASSWORD_MIN, USERNAME_MAX, USERNAME_MIN } from "@/lib/auth-rules";
 import { Button, Input, Label, Notice } from "@/components/ui";
 
 function Submit() {
+  const t = useTranslations("invite.form");
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending} className="w-full">
-      {pending ? "Setting you up…" : "Create your account"}
+      {pending ? t("working") : t("submit")}
     </Button>
   );
 }
@@ -38,6 +40,10 @@ function Hint({
   );
 }
 
+/**
+ * The registration form. Its refusals come back from `acceptInvite` already
+ * in the reader's language: the action reads the request, this only shows.
+ */
 export function ClaimForm({
   token,
   email,
@@ -47,6 +53,9 @@ export function ClaimForm({
   email: string;
   suggestedName: string;
 }) {
+  const t = useTranslations("invite.form");
+  const fields = useTranslations("auth.fields");
+  const notice = useTranslations("auth.notice");
   const [state, formAction] = useActionState<ClaimState, FormData>(
     acceptInvite,
     {},
@@ -57,17 +66,17 @@ export function ClaimForm({
       <input type="hidden" name="token" value={token} />
 
       <div>
-        <Label htmlFor="email">Your email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         {/* Fixed: the invite is bound to this address. Showing it disabled is
             clearer than hiding it — people want to know which inbox they are. */}
         <Input id="email" value={email} disabled readOnly />
         <p className="mt-[6px] font-mono text-[11.5px] uppercase tracking-[0.04em] text-ink-3">
-          The invite is tied to this address and cannot be moved to another.
+          {t("emailHelp")}
         </p>
       </div>
 
       <div>
-        <Label htmlFor="name">What should we call you?</Label>
+        <Label htmlFor="name">{t("name")}</Label>
         <Input
           id="name"
           name="name"
@@ -80,12 +89,12 @@ export function ClaimForm({
           aria-invalid={state.field === "name" || undefined}
         />
         <Hint state={state} field="name">
-          Shown on your tickets and in the conversation.
+          {t("nameHelp")}
         </Hint>
       </div>
 
       <div>
-        <Label htmlFor="username">Pick a username</Label>
+        <Label htmlFor="username">{fields("pickUsername")}</Label>
         <Input
           id="username"
           name="username"
@@ -101,12 +110,12 @@ export function ClaimForm({
           aria-invalid={state.field === "username" || undefined}
         />
         <Hint state={state} field="username">
-          What you sign in with — letters, digits, - and _
+          {fields("usernameHelp")}
         </Hint>
       </div>
 
       <div>
-        <Label htmlFor="password">And a password</Label>
+        <Label htmlFor="password">{t("password")}</Label>
         <Input
           id="password"
           name="password"
@@ -118,13 +127,15 @@ export function ClaimForm({
           aria-invalid={state.field === "password" || undefined}
         />
         <Hint state={state} field="password">
-          At least {PASSWORD_MIN} characters. Length beats punctuation.
+          {t("passwordHelp", { min: PASSWORD_MIN })}
         </Hint>
       </div>
 
       {/* Anything the fields could not carry: a revoked invite, a refused
           breach check, a server that fell over. */}
-      {state.error && !state.field && <Notice tone="warn">{state.error}</Notice>}
+      {state.error && !state.field && (
+        <Notice tone="warn" label={notice("holdOn")}>{state.error}</Notice>
+      )}
 
       <Submit />
     </form>

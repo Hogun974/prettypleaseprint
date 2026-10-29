@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { requireUser, printerName } from "@/lib/authz";
 import {
@@ -6,8 +7,6 @@ import {
   FEATURE_CATEGORIES,
   DEFAULT_FEATURE_PRIORITY,
   DEFAULT_FEATURE_CATEGORY,
-  PRIORITY_CHIP,
-  CATEGORY_LABEL,
 } from "@/lib/catalog";
 import { createFeature } from "@/app/actions/features";
 import { AppHeader } from "@/components/app-header";
@@ -29,6 +28,7 @@ export default async function NewFeaturePage({
 }) {
   const [{ error }, user] = await Promise.all([searchParams, requireUser("/frr/new")]);
   const owner = await printerName();
+  const [t, words] = await Promise.all([getTranslations("frr"), getTranslations("common")]);
 
   return (
     <>
@@ -39,48 +39,47 @@ export default async function NewFeaturePage({
           href="/frr"
           className="inline-block font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-ink-2 underline underline-offset-4 hover:text-cherry-dk"
         >
-          ← Back to requests
+          {t("back")}
         </Link>
 
         <div className="mt-[13.2px] mb-[22px]">
-          <Kicker>New request</Kicker>
+          <Kicker>{t("new.kicker")}</Kicker>
           <h1 className="m-0 mt-[6px] font-display text-[30px] leading-[1.05] text-ink">
-            Ask for a feature
+            {t("new.title")}
           </h1>
           <p className="m-0 mt-[8px] text-[15px] text-ink-2">
-            Say what you are hoping for and why. {owner} sees it on the board and takes
-            it from there.
+            {t("new.lead", { owner })}
           </p>
         </div>
 
         {error && (
           <div className="mb-[17.6px]">
-            <Notice tone="warn">{error}</Notice>
+            <Notice tone="warn" label={t("notice.holdOn")}>{error}</Notice>
           </div>
         )}
 
         <form action={createFeature} className="flex flex-col gap-[17.6px]">
           <div>
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" required maxLength={120} placeholder="A short summary" />
+            <Label htmlFor="title">{t("new.titleLabel")}</Label>
+            <Input id="title" name="title" required maxLength={120} placeholder={t("new.titlePlaceholder")} />
           </div>
 
           <div>
-            <Label htmlFor="description">What &amp; why</Label>
+            <Label htmlFor="description">{t("new.description")}</Label>
             <textarea
               id="description"
               name="description"
               required
               maxLength={4000}
               rows={6}
-              placeholder="What you'd like, and what it would let you do."
+              placeholder={t("new.descriptionPlaceholder")}
               className="w-full rounded-card border-[3px] border-ink bg-porcelain px-[15px] py-[12px] text-[16px] leading-[1.5] text-ink placeholder:text-ink-3"
             />
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[17.6px]">
             <div>
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="priority">{t("new.priority")}</Label>
               <select
                 id="priority"
                 name="priority"
@@ -89,13 +88,13 @@ export default async function NewFeaturePage({
               >
                 {FEATURE_PRIORITIES.map((p) => (
                   <option key={p} value={p}>
-                    {PRIORITY_CHIP[p]?.label ?? p}
+                    {words(`priority.${p}`)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">{t("new.category")}</Label>
               <select
                 id="category"
                 name="category"
@@ -104,7 +103,7 @@ export default async function NewFeaturePage({
               >
                 {FEATURE_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {CATEGORY_LABEL[c] ?? c}
+                    {words(`category.${c}`)}
                   </option>
                 ))}
               </select>
@@ -116,7 +115,7 @@ export default async function NewFeaturePage({
               type="submit"
               className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[28px] py-[13px] text-[16px] font-bold text-cream hover:bg-cherry"
             >
-              File the request
+              {t("new.submit")}
             </button>
           </div>
         </form>

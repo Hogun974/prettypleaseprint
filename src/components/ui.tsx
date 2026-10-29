@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
+import { useTranslations } from "next-intl";
 
-import { PRIORITY_CHIP } from "@/lib/catalog";
+import { FEATURE_PRIORITIES, PRIORITY_CHIP } from "@/lib/catalog";
 
 /**
  * The neon logotype. A script wordmark on a lit disc — the sign over the door.
@@ -216,6 +217,11 @@ const CHIP_SKIN: Record<string, string> = {
  * medium, and a chip on every card is a chip nobody reads — there the mark
  * should mean "this one is not like the others". In a list the owner is
  * triaging, every row says what it is.
+ *
+ * The word is the reader's language (`common.priority`). `useTranslations`
+ * rather than a prop, unlike `AuthShell` and `Notice`: next-intl answers it in
+ * a server component as well as in a client one, and this chip is drawn by
+ * both — so the group is in CLIENT_GROUPS too.
  */
 export function PriorityChip({
   priority,
@@ -224,13 +230,15 @@ export function PriorityChip({
   priority: string;
   quiet?: boolean;
 }) {
+  const t = useTranslations("common.priority");
   if (quiet && priority === "medium") return null;
+  const known = (FEATURE_PRIORITIES as readonly string[]).includes(priority);
   const chip = PRIORITY_CHIP[priority] ?? PRIORITY_CHIP.medium!;
   return (
     <span
       className={`inline-block flex-none rounded-chip border-2 border-ink px-[8px] py-[1px] font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink ${chip.bg}`}
     >
-      {chip.label}
+      {t(known ? (priority as (typeof FEATURE_PRIORITIES)[number]) : "medium")}
     </span>
   );
 }

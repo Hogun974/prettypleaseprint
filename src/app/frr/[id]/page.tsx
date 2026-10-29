@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { requireUser, printerName } from "@/lib/authz";
-import { FEATURE_FLOW, featureLabel, featureRef } from "@/lib/scope";
+import { FEATURE_FLOW, featureRef } from "@/lib/scope";
 import { findFeature, listFeatureComments } from "@/lib/features";
 import { changeFeaturePriority, withdrawFeature } from "@/app/actions/features";
-import { relativeTime, PRIORITY_CHIP, CATEGORY_LABEL, FEATURE_PRIORITIES } from "@/lib/catalog";
+import { PRIORITY_CHIP, FEATURE_PRIORITIES } from "@/lib/catalog";
+import { getRelativeTime } from "@/i18n/server";
 import { AppHeader } from "@/components/app-header";
 import { Fact, Notice, StatusChip } from "@/components/ui";
 import { FeatureActions } from "@/components/feature-actions";
@@ -38,8 +40,15 @@ export default async function FeaturePage({
   if (!feature) notFound();
   const comments = await listFeatureComments(user, featureId);
   const owner = await printerName();
+  const [t, words, ago] = await Promise.all([
+    getTranslations("frr"),
+    getTranslations("common"),
+    getRelativeTime(),
+  ]);
 
   const priority = PRIORITY_CHIP[feature.priority] ?? PRIORITY_CHIP.medium!;
+  const priorityLabel = words(`priority.${feature.priority}`);
+  const categoryLabel = words(`category.${feature.category}`);
   const currentIndex = (FEATURE_FLOW as readonly string[]).indexOf(feature.status);
   const canWithdraw =
     feature.requester.id === user.id &&
@@ -58,19 +67,19 @@ export default async function FeaturePage({
           href="/frr"
           className="inline-block font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-ink-2 underline underline-offset-4 hover:text-cherry-dk"
         >
-          ← Back to requests
+          {t("back")}
         </Link>
 
         <div className="mt-[13.2px] mb-[8.8px] flex flex-wrap items-center gap-[8.8px]">
           <span className="rounded-chip border-2 border-ink bg-porcelain px-[11px] py-[3px] font-mono text-[12px] font-bold tracking-[0.06em] text-ink">
             {featureRef(feature.id)}
           </span>
-          <StatusChip status={feature.status} label={featureLabel(feature.status)} />
+          <StatusChip status={feature.status} label={t(`status.${feature.status}`)} />
           <span className={`rounded-chip border-2 border-ink px-[11px] py-[3px] font-mono text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink ${priority.bg}`}>
-            {priority.label}
+            {priorityLabel}
           </span>
           <span className="rounded-chip border-2 border-ink bg-aqua-wash px-[11px] py-[3px] font-mono text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink">
-            {CATEGORY_LABEL[feature.category] ?? feature.category}
+            {categoryLabel}
           </span>
         </div>
 
@@ -84,10 +93,10 @@ export default async function FeaturePage({
 
         <div className="rounded-panel border-[3px] border-ink bg-porcelain p-[22px] shadow-stamp">
           <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-[17.6px]">
-            <Fact label="Asked by">{feature.requester.name}</Fact>
-            <Fact label="Priority">{priority.label}</Fact>
-            <Fact label="Category">{CATEGORY_LABEL[feature.category] ?? feature.category}</Fact>
-            <Fact label="Filed">{relativeTime(feature.createdAt)}</Fact>
+            <Fact label={t("detail.askedBy")}>{feature.requester.name}</Fact>
+            <Fact label={t("detail.priority")}>{priorityLabel}</Fact>
+            <Fact label={t("detail.category")}>{categoryLabel}</Fact>
+            <Fact label={t("detail.filed")}>{ago(feature.createdAt)}</Fact>
           </div>
 
           {/* Change the priority after filing. A plain form + submit, so it
@@ -104,7 +113,7 @@ export default async function FeaturePage({
                   htmlFor="priority"
                   className="mb-[4px] block font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-3"
                 >
-                  Change priority
+                  {t("detail.changePriority")}
                 </label>
                 <select
                   id="priority"
@@ -114,7 +123,7 @@ export default async function FeaturePage({
                 >
                   {FEATURE_PRIORITIES.map((p) => (
                     <option key={p} value={p}>
-                      {PRIORITY_CHIP[p]?.label ?? p}
+                      {words(`priority.${p}`)}
                     </option>
                   ))}
                 </select>
@@ -123,17 +132,17 @@ export default async function FeaturePage({
                 type="submit"
                 className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-aqua px-[18px] py-[9px] text-[14px] font-bold text-ink hover:bg-sun"
               >
-                Set
+                {t("detail.set")}
               </button>
             </form>
           )}
         </div>
 
         <section className="mt-[26.4px]">
-          <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">Where it&rsquo;s at</h2>
+          <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">{t("detail.whereItsAt")}</h2>
           {feature.status === "Declined" ? (
             <p className="m-0 rounded-card border-[3px] border-ink bg-cream-3 px-[17.6px] py-[13.2px] text-[15px] text-ink-2">
-              This one was declined {relativeTime(feature.updatedAt)}.
+              {t("detail.declinedWhen", { when: ago(feature.updatedAt) })}
             </p>
           ) : (
             <ol className="m-0 flex list-none flex-col p-0">
@@ -159,10 +168,10 @@ export default async function FeaturePage({
                     </div>
                     <div className="pb-[17.6px]">
                       <div className={`font-display text-[17px] ${done || now ? "text-ink" : "text-ink-3"}`}>
-                        {featureLabel(step)}
+                        {t(`status.${step}`)}
                       </div>
                       <div className="mt-[3px] font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-ink-3">
-                        {now ? "now" : done ? "cleared" : "waiting"}
+                        {t(`detail.step.${now ? "now" : done ? "cleared" : "waiting"}`)}
                       </div>
                     </div>
                   </li>
@@ -181,17 +190,17 @@ export default async function FeaturePage({
                   the print one, and a control that reads as a link on one and
                   a button on the other would be the seam showing. */}
               <summary className="stamp inline-block cursor-pointer list-none rounded-chip border-[3px] border-ink bg-cherry-wash px-[15px] py-[8px] text-[14px] font-bold text-cherry-dk hover:bg-cherry-dk hover:text-cream">
-                Withdraw this request
+                {t("detail.withdraw")}
               </summary>
               <div className="mt-[8.8px] rounded-card border-[3px] border-ink bg-cream-2 p-[13.2px]">
                 <p className="m-0 mb-[8px] text-[14px] text-ink-2">
-                  This removes it and its conversation. Only while nobody has started on it.
+                  {t("detail.withdrawHelp")}
                 </p>
                 <button
                   type="submit"
                   className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[15px] py-[8px] text-[14px] font-bold text-cream hover:bg-cherry"
                 >
-                  Yes, withdraw it
+                  {t("detail.withdrawConfirm")}
                 </button>
               </div>
             </details>
@@ -201,11 +210,11 @@ export default async function FeaturePage({
         {user.role === "admin" && (
           <section className="mt-[26.4px] rounded-panel border-[3px] border-ink bg-aqua-wash p-[22px] shadow-stamp">
             <h2 className="m-0 mb-[13.2px] font-display text-[20px] text-ink">
-              {feature.status === "Requested" ? "This one needs a yes" : "Move it along"}
+              {feature.status === "Requested" ? t("detail.needsYes") : t("detail.moveAlong")}
             </h2>
             {error && (
               <div className="mb-[13.2px]">
-                <Notice tone="warn">{error}</Notice>
+                <Notice tone="warn" label={t("notice.holdOn")}>{error}</Notice>
               </div>
             )}
             <FeatureActions featureId={feature.id} status={feature.status} from={`/frr/${feature.id}`} />
@@ -220,7 +229,7 @@ export default async function FeaturePage({
         />
       </main>
 
-      {sent && <Toast>Filed · {owner} has been notified</Toast>}
+      {sent && <Toast>{t("detail.filedToast", { owner })}</Toast>}
       {toast && <Toast>{toast}</Toast>}
     </>
   );

@@ -225,5 +225,285 @@
       "good": "C’est bon",
       "holdOn": "Un instant"
     }
+  },
+  "common": {
+    "priority": {
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Basse"
+    },
+    "category": {
+      "ui": "Interface",
+      "api": "API",
+      "bug": "Bug",
+      "other": "Autre"
+    }
+  },
+  "frr": {
+    "kicker": "Boîte à idées",
+    "back": "← Retour aux demandes",
+    "status": {
+      "Requested": "Demandée",
+      "Accepted": "Acceptée",
+      "InProgress": "En cours",
+      "Shipped": "Livrée",
+      "Done": "Terminée",
+      "Declined": "Refusée"
+    },
+    "notice": {
+      "note": "À noter",
+      "holdOn": "Un instant",
+      "good": "C’est bon"
+    },
+    "board": {
+      "titleOwner": "Tout ce qui a été demandé",
+      "titleMember": "Ce que vous avez demandé",
+      "lead": "Demandez une modification de Pretty Please Print, et suivez-la à travers les mêmes étapes qu’une impression. {owner} voit chaque demande et la fait avancer.",
+      "triage": "Trier",
+      "newRequest": "+ Nouvelle demande",
+      "noMatch": "Rien ne correspond à ces filtres",
+      "clearFilters": "<clear>Effacez les filtres</clear> pour tout voir.",
+      "empty": "Rien pour l’instant",
+      "emptyHelp": "La première idée s’affiche ici dès que vous la déposez.",
+      "rail": {
+        "Requested": "attend un oui",
+        "Accepted": "acceptée, en attente",
+        "InProgress": "en cuisine",
+        "Shipped": "sortie — allez voir"
+      },
+      "closed": "Classées"
+    },
+    "new": {
+      "kicker": "Nouvelle demande",
+      "title": "Demander une fonctionnalité",
+      "lead": "Dites ce que vous espérez, et pourquoi. {owner} la voit arriver et s’en occupe.",
+      "titleLabel": "Titre",
+      "titlePlaceholder": "Un résumé en quelques mots",
+      "description": "Quoi et pourquoi",
+      "descriptionPlaceholder": "Ce que vous aimeriez, et ce que ça vous permettrait de faire.",
+      "priority": "Priorité",
+      "category": "Catégorie",
+      "submit": "Déposer la demande"
+    },
+    "detail": {
+      "askedBy": "Demandée par",
+      "priority": "Priorité",
+      "category": "Catégorie",
+      "filed": "Déposée",
+      "changePriority": "Changer la priorité",
+      "set": "Valider",
+      "whereItsAt": "Où elle en est",
+      "declinedWhen": "Celle-ci a été refusée {when}.",
+      "step": {
+        "now": "maintenant",
+        "cleared": "passée",
+        "waiting": "à venir"
+      },
+      "withdraw": "Retirer cette demande",
+      "withdrawHelp": "Elle disparaît, avec sa conversation. Seulement tant que personne ne s’y est mis.",
+      "withdrawConfirm": "Oui, la retirer",
+      "needsYes": "Celle-ci attend un oui",
+      "moveAlong": "La faire avancer",
+      "filedToast": "Déposée · {owner} est au courant"
+    },
+    "queue": {
+      "title": "Demandes à trier",
+      "waiting": "Elles vous attendent",
+      "inFlight": "Sur le feu",
+      "nothingMoving": "Rien d’accepté ni en cours"
+    },
+    "filter": {
+      "priority": "Priorité",
+      "status": "Statut",
+      "category": "Catégorie",
+      "anyPriority": "Toutes",
+      "anyStatus": "Tous",
+      "anyCategory": "Toutes",
+      "apply": "Appliquer",
+      "clear": "Effacer"
+    },
+    "conversation": {
+      "title": "Parlons-en",
+      "empty": "Rien de dit pour l’instant",
+      "byline": "{name} · {when}",
+      "bylineOwner": "{name} · en cuisine · {when}",
+      "label": "Ajouter à la conversation",
+      "placeholderOwner": "Posez une question, ou dites ce que vous avez changé…",
+      "placeholderMember": "Répondre à {owner}…",
+      "send": "Envoyer"
+    },
+    "actions": {
+      "declined": "Refusée — plus rien à faire",
+      "accept": "L’accepter",
+      "moveTo": "Passer à « {status} »",
+      "decline": "Refuser",
+      "declineHelp": "Ça la clôt. La personne qui l’a demandée est prévenue.",
+      "declineConfirm": "Oui, la refuser"
+    },
+    "toast": {
+      "advanced": "« {title} » → {status} · {name} est au courant",
+      "declined": "Refusée · {name} est au courant",
+      "withdrawn": "{ref} retirée.",
+      "priorityUnchanged": "Déjà en priorité {priority}.",
+      "priorityChanged": "Priorité → {priority}.",
+      "sent": "Envoyé"
+    }
+  },
+  "invite": {
+    "kicker": "Votre table est prête",
+    "rejected": {
+      "not_found": {
+        "title": "Ce lien ne nous dit rien",
+        "body": "Il a peut-être été mal recopié, ou l’invitation a été retirée. Demandez-en une nouvelle à la personne qui s’occupe de l’imprimante."
+      },
+      "expired": {
+        "title": "Cette invitation a expiré",
+        "body": "Une invitation dure une semaine. Demandez-en une autre, elle marchera tout de suite."
+      },
+      "revoked": {
+        "title": "Cette invitation a été retirée",
+        "body": "La personne qui l’a envoyée l’a annulée depuis. Si ça vous semble une erreur, parlez-lui-en."
+      },
+      "already_accepted": {
+        "title": "Cette invitation a déjà servi",
+        "body": "Le compte existe déjà — connectez-vous plutôt. Un lien d’invitation ne sert qu’une fois, exprès."
+      }
+    },
+    "title": "{name} imprimera des choses pour vous",
+    "someone": "Quelqu’un",
+    "lead": "Déposez un <mono>.stl</mono> ou un <mono>.3mf</mono>, dites ce que vous espérez, et le voilà sur le rail, comme un ticket que vous pouvez suivre. Choisissez un nom, un nom d’utilisateur et un mot de passe, et c’est parti.",
+    "notice": "Ce lien ouvre le compte — il n’y a pas de second e-mail. Vous êtes connecté dès sa création, et l’écran suivant propose une clé d’accès pour vous passer du mot de passe sur cet appareil.",
+    "form": {
+      "email": "Votre e-mail",
+      "emailHelp": "L’invitation est liée à cette adresse et ne peut pas passer à une autre.",
+      "name": "Comment doit-on vous appeler ?",
+      "nameHelp": "Affiché sur vos tickets et dans la conversation.",
+      "password": "Et un mot de passe",
+      "passwordHelp": "Au moins {min} caractères. La longueur compte plus que la ponctuation.",
+      "submit": "Créer votre compte",
+      "working": "On vous installe…"
+    }
+  },
+  "auth": {
+    "goSignIn": "Aller à la connexion →",
+    "notice": {
+      "note": "À noter",
+      "holdOn": "Un instant",
+      "good": "C’est bon"
+    },
+    "fields": {
+      "pickUsername": "Choisissez un nom d’utilisateur",
+      "usernameHelp": "Ce qui sert à vous connecter — lettres, chiffres, - et _"
+    },
+    "setPassword": {
+      "kicker": "Une clé toute neuve",
+      "spentTitle": "Ce lien a déjà servi",
+      "spentBody": "Un lien de mot de passe ne sert qu’une fois et expire vite. Demandez-en un autre à la personne qui s’occupe de l’imprimante — c’est l’affaire d’un instant.",
+      "titleSetUp": "Installez-vous",
+      "titlePick": "Choisissez un mot de passe, {name}",
+      "leadSetUp": "Personne n’a invité ce compte, il n’a donc pas encore de nom d’utilisateur. Choisissez-en un, et un mot de passe pour aller avec.",
+      "leadPick": "Ce lien définit un mot de passe, rien d’autre — vous vous connecterez avec à l’écran suivant. Partout où l’ancien vous gardait connecté, la session est fermée.",
+      "notice": "Vous n’avez rien demandé ? Parlez-en à la personne qui s’occupe de l’imprimante avant de vous en servir.",
+      "form": {
+        "newPassword": "Nouveau mot de passe",
+        "passwordHelp": "Au moins {min} caractères, et pas un mot de passe qui a fuité.",
+        "submit": "Enregistrer ce mot de passe",
+        "working": "Enregistrement…"
+      }
+    },
+    "reauth": {
+      "kicker": "Encore une fois, s’il vous plaît",
+      "title": "C’est toujours vous ?",
+      "lead": "Vous allez changer qui peut entrer, ou la façon dont l’application se comporte pour tout le monde. Un mot de passe ou une clé d’accès confirme que c’est bien vous au clavier, et pas un navigateur que quelqu’un a laissé ouvert.",
+      "form": {
+        "withPasskey": "Confirmer avec une clé d’accès",
+        "or": "ou",
+        "passwordFor": "Mot de passe du compte {name}",
+        "checking": "Vérification…",
+        "confirm": "Confirmer",
+        "passkeyRefused": "Cette clé d’accès n’a pas été acceptée. Utilisez plutôt votre mot de passe.",
+        "tooManyAttempts": "Trop de tentatives. Patientez une minute, puis réessayez.",
+        "refused": "Ce mot de passe ne correspond pas. Réessayez."
+      }
+    },
+    "welcome": {
+      "kicker": "Vous êtes des nôtres",
+      "title": "Bienvenue, {name}",
+      "lead": "Une dernière chose qui vaut trente secondes : enregistrer une clé d’accès. Votre empreinte, votre visage ou le code de l’appareil prennent la place du mot de passe, et contrairement à un mot de passe, il n’y a rien à se faire voler, à réutiliser ni à oublier.",
+      "prompt": {
+        "unsupported": "Ce navigateur ne gère pas les clés d’accès. Votre nom d’utilisateur et votre mot de passe marchent partout : c’est pour ça qu’ils sont la porte d’entrée.",
+        "takeMeIn": "Entrer",
+        "done": "Clé d’accès enregistrée. La prochaine fois, se connecter, c’est une empreinte ou un visage — aucun mot de passe à taper. Le mot de passe marche toujours si vous préférez.",
+        "add": "Ajouter une clé d’accès",
+        "working": "En attente de votre appareil…",
+        "failed": "Ça n’a pas abouti. Vous pourrez toujours en ajouter une plus tard.",
+        "notNow": "Pas maintenant — je garde mon mot de passe"
+      }
+    }
+  },
+  "problems": {
+    "feature": {
+      "notARequest": "Ce n’est pas une demande.",
+      "gone": "Cette demande n’existe plus.",
+      "ownerOnly": "Seule la personne qui s’occupe de l’imprimante fait avancer une demande.",
+      "requesterOnly": "Seule la personne qui l’a demandée peut la retirer.",
+      "alreadyStarted": {
+        "Accepted": "{ref} est déjà acceptée — demandez plutôt à {owner}.",
+        "InProgress": "{ref} est déjà en cours — demandez plutôt à {owner}.",
+        "Shipped": "{ref} est déjà livrée — demandez plutôt à {owner}.",
+        "Done": "{ref} est déjà terminée — demandez plutôt à {owner}."
+      },
+      "notAPriority": "Ce n’est pas une priorité.",
+      "reprioritiseRefused": "Seules la personne qui l’a demandée et celle qui s’occupe de l’imprimante peuvent en changer la priorité.",
+      "endOfLine": {
+        "Done": "Terminée, c’est le terminus.",
+        "Declined": "Refusée, c’est le terminus."
+      },
+      "cannotDecline": {
+        "Accepted": "Impossible de refuser une demande déjà acceptée.",
+        "InProgress": "Impossible de refuser une demande déjà en cours.",
+        "Shipped": "Impossible de refuser une demande déjà livrée.",
+        "Done": "Impossible de refuser une demande déjà terminée.",
+        "Declined": "Impossible de refuser une demande déjà refusée."
+      },
+      "titleShort": "Donnez-lui un titre — quelques mots suffisent.",
+      "titleLong": "Le titre doit tenir en moins de 120 caractères.",
+      "descriptionEmpty": "Dites ce que vous espérez.",
+      "descriptionLong": "Cette description est très longue.",
+      "commentEmpty": "Dites d’abord quelque chose.",
+      "commentLong": "C’est bien long pour un commentaire.",
+      "checkForm": "Vérifiez le formulaire.",
+      "checkAgain": "Vérifiez encore une fois."
+    },
+    "auth": {
+      "nameMissing": "Dites-nous comment vous appeler.",
+      "usernameShort": "Un nom d’utilisateur compte au moins {min} caractères.",
+      "usernameLong": "Un nom d’utilisateur compte au plus {max} caractères.",
+      "usernameRule": "Un nom d’utilisateur compte de {min} à {max} caractères : lettres, chiffres, trait d’union ou tiret bas.",
+      "usernameTaken": "Quelqu’un a déjà ce nom d’utilisateur. Essayez-en un autre.",
+      "usernameNeeded": "Choisissez un nom d’utilisateur pour vous connecter.",
+      "passwordShort": "Un mot de passe compte au moins {min} caractères.",
+      "passwordLong": "Ce mot de passe dépasse {max} caractères.",
+      "pickDifferent": "Choisissez un autre mot de passe.",
+      "linkSpent": "Ce lien a déjà servi, ou il a expiré. Demandez-en un autre à la personne qui s’occupe de l’imprimante.",
+      "failed": "Ça n’est pas passé. Réessayez.",
+      "failedMoment": "Ça n’est pas passé. Réessayez dans un instant.",
+      "checkForm": "Vérifiez le formulaire.",
+      "betterAuth": {
+        "PASSWORD_COMPROMISED": "Ce mot de passe figure dans une fuite connue. Choisissez-en un autre — la longueur compte plus que l’astuce.",
+        "AUTH_CANCELLED": "Annulé sur l’appareil.",
+        "ERROR_CEREMONY_ABORTED": "Annulé sur l’appareil.",
+        "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED": "Cet appareil a déjà une clé d’accès pour ce compte.",
+        "CHALLENGE_NOT_FOUND": "La demande a expiré. Réessayez.",
+        "YOU_ARE_NOT_ALLOWED_TO_REGISTER_THIS_PASSKEY": "Vous n’avez pas le droit d’enregistrer cette clé d’accès.",
+        "FAILED_TO_VERIFY_REGISTRATION": "La clé d’accès n’a pas pu être vérifiée.",
+        "PASSKEY_NOT_FOUND": "Cette clé d’accès est inconnue ici.",
+        "AUTHENTICATION_FAILED": "L’authentification a échoué.",
+        "UNABLE_TO_CREATE_SESSION": "Impossible d’ouvrir une session.",
+        "USER_NOT_FOUND": "Compte introuvable.",
+        "SESSION_REQUIRED": "Il faut être connecté pour enregistrer une clé d’accès.",
+        "UNKNOWN_ERROR": "Une erreur inattendue s’est produite."
+      }
+    }
   }
 }

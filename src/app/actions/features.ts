@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 
 import { requireAdmin, requireUser } from "@/lib/authz";
@@ -14,6 +15,7 @@ import {
   featureIdOr400,
   withdrawFeature as withdraw,
 } from "@/lib/features";
+import { say } from "@/i18n/spoken";
 
 /**
  * The feature-request forms, as plain server actions.
@@ -22,6 +24,9 @@ import {
  * `src/lib/features.ts`; this reads a `FormData`, calls the operation, and
  * turns the outcome into a redirect with a toast. Everything works with
  * JavaScript off.
+ *
+ * The toast and the refusal travel in the URL as finished sentences, so they
+ * are written here in the language of the person who pressed the button.
  */
 
 function back(to: string, params: Record<string, string>): never {
@@ -45,7 +50,7 @@ export async function createFeature(formData: FormData): Promise<void> {
     });
     back(`/frr/${feature.id}`, { sent: "1" });
   } catch (error) {
-    if (error instanceof FeatureProblem) back("/frr/new", { error: error.message });
+    if (error instanceof FeatureProblem) back("/frr/new", { error: await say(error) });
     throw error;
   }
 }
@@ -60,7 +65,7 @@ async function ownerStep(
     const { toast } = await op(id);
     back(from, { toast });
   } catch (error) {
-    if (error instanceof FeatureProblem) back(from, { error: error.message });
+    if (error instanceof FeatureProblem) back(from, { error: await say(error) });
     throw error;
   }
 }
@@ -69,7 +74,14 @@ export async function advanceFeature(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   await ownerStep(formData, async (id) => {
     const done = await advance(admin, id);
-    return { toast: `“${done.title}” → ${done.to === "InProgress" ? "In progress" : done.to} · ${done.requesterName} notified` };
+    const t = await getTranslations("frr");
+    return {
+      toast: t("toast.advanced", {
+        title: done.title,
+        status: t(`status.${done.to}`),
+        name: done.requesterName,
+      }),
+    };
   });
 }
 
@@ -77,7 +89,8 @@ export async function declineFeature(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   await ownerStep(formData, async (id) => {
     const done = await decline(admin, id);
-    return { toast: `Declined · ${done.requesterName} notified` };
+    const t = await getTranslations("frr.toast");
+    return { toast: t("declined", { name: done.requesterName }) };
   });
 }
 
@@ -87,9 +100,10 @@ export async function withdrawFeature(formData: FormData): Promise<void> {
   const id = featureIdOr400(formData.get("id"));
   try {
     const done = await withdraw(user, id);
-    back("/frr", { toast: `${done.ref} withdrawn.` });
+    const t = await getTranslations("frr.toast");
+    back("/frr", { toast: t("withdrawn", { ref: done.ref }) });
   } catch (error) {
-    if (error instanceof FeatureProblem) back(`/frr/${id}`, { toast: error.message });
+    if (error instanceof FeatureProblem) back(`/frr/${id}`, { toast: await say(error) });
     throw error;
   }
 }
@@ -104,11 +118,17 @@ export async function changeFeaturePriority(formData: FormData): Promise<void> {
   const id = featureIdOr400(formData.get("id"));
   try {
     const done = await reprioritise(user, id, formData.get("priority") ?? "");
+    const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
+    // The chip's word, lower-cased for the middle of a sentence: "high" in
+    // English, exactly as before, and "haute" in French.
+    const priority = t(`common.priority.${done.to as "high" | "medium" | "low"}`).toLocaleLowerCase(locale);
     back(from, {
-      toast: done.unchanged ? `Already ${done.to} priority.` : `Priority → ${done.to}.`,
+      toast: done.unchanged
+        ? t("frr.toast.priorityUnchanged", { priority })
+        : t("frr.toast.priorityChanged", { priority }),
     });
   } catch (error) {
-    if (error instanceof FeatureProblem) back(from, { error: error.message });
+    if (error instanceof FeatureProblem) back(from, { error: await say(error) });
     throw error;
   }
 }
@@ -122,9 +142,10 @@ export async function addFeatureComment(formData: FormData): Promise<void> {
   } catch (error) {
     if (error instanceof FeatureProblem) {
       if (error.status === 404) redirect("/frr");
-      back(`/frr/${id}`, { error: error.message });
+      back(`/frr/${id}`, { error: await say(error) });
     }
     throw error;
   }
-  back(`/frr/${id}`, { toast: "Sent" });
+  const t = await getTranslations("frr.toast");
+  back(`/frr/${id}`, { toast: t("sent") });
 }

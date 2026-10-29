@@ -33,6 +33,7 @@ export default async function SignInPage({
 
   const t = await getTranslations("signin");
   const shell = await getTranslations("authShell");
+  const notice = await getTranslations("auth.notice");
 
   return (
     <AuthShell sign={shell("sign")}>
@@ -43,13 +44,13 @@ export default async function SignInPage({
       {reset && (
         <div className="mb-[22px]">
           {/* Set by /set-password once a new one has been chosen. */}
-          <Notice tone="good">{t("passwordSet")}</Notice>
+          <Notice tone="good" label={notice("good")}>{t("passwordSet")}</Notice>
         </div>
       )}
 
       {error && (
         <div className="mb-[22px]">
-          <Notice tone="warn">
+          <Notice tone="warn" label={notice("holdOn")}>
             {t(`errors.${Object.hasOwn(ERRORS, error) ? ERRORS[error as keyof typeof ERRORS] : "other"}`)}
           </Notice>
         </div>

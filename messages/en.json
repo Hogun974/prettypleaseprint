@@ -225,5 +225,285 @@
       "good": "Good",
       "holdOn": "Hold on"
     }
+  },
+  "common": {
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "category": {
+      "ui": "UI",
+      "api": "API",
+      "bug": "Bug",
+      "other": "Other"
+    }
+  },
+  "frr": {
+    "kicker": "Feature requests",
+    "back": "← Back to requests",
+    "status": {
+      "Requested": "Requested",
+      "Accepted": "Accepted",
+      "InProgress": "In progress",
+      "Shipped": "Shipped",
+      "Done": "Done",
+      "Declined": "Declined"
+    },
+    "notice": {
+      "note": "Note",
+      "holdOn": "Hold on",
+      "good": "Good"
+    },
+    "board": {
+      "titleOwner": "Everything asked for",
+      "titleMember": "What you've asked for",
+      "lead": "Ask for a change to Pretty Please Print, and follow it through the same stages a print goes through. {owner} sees each one and moves it along.",
+      "triage": "Triage",
+      "newRequest": "+ New request",
+      "noMatch": "Nothing matches those filters",
+      "clearFilters": "<clear>Clear the filters</clear> to see everything.",
+      "empty": "Nothing here yet",
+      "emptyHelp": "The first idea goes on the board the moment you file it.",
+      "rail": {
+        "Requested": "waiting on a yes",
+        "Accepted": "agreed, queued",
+        "InProgress": "being built",
+        "Shipped": "released — go and check"
+      },
+      "closed": "Closed"
+    },
+    "new": {
+      "kicker": "New request",
+      "title": "Ask for a feature",
+      "lead": "Say what you are hoping for and why. {owner} sees it on the board and takes it from there.",
+      "titleLabel": "Title",
+      "titlePlaceholder": "A short summary",
+      "description": "What & why",
+      "descriptionPlaceholder": "What you'd like, and what it would let you do.",
+      "priority": "Priority",
+      "category": "Category",
+      "submit": "File the request"
+    },
+    "detail": {
+      "askedBy": "Asked by",
+      "priority": "Priority",
+      "category": "Category",
+      "filed": "Filed",
+      "changePriority": "Change priority",
+      "set": "Set",
+      "whereItsAt": "Where it’s at",
+      "declinedWhen": "This one was declined {when}.",
+      "step": {
+        "now": "now",
+        "cleared": "cleared",
+        "waiting": "waiting"
+      },
+      "withdraw": "Withdraw this request",
+      "withdrawHelp": "This removes it and its conversation. Only while nobody has started on it.",
+      "withdrawConfirm": "Yes, withdraw it",
+      "needsYes": "This one needs a yes",
+      "moveAlong": "Move it along",
+      "filedToast": "Filed · {owner} has been notified"
+    },
+    "queue": {
+      "title": "Requests to triage",
+      "waiting": "Waiting on you",
+      "inFlight": "In flight",
+      "nothingMoving": "Nothing accepted and in progress"
+    },
+    "filter": {
+      "priority": "Priority",
+      "status": "Status",
+      "category": "Category",
+      "anyPriority": "Any",
+      "anyStatus": "Any",
+      "anyCategory": "Any",
+      "apply": "Apply",
+      "clear": "Clear"
+    },
+    "conversation": {
+      "title": "Talk it over",
+      "empty": "Nothing said yet",
+      "byline": "{name} · {when}",
+      "bylineOwner": "{name} · the printer · {when}",
+      "label": "Add to the conversation",
+      "placeholderOwner": "Ask a question, or say what you changed…",
+      "placeholderMember": "Reply to {owner}…",
+      "send": "Send"
+    },
+    "actions": {
+      "declined": "Declined — nothing further",
+      "accept": "Accept it",
+      "moveTo": "Move to {status}",
+      "decline": "Decline",
+      "declineHelp": "This closes it. The requester is told.",
+      "declineConfirm": "Yes, decline it"
+    },
+    "toast": {
+      "advanced": "“{title}” → {status} · {name} notified",
+      "declined": "Declined · {name} notified",
+      "withdrawn": "{ref} withdrawn.",
+      "priorityUnchanged": "Already {priority} priority.",
+      "priorityChanged": "Priority → {priority}.",
+      "sent": "Sent"
+    }
+  },
+  "invite": {
+    "kicker": "Your table is ready",
+    "rejected": {
+      "not_found": {
+        "title": "That link means nothing to us",
+        "body": "It may have been mistyped, or the invitation was withdrawn. Ask whoever owns the printer to send a fresh one."
+      },
+      "expired": {
+        "title": "That invitation expired",
+        "body": "Invitations last a week. Ask for another and it will work straight away."
+      },
+      "revoked": {
+        "title": "That invitation was withdrawn",
+        "body": "Whoever sent it has since cancelled it. If that seems wrong, have a word with them."
+      },
+      "already_accepted": {
+        "title": "That invitation has been used",
+        "body": "The account already exists — sign in instead. Invitation links only work once, on purpose."
+      }
+    },
+    "title": "{name} will print things for you",
+    "someone": "Someone",
+    "lead": "Upload an <mono>.stl</mono> or <mono>.3mf</mono>, say what you are hoping for, and it lands on the backlog as a story you can follow. Pick a name to go by, a username and a password, and you are in.",
+    "notice": "This link registers the account — there is no second email. You are signed in the moment it is created, and the next screen offers a passkey so you can skip the password on this device.",
+    "form": {
+      "email": "Your email",
+      "emailHelp": "The invite is tied to this address and cannot be moved to another.",
+      "name": "What should we call you?",
+      "nameHelp": "Shown on your tickets and in the conversation.",
+      "password": "And a password",
+      "passwordHelp": "At least {min} characters. Length beats punctuation.",
+      "submit": "Create your account",
+      "working": "Setting you up…"
+    }
+  },
+  "auth": {
+    "goSignIn": "Go to sign in →",
+    "notice": {
+      "note": "Note",
+      "holdOn": "Hold on",
+      "good": "Good"
+    },
+    "fields": {
+      "pickUsername": "Pick a username",
+      "usernameHelp": "What you sign in with — letters, digits, - and _"
+    },
+    "setPassword": {
+      "kicker": "New key, cut fresh",
+      "spentTitle": "That link is spent",
+      "spentBody": "Set-password links work once and expire quickly. Ask whoever owns the printer for another — it takes them a moment.",
+      "titleSetUp": "Set yourself up",
+      "titlePick": "Pick a password, {name}",
+      "leadSetUp": "Nobody invited this account, so it has no username yet. Pick one, and a password to go with it.",
+      "leadPick": "This link sets a password and nothing else — you will sign in with it on the next screen. Anything you were signed in on with the old one is signed out.",
+      "notice": "Did not ask for this? Have a word with whoever runs the printer before you use it.",
+      "form": {
+        "newPassword": "New password",
+        "passwordHelp": "At least {min} characters, and not a breached one.",
+        "submit": "Save this password",
+        "working": "Saving…"
+      }
+    },
+    "reauth": {
+      "kicker": "One more time, please",
+      "title": "Is that still you?",
+      "lead": "You are about to change who can get in, or how the app behaves for everyone. A password or a passkey confirms it is you at the keyboard and not a browser somebody left open.",
+      "form": {
+        "withPasskey": "Confirm with a passkey",
+        "or": "or",
+        "passwordFor": "Password for {name}",
+        "checking": "Checking…",
+        "confirm": "Confirm",
+        "passkeyRefused": "That passkey was not accepted. Use your password instead.",
+        "tooManyAttempts": "Too many attempts. Wait a minute and try again.",
+        "refused": "That password does not match. Try again."
+      }
+    },
+    "welcome": {
+      "kicker": "You’re in",
+      "title": "Welcome, {name}",
+      "lead": "One last thing worth thirty seconds: save a passkey. It puts your fingerprint, face or device PIN where the password goes, and unlike a password there is nothing to phish, reuse or forget.",
+      "prompt": {
+        "unsupported": "This browser does not do passkeys. Your username and password work everywhere, which is why they are the way in.",
+        "takeMeIn": "Take me in",
+        "done": "Passkey saved. Next time, signing in is a fingerprint or a face — no password to type. It still works if you would rather.",
+        "add": "Add a passkey",
+        "working": "Waiting for your device…",
+        "failed": "That did not complete. You can always add one later.",
+        "notNow": "Not now — keep typing my password"
+      }
+    }
+  },
+  "problems": {
+    "feature": {
+      "notARequest": "That is not a request.",
+      "gone": "That request no longer exists.",
+      "ownerOnly": "Only the printer owner moves a request along.",
+      "requesterOnly": "Only the person who asked for it can withdraw it.",
+      "alreadyStarted": {
+        "Accepted": "{ref} is already accepted — ask {owner} instead.",
+        "InProgress": "{ref} is already in progress — ask {owner} instead.",
+        "Shipped": "{ref} is already shipped — ask {owner} instead.",
+        "Done": "{ref} is already done — ask {owner} instead."
+      },
+      "notAPriority": "That is not a priority.",
+      "reprioritiseRefused": "Only the person who asked for it, or the printer owner, can reprioritise it.",
+      "endOfLine": {
+        "Done": "Done is the end of the line.",
+        "Declined": "Declined is the end of the line."
+      },
+      "cannotDecline": {
+        "Accepted": "Cannot decline a request that is already Accepted.",
+        "InProgress": "Cannot decline a request that is already In progress.",
+        "Shipped": "Cannot decline a request that is already Shipped.",
+        "Done": "Cannot decline a request that is already Done.",
+        "Declined": "Cannot decline a request that is already Declined."
+      },
+      "titleShort": "Give it a title — a few words is plenty.",
+      "titleLong": "Keep the title under 120 characters.",
+      "descriptionEmpty": "Say what you are hoping for.",
+      "descriptionLong": "That description is very long.",
+      "commentEmpty": "Say something first.",
+      "commentLong": "That is longer than a comment wants to be.",
+      "checkForm": "Check the form.",
+      "checkAgain": "Check that again."
+    },
+    "auth": {
+      "nameMissing": "Tell us what to call you.",
+      "usernameShort": "A username needs at least {min} characters.",
+      "usernameLong": "A username can be at most {max} characters.",
+      "usernameRule": "A username is {min}–{max} characters: letters, digits, hyphen or underscore.",
+      "usernameTaken": "Somebody already has that username. Try another.",
+      "usernameNeeded": "Pick a username to sign in with.",
+      "passwordShort": "A password needs at least {min} characters.",
+      "passwordLong": "That password is longer than {max} characters.",
+      "pickDifferent": "Pick a different password.",
+      "linkSpent": "That link has already been used, or it expired. Ask the printer owner for another.",
+      "failed": "That did not go through. Try again.",
+      "failedMoment": "That did not go through. Try again in a moment.",
+      "checkForm": "Check the form.",
+      "betterAuth": {
+        "PASSWORD_COMPROMISED": "That password appears in a known breach. Pick another — length beats cleverness.",
+        "AUTH_CANCELLED": "Auth cancelled",
+        "ERROR_CEREMONY_ABORTED": "Registration cancelled",
+        "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED": "Previously registered",
+        "CHALLENGE_NOT_FOUND": "Challenge not found",
+        "YOU_ARE_NOT_ALLOWED_TO_REGISTER_THIS_PASSKEY": "You are not allowed to register this passkey",
+        "FAILED_TO_VERIFY_REGISTRATION": "Failed to verify registration",
+        "PASSKEY_NOT_FOUND": "Passkey not found",
+        "AUTHENTICATION_FAILED": "Authentication failed",
+        "UNABLE_TO_CREATE_SESSION": "Unable to create session",
+        "USER_NOT_FOUND": "User not found",
+        "SESSION_REQUIRED": "Passkey registration requires an authenticated session",
+        "UNKNOWN_ERROR": "Unknown error"
+      }
+    }
   }
 }

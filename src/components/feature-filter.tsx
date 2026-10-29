@@ -1,12 +1,8 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-import {
-  FEATURE_PRIORITIES,
-  FEATURE_CATEGORIES,
-  PRIORITY_CHIP,
-  CATEGORY_LABEL,
-} from "@/lib/catalog";
-import { FEATURE_FLOW, featureLabel } from "@/lib/scope";
+import { FEATURE_PRIORITIES, FEATURE_CATEGORIES } from "@/lib/catalog";
+import { FEATURE_FLOW } from "@/lib/scope";
 import type { FeatureFilter } from "@/lib/features";
 import type { FeatureStatus } from "@prisma/client";
 
@@ -21,7 +17,7 @@ const STATUSES = [...FEATURE_FLOW, "Declined"] as readonly FeatureStatus[];
  * link-and-bookmark-able, and the narrowing happens in the query — a filter
  * can only ever shrink what `featureScope` already allows, never widen it.
  */
-export function FeatureFilterBar({
+export async function FeatureFilterBar({
   action,
   filter,
 }: {
@@ -30,6 +26,7 @@ export function FeatureFilterBar({
   filter: FeatureFilter;
 }) {
   const active = Boolean(filter.priority || filter.status || filter.category);
+  const [t, words] = await Promise.all([getTranslations("frr"), getTranslations("common")]);
   const selectCls =
     "rounded-card border-[3px] border-ink bg-porcelain px-[11px] py-[7px] font-mono text-[13px] text-ink";
   const labelCls =
@@ -42,31 +39,31 @@ export function FeatureFilterBar({
       className="mb-[22px] flex flex-wrap items-end gap-[10px] rounded-panel border-[3px] border-ink bg-cream-2 p-[13.2px]"
     >
       <div className="flex flex-col gap-[3px]">
-        <label htmlFor="f-priority" className={labelCls}>Priority</label>
+        <label htmlFor="f-priority" className={labelCls}>{t("filter.priority")}</label>
         <select id="f-priority" name="priority" defaultValue={filter.priority ?? ""} className={selectCls}>
-          <option value="">Any</option>
+          <option value="">{t("filter.anyPriority")}</option>
           {FEATURE_PRIORITIES.map((p) => (
-            <option key={p} value={p}>{PRIORITY_CHIP[p]?.label ?? p}</option>
+            <option key={p} value={p}>{words(`priority.${p}`)}</option>
           ))}
         </select>
       </div>
 
       <div className="flex flex-col gap-[3px]">
-        <label htmlFor="f-status" className={labelCls}>Status</label>
+        <label htmlFor="f-status" className={labelCls}>{t("filter.status")}</label>
         <select id="f-status" name="status" defaultValue={filter.status ?? ""} className={selectCls}>
-          <option value="">Any</option>
+          <option value="">{t("filter.anyStatus")}</option>
           {STATUSES.map((s) => (
-            <option key={s} value={s}>{featureLabel(s)}</option>
+            <option key={s} value={s}>{t(`status.${s}`)}</option>
           ))}
         </select>
       </div>
 
       <div className="flex flex-col gap-[3px]">
-        <label htmlFor="f-category" className={labelCls}>Category</label>
+        <label htmlFor="f-category" className={labelCls}>{t("filter.category")}</label>
         <select id="f-category" name="category" defaultValue={filter.category ?? ""} className={selectCls}>
-          <option value="">Any</option>
+          <option value="">{t("filter.anyCategory")}</option>
           {FEATURE_CATEGORIES.map((c) => (
-            <option key={c} value={c}>{CATEGORY_LABEL[c] ?? c}</option>
+            <option key={c} value={c}>{words(`category.${c}`)}</option>
           ))}
         </select>
       </div>
@@ -75,7 +72,7 @@ export function FeatureFilterBar({
         type="submit"
         className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[16px] py-[8px] text-[13.5px] font-bold text-cream hover:bg-cherry"
       >
-        Apply
+        {t("filter.apply")}
       </button>
 
       {active && (
@@ -83,7 +80,7 @@ export function FeatureFilterBar({
           href={action}
           className="font-mono text-[12px] font-bold uppercase tracking-[0.06em] text-ink-3 underline underline-offset-4 hover:text-cherry-dk"
         >
-          Clear
+          {t("filter.clear")}
         </Link>
       )}
     </form>

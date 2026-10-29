@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { requireAdmin } from "@/lib/authz";
-import { featureLabel, featureRef } from "@/lib/scope";
+import { featureRef } from "@/lib/scope";
 import { coerceFeatureFilter, listFeatures } from "@/lib/features";
-import { relativeTime, PRIORITY_CHIP, CATEGORY_LABEL } from "@/lib/catalog";
+import { PRIORITY_CHIP } from "@/lib/catalog";
+import { getRelativeTime } from "@/i18n/server";
 import { AppHeader } from "@/components/app-header";
 import { FeatureActions } from "@/components/feature-actions";
 import { FeatureFilterBar } from "@/components/feature-filter";
@@ -31,6 +33,11 @@ export default async function FeatureQueuePage({
 }) {
   const [params, admin] = await Promise.all([searchParams, requireAdmin()]);
   const { toast, error } = params;
+  const [t, words, ago] = await Promise.all([
+    getTranslations("frr"),
+    getTranslations("common"),
+    getRelativeTime(),
+  ]);
 
   // The owner sees everyone's, so scope is `{}` — the filter is all the query
   // narrows by here. Oldest-first, the order a triage queue wants.
@@ -51,22 +58,22 @@ export default async function FeatureQueuePage({
       <AppHeader user={admin} active="/frr" />
 
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Feature requests</Kicker>
+        <Kicker>{t("kicker")}</Kicker>
         <h1 className="m-0 mt-[6px] mb-[22px] font-display text-[30px] leading-[1.05] text-ink">
-          Requests to triage
+          {t("queue.title")}
         </h1>
 
         <FeatureFilterBar action="/frr/queue" filter={filter} />
 
         {error && (
           <div className="mb-[17.6px]">
-            <Notice tone="warn">{error}</Notice>
+            <Notice tone="warn" label={t("notice.holdOn")}>{error}</Notice>
           </div>
         )}
 
         {waiting.length > 0 && (
           <section className="mb-[35.2px]">
-            <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">Waiting on you</h2>
+            <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">{t("queue.waiting")}</h2>
             <div className="flex flex-col gap-[13.2px]">
               {waiting.map((f) => {
                 const priority = PRIORITY_CHIP[f.priority] ?? PRIORITY_CHIP.medium!;
@@ -83,10 +90,10 @@ export default async function FeatureQueuePage({
                         {featureRef(f.id)}
                       </Link>
                       <span className={`rounded-chip border-2 border-ink px-[8px] py-[1px] font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink ${priority.bg}`}>
-                        {priority.label}
+                        {words(`priority.${f.priority}`)}
                       </span>
                       <span className="rounded-chip border-2 border-ink bg-aqua-wash px-[8px] py-[1px] font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink">
-                        {CATEGORY_LABEL[f.category] ?? f.category}
+                        {words(`category.${f.category}`)}
                       </span>
                     </div>
                     <Link href={`/frr/${f.id}`} className="font-display text-[19px] text-ink hover:text-cherry-dk">
@@ -97,7 +104,7 @@ export default async function FeatureQueuePage({
                     </p>
                     <div className="flex flex-wrap items-center justify-between gap-[13.2px]">
                       <span className="font-mono text-[11.5px] text-ink-3">
-                        {f.requester.name} · {relativeTime(f.createdAt)}
+                        {f.requester.name} · {ago(f.createdAt)}
                       </span>
                       <FeatureActions featureId={f.id} status={f.status} from="/frr/queue" />
                     </div>
@@ -109,10 +116,10 @@ export default async function FeatureQueuePage({
         )}
 
         <section>
-          <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">In flight</h2>
+          <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">{t("queue.inFlight")}</h2>
           {moving.length === 0 ? (
             <p className="m-0 rounded-card border-[3px] border-dashed border-ink-3 bg-cream-2 px-[15px] py-[13.2px] font-mono text-[12px] uppercase tracking-[0.05em] text-ink-3">
-              Nothing accepted and in progress
+              {t("queue.nothingMoving")}
             </p>
           ) : (
             <div className="flex flex-col gap-[11px]">
@@ -126,7 +133,7 @@ export default async function FeatureQueuePage({
                       <Link href={`/frr/${f.id}`} className="font-mono text-[12px] font-bold text-ink-3 underline underline-offset-2 hover:text-cherry-dk">
                         {featureRef(f.id)}
                       </Link>
-                      <StatusChip status={f.status} label={featureLabel(f.status)} />
+                      <StatusChip status={f.status} label={t(`status.${f.status}`)} />
                     </div>
                     <Link href={`/frr/${f.id}`} className="font-display text-[16px] text-ink hover:text-cherry-dk">
                       {f.title}

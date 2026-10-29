@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-import { relativeTime, PRIORITY_CHIP, CATEGORY_LABEL } from "@/lib/catalog";
+import { PRIORITY_CHIP } from "@/lib/catalog";
+import { getRelativeTime } from "@/i18n/server";
 import { featureRef } from "@/lib/scope";
 import type { FeatureRow } from "@/lib/features";
 
@@ -14,7 +16,7 @@ import type { FeatureRow } from "@/lib/features";
  * `showUploader` does: a client only ever sees their own, so their name on
  * every card would be noise.
  */
-export function FeatureCard({
+export async function FeatureCard({
   feature,
   showRequester,
 }: {
@@ -22,6 +24,7 @@ export function FeatureCard({
   showRequester: boolean;
 }) {
   const priority = PRIORITY_CHIP[feature.priority] ?? PRIORITY_CHIP.medium!;
+  const [t, ago] = await Promise.all([getTranslations("common"), getRelativeTime()]);
 
   return (
     <Link
@@ -40,7 +43,7 @@ export function FeatureCard({
             {featureRef(feature.id)}
           </span>
           <span className="rounded-chip border-2 border-ink bg-cream-2 px-[8px] py-[1px] font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink">
-            {priority.label}
+            {t(`priority.${feature.priority}`)}
           </span>
         </div>
 
@@ -50,7 +53,7 @@ export function FeatureCard({
 
         <div className="flex flex-wrap items-center gap-[6px]">
           <span className="rounded-chip border-2 border-ink bg-aqua-wash px-[9px] py-[2px] font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-ink">
-            {CATEGORY_LABEL[feature.category] ?? feature.category}
+            {t(`category.${feature.category}`)}
           </span>
           {feature._count.comments > 0 && (
             <span className="rounded-chip border-2 border-ink bg-cream-2 px-[9px] py-[2px] font-mono text-[11px] font-bold text-ink">
@@ -70,8 +73,8 @@ export function FeatureCard({
           )}
           <span className="truncate">
             {showRequester
-              ? `${feature.requester.name} · ${relativeTime(feature.createdAt)}`
-              : relativeTime(feature.createdAt)}
+              ? `${feature.requester.name} · ${ago(feature.createdAt)}`
+              : ago(feature.createdAt)}
           </span>
         </div>
       </div>
