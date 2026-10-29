@@ -369,6 +369,16 @@ echo "${B}ppp full test${R}  ${DIM}· $ROOT · logs in $OUT${R}"
 step typecheck npm run -s typecheck || true
 step check-links npm run -s check:links || true
 step check-messages npm run -s check:messages || true
+# Untranslated keys pass the gate by design (docs/i18n.md: an English-only
+# change must not wait on a translator), so a PASS alone would bury them in a
+# log. The checker's last line counts them; say so in the summary. awk, not
+# grep, so "no warnings" is not an error under pipefail.
+messages_warned="$(awk '/^check:messages — [0-9]+ error\(s\), [1-9][0-9]* warning\(s\)$/ { print $5 }' \
+  "$OUT/check-messages.log" 2>/dev/null || true)"
+if [ -n "$messages_warned" ]; then
+  echo "${YLW}WARN${R} check-messages: $messages_warned untranslated or stale key(s) — see $OUT/check-messages.log" \
+    | tee -a "$OUT/summary.txt"
+fi
 step check-secrets npm run -s check:secrets -- --all || true
 if command -v trivy >/dev/null; then
   step trivy-fs trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \

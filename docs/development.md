@@ -128,9 +128,11 @@ else's uptime fails for reasons unrelated to the change and gets ignored.
 
 `check:messages` is the same idea for translations: a key added in English
 shows in English to a French reader, a key removed from English lingers in
-`fr.json`, and nothing else notices either. It lists what is missing, stale or
-malformed per language — [Translation](i18n.md#what-checkmessages-reports) says
-what each finding means.
+`fr.json`, and nothing else notices either. It lists what is missing or stale
+per language as warnings — the check passes, so an English-only change is never
+held up by a translation — and fails on what is actually broken: placeholders
+that differ from English, ICU quoting, a malformed file.
+[Translation](i18n.md#what-checkmessages-reports) says what each finding means.
 
 ### The full local run
 

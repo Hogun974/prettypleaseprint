@@ -55,10 +55,16 @@ Notable changes. Every entry names a released version; deployments pin
   OpenAPI document, audit verbs, logs, e-mails and the slicer helper stay
   English on purpose.
 
-  `npm run check:messages` holds every translation against English — missing
-  and stale keys, placeholders that differ, the ICU apostrophe trap — and runs
-  in CI's `guard` job and in `scripts/full-test.sh`. `verify:auth` checks that
-  French is served when asked for and that English is unchanged otherwise.
+  `npm run check:messages` holds every translation against English and runs in
+  CI's `guard` job and in `scripts/full-test.sh`. **An untranslated or stale key
+  is a warning, not a failure**: an English-only change merges, the French page
+  shows the English text for that key, and the gap is listed — as a `::warning`
+  annotation on the pull request, and as a `WARN` line in the full test's
+  summary. What is broken rather than behind still fails: placeholders that
+  differ from English, the ICU apostrophe trap, an empty string, a malformed
+  file, a client component asking for messages the browser is not sent.
+  `verify:auth` checks that French is served when asked for and that English is
+  unchanged otherwise.
   [Translation](docs/i18n.md) covers adding a key or a language and keeps the
   French glossary with the reasoning for each word.
 

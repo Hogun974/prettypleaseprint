@@ -11,22 +11,41 @@
  * translated and reviewed for nothing. Nothing else notices either — the
  * typecheck only knows English, and the suites only read English.
  *
- * Per language it lists:
+ * Per language, two kinds of finding.
+ *
+ * WARNINGS — listed, annotated in CI, and the run still passes. Each is what
+ * an English-only change leaves behind, and each costs the reader nothing but
+ * some English: the request config falls back to English key by key. Failing
+ * on them would make every maintainer's English-only pull request wait for a
+ * translator, which is the opposite of what a volunteer translation is for.
  *
  *   missing   in English, not in the translation — shown in English meanwhile
- *   stale     in the translation, no longer in English — delete it
- *   shape     a string where English has a group, or the reverse
- *   empty     an empty string, which would blank the text rather than fall back
+ *   stale     in the translation, no longer in English — delete it. A warning
+ *             and not an error because removing or renaming an English key is
+ *             an English-only change like any other, and the leftover is never
+ *             read by anything.
+ *   shape     a string where English has a group, or the reverse — English was
+ *             restructured; the overlay ignores the French value and shows
+ *             English, exactly as for a missing key.
+ *
+ * ERRORS — the run fails. These are broken, not merely behind:
+ *
+ *   empty     an empty string — a translator's slip, never an English change
  *   arguments the {placeholders} differ from English's — `{name}` renamed or
  *             dropped is a sentence that silently loses its subject
  *   quote     an ASCII apostrophe right before `{`, `}` or `#`, which ICU reads
  *             as the start of a quoted literal: `l'{x}` renders "l{x}". The
  *             catalogues use the typographic ’ for exactly this reason.
+ *   malformed a file that is not JSON, a key containing ".", a value that is
+ *             neither a string nor a group
  *
  * And, once, for the source: every `useTranslations("…")` in a client
- * component names a group the browser is actually sent (see the end).
+ * component names a group the browser is actually sent (see the end) — an
+ * error, since the browser would show key names, not English.
  *
- * Any of them fails the run. docs/i18n.md says what to do about each.
+ * Under GitHub Actions each finding is also printed as a `::warning` or
+ * `::error` annotation, so a warning shows on the pull request without failing
+ * it. docs/i18n.md says what to do about each.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -82,6 +101,22 @@ function load(file: string, problems: string[]) {
   }
 }
 
+/**
+ * A GitHub Actions annotation: it lands on the run's summary and the pull
+ * request's checks, which is where a warning that does not fail the job is
+ * still seen. Plain output elsewhere; the lines above it already say it all.
+ */
+const IN_CI = process.env.GITHUB_ACTIONS === "true";
+function annotate(level: "warning" | "error", file: string, title: string, message: string) {
+  if (!IN_CI) return;
+  const esc = (s: string) => s.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  const prop = (s: string) => esc(s).replace(/:/g, "%3A").replace(/,/g, "%2C");
+  console.info(`::${level} file=${prop(file)},title=${prop(title)}::${esc(message)}`);
+}
+
+let errors = 0;
+let warnings = 0;
+
 const fatal: string[] = [];
 const source = load(`${SOURCE}.json`, fatal);
 const translations = readdirSync(DIR)
@@ -93,61 +128,77 @@ console.info(
     `${translations.length} translation(s): ${translations.map((f) => f.replace(/\.json$/, "")).join(", ") || "none"}`,
 );
 
-let failed = fatal.length > 0;
-for (const p of fatal) console.error(`  ${p}`);
+for (const p of fatal) {
+  console.error(`  error: ${p}`);
+  annotate("error", `${DIR}/${SOURCE}.json`, "malformed catalogue", p);
+  errors++;
+}
 
 const QUOTE = /'[{}#]/;
 for (const [key, message] of source.leaves) {
   if (QUOTE.test(message)) {
-    console.error(`  ${SOURCE}: ${key} — an ASCII apostrophe before { } or # starts an ICU quote; use ’`);
-    failed = true;
+    const text = `${key} — an ASCII apostrophe before { } or # starts an ICU quote; use ’`;
+    console.error(`  error: ${SOURCE}: ${text}`);
+    annotate("error", `${DIR}/${SOURCE}.json`, "ICU apostrophe", text);
+    errors++;
   }
 }
 
+type Section = { title: string; level: "warning" | "error"; list: string[] };
+
 for (const file of translations) {
   const lang = file.replace(/\.json$/, "");
+  const path = `${DIR}/${file}`;
   const problems: string[] = [];
   const { leaves, groups } = load(file, problems);
 
-  const sections: Array<[string, string[]]> = [
-    ["missing (shown in English until translated)", []],
-    ["stale (no longer in en.json — delete)", []],
-    ["shape (a string against a group, or the reverse)", []],
-    ["empty (would blank the text instead of falling back)", []],
-    ["arguments (placeholders differ from English)", []],
-    ["quote (ASCII apostrophe before { } or # — use ’)", []],
-  ];
-  const [missing, stale, shape, empty, args, quote] = sections.map(([, list]) => list) as string[][];
+  const section = (title: string, level: Section["level"]): Section => ({ title, level, list: [] });
+  const missing = section("missing — shown in English until translated", "warning");
+  const stale = section("stale — no longer in en.json, delete it", "warning");
+  const shape = section("shape — English was restructured; shown in English meanwhile", "warning");
+  const empty = section("empty — would blank the text", "error");
+  const args = section("arguments — placeholders differ from English", "error");
+  const quote = section("quote — ASCII apostrophe before { } or #, use ’", "error");
+  const malformed = section("malformed", "error");
+  malformed.list.push(...problems);
+  const sections = [missing, stale, shape, malformed, empty, args, quote];
 
   for (const [key, english] of source.leaves) {
-    if (groups.has(key)) shape!.push(`${key}  (a group here, a string in English)`);
-    else if (!leaves.has(key)) missing!.push(key);
+    if (groups.has(key)) shape.list.push(`${key}  (a group here, a string in English)`);
+    else if (!leaves.has(key)) missing.list.push(key);
     else {
       const translated = leaves.get(key)!;
-      if (translated.trim() === "") empty!.push(key);
+      if (translated.trim() === "") empty.list.push(key);
       const want = argumentsOf(english).join(", ");
       const got = argumentsOf(translated).join(", ");
-      if (want !== got) args!.push(`${key}  (English has {${want}}, ${lang} has {${got}})`);
-      if (QUOTE.test(translated)) quote!.push(key);
+      if (want !== got) args.list.push(`${key}  (English has {${want}}, ${lang} has {${got}})`);
+      if (QUOTE.test(translated)) quote.list.push(key);
     }
   }
   for (const key of leaves.keys()) {
-    if (source.groups.has(key)) shape!.push(`${key}  (a string here, a group in English)`);
-    else if (!source.leaves.has(key)) stale!.push(key);
+    if (source.groups.has(key)) shape.list.push(`${key}  (a string here, a group in English)`);
+    else if (!source.leaves.has(key)) stale.list.push(key);
   }
 
-  const count = sections.reduce((n, [, list]) => n + list.length, 0) + problems.length;
-  if (count === 0) {
+  const count = (level: Section["level"]) =>
+    sections.filter((s) => s.level === level).reduce((n, s) => n + s.list.length, 0);
+  const langWarnings = count("warning");
+  const langErrors = count("error");
+  warnings += langWarnings;
+  errors += langErrors;
+  if (langWarnings + langErrors === 0) {
     console.info(`  ${lang}: every key translated, nothing stale`);
     continue;
   }
-  failed = true;
-  console.error(`\n  ${lang}: ${count} problem(s)`);
-  for (const p of problems) console.error(`    ${p}`);
-  for (const [title, list] of sections) {
-    if (list.length === 0) continue;
-    console.error(`    ${title}:`);
-    for (const item of list.sort()) console.error(`      ${item}`);
+  console.info(`\n  ${lang}: ${langErrors} error(s), ${langWarnings} warning(s)`);
+  for (const s of sections) {
+    if (s.list.length === 0) continue;
+    const log = s.level === "error" ? console.error : console.info;
+    log(`    ${s.level}: ${s.title}:`);
+    for (const item of s.list.sort()) {
+      log(`      ${item}`);
+      annotate(s.level, path, `${lang}: ${s.title.split(" — ")[0]}`, `${item} — ${s.title}`);
+    }
   }
 }
 
@@ -180,11 +231,18 @@ for (const file of sourceFiles("src")) {
   }
 }
 if (uncovered.length) {
-  failed = true;
-  console.error(`\n  client components: ${uncovered.length} problem(s)`);
-  for (const u of uncovered) console.error(`    ${u}`);
+  errors += uncovered.length;
+  console.error(`\n  client components: ${uncovered.length} error(s)`);
+  for (const u of uncovered) {
+    console.error(`    error: ${u}`);
+    annotate("error", u.slice(0, u.indexOf(":")), "client group not sent", u);
+  }
 } else {
   console.info(`  client components: every group they ask for is sent (${CLIENT_GROUPS.join(", ")})`);
 }
 
-if (failed) process.exitCode = 1;
+// One line, always last, in a fixed shape: scripts/full-test.sh reads it to
+// put a WARN line in its summary, since a passing step would otherwise hide
+// the warnings in a log nobody opens.
+console.info(`\ncheck:messages — ${errors} error(s), ${warnings} warning(s)`);
+if (errors > 0) process.exitCode = 1;

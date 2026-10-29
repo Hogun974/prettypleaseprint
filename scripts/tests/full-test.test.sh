@@ -93,7 +93,10 @@ S="$STUB/state"
 if [ "${1:-} ${2:-}" = "run -s" ]; then
   script="${3:-}"
   case "$script" in
-    typecheck|check:links|check:messages|verify:models|verify:auth|verify:upload|verify:import|verify:queue|verify:frr|verify:benefits|verify:catalog|verify:api|verify:passkey|probe:security) ;;
+    typecheck|check:links|verify:models|verify:auth|verify:upload|verify:import|verify:queue|verify:frr|verify:benefits|verify:catalog|verify:api|verify:passkey|probe:security) ;;
+    check:messages)
+      # Its last line, in the shape scripts/check-messages.ts prints it.
+      if [ -e "$S/messages-warn" ]; then echo "check:messages — 0 error(s), 2 warning(s)"; fi ;;
     check:secrets)
       # The secret scanner has to see the developer's own env files.
       printf 'SCANNED %s\n' "$(tail -1 .env 2>/dev/null)" >>"$STUB/log" ;;
@@ -369,6 +372,17 @@ t "34 a failing static gate fails the run but does not stop it"
 new_sandbox; touch "$T/stub/state/fail-typecheck"
 ft
 rc 1; out "FAIL typecheck (exit 1)"; eq "the suites" "$(suites_run)" "$ALL_SUITES"; restored
+
+t "34 untranslated keys pass the gate but are named in the summary"
+new_sandbox; touch "$T/stub/state/messages-warn"
+ft
+rc 0; out "PASS check-messages"; out "WARN check-messages: 2 untranslated or stale key(s)"
+ok "the WARN line is in summary.txt" grep -q "WARN check-messages" "$LOGS/summary.txt"; restored
+
+t "34 no WARN line when every key is translated"
+new_sandbox
+ft
+rc 0; no_out "WARN check-messages"
 
 t "35 a stack that does not come up: no health wait, no suites, down still runs, env restored"
 new_sandbox; touch "$T/stub/state/up-fail"
