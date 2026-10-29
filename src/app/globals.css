@@ -181,6 +181,10 @@
   --background-color-sun-wash: var(--color-fill-sun-wash, var(--color-sun-wash));
   --background-color-mint-wash: var(--color-fill-mint-wash, var(--color-mint-wash));
   --background-color-board: var(--color-fill-board, var(--color-board));
+  /* Cherry too: read as text, and filled behind light text. Glass lights the
+     fill and keeps the text deep. */
+  --background-color-cherry: var(--color-fill-cherry, var(--color-cherry));
+  --background-color-cherry-dk: var(--color-fill-cherry-dk, var(--color-cherry-dk));
 }
 
 @layer base {

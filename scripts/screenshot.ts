@@ -99,14 +99,16 @@ async function prepare(page: Page): Promise<void> {
  * measured at its worst, as `check:contrast` does:
  *
  *   - a chain of translucent fills that reaches the room — the root's
- *     backdrop and its --color-glow-* layers — is laid over the room's
- *     darkest and lightest points, one glow at a time at every strength
- *     (glass keeps them apart). The build plate's grid is a texture here,
- *     as it is on the diner's cream; check:contrast counts it;
- *   - one that reaches something floating — an element with a backdrop
- *     filter, or whose ::before has one (the header) — is laid over that
- *     layer's tint over pure black and over pure white, because the page
- *     scrolls anything under it;
+ *     backdrop, its --color-glow-* layers and its --color-wash — is laid
+ *     over the room's per-channel bounds: every glow absent or full, in
+ *     every combination, as check:contrast has them;
+ *   - one that reaches glass in the page — an element with a backdrop
+ *     filter, not in anything fixed or sticky — is laid over those bounds
+ *     saturated as the glass saturates what it blurs (--glass-saturate);
+ *   - one that reaches something floating — a backdrop filter on or inside
+ *     something fixed or sticky, or a ::before with one (the header) — is
+ *     laid over that layer's tint over pure black and over pure white,
+ *     because the page scrolls anything under it;
  *   - a flat `linear-gradient(c, c)` background image (a menu's veil) is a
  *     layer of colour c over the element's own.
  *
@@ -130,25 +132,45 @@ const MEASURE = `(() => {
   };
   const hex = (c) => "#" + c.slice(0, 3).map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
   const BLACK = [0, 0, 0, 1], WHITE = [255, 255, 255, 1];
-  // The room, if the root draws one: its darkest and lightest points.
-  const room = (() => {
+  // The room, if the root draws one: the per-channel bounds of its corners
+  // (every glow absent or full, the wash over them), as check:contrast has
+  // them; and what glass in the page shows of it, blurred and saturated.
+  const box = (cs) => [0, 1, 2].reduce((b, i) => {
+    b[0][i] = Math.min(...cs.map((c) => c[i])); b[1][i] = Math.max(...cs.map((c) => c[i])); return b;
+  }, [[0, 0, 0, 1], [0, 0, 0, 1]]);
+  const saturate = ([r, g, b], s) => [
+    (0.213 + 0.787 * s) * r + (0.715 - 0.715 * s) * g + (0.072 - 0.072 * s) * b,
+    (0.213 - 0.213 * s) * r + (0.715 + 0.285 * s) * g + (0.072 - 0.072 * s) * b,
+    (0.213 - 0.213 * s) * r + (0.715 - 0.715 * s) * g + (0.072 + 0.928 * s) * b,
+  ].map((v) => Math.min(255, Math.max(0, v))).concat(1);
+  const [room, behind] = (() => {
     const root = getComputedStyle(document.documentElement);
-    if (root.backgroundImage === "none") return null;
-    const base = rgb(root.backgroundColor);
+    if (root.backgroundImage === "none") return [null, null];
     const probe = document.createElement("i");
     document.body.append(probe);
-    const points = [base];
-    for (let i = 1; ; i++) {
-      const v = root.getPropertyValue("--color-glow-" + i).trim();
-      if (!v) break;
+    const colour = (name) => {
+      const v = root.getPropertyValue(name).trim();
+      if (!v) return null;
       probe.style.color = v;
-      const g = rgb(getComputedStyle(probe).color);
-      for (let k = 1; k <= 20; k++) points.push(over([g[0], g[1], g[2], (g[3] * k) / 20], base));
-    }
+      return rgb(getComputedStyle(probe).color);
+    };
+    const glows = [];
+    for (let i = 1; colour("--color-glow-" + i); i++) glows.unshift(colour("--color-glow-" + i));
+    const wash = colour("--color-wash");
     probe.remove();
-    points.sort((a, b) => lum(a) - lum(b));
-    return [points[0], points[points.length - 1]];
+    const corners = [];
+    for (let mask = 0; mask < 1 << glows.length; mask++) {
+      const lit = glows.reduce((u, g, i) => (mask & (1 << i) ? over(g, u) : u), rgb(root.backgroundColor));
+      corners.push(wash ? over(wash, lit) : lit);
+    }
+    const s = Number(root.getPropertyValue("--glass-saturate")) || 1;
+    return [box(corners), box(corners.map((c) => saturate(c, s)))];
   })();
+  // Floating: fixed, or inside something sticky (the header) or fixed.
+  const floats = (n) => {
+    for (let m = n; m; m = m.parentElement) if (/^(fixed|sticky)$/.test(getComputedStyle(m).position)) return true;
+    return false;
+  };
   const flat = (image) => {
     const m = /^linear-gradient\\((rgba?\\([^)]*\\)|color\\([^)]*\\)), (rgba?\\([^)]*\\)|color\\([^)]*\\))\\)$/.exec(image);
     return m && m[1] === m[2] ? rgb(m[1]) : null;
@@ -169,7 +191,9 @@ const MEASURE = `(() => {
         const tint = rgb(before.backgroundColor);
         if (tint && tint[3] > 0) layers.push(tint);
       }
-      if (cs.backdropFilter !== "none" || before.backdropFilter !== "none") return under([BLACK, WHITE]);
+      if (cs.backdropFilter !== "none" || before.backdropFilter !== "none") {
+        return under(floats(n) || !behind ? [BLACK, WHITE] : behind);
+      }
       if (cs.backgroundImage !== "none" && !veil && !(room && n === document.body)) return null;
     }
     return under([WHITE]);

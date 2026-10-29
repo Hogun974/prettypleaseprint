@@ -62,21 +62,29 @@ Notable changes. Every entry names a released version; deployments pin
 
 - **A third theme, "glass" — fork only** (never proposed upstream, whose
   design refuses blur; nobody can choose it yet, and `auto` never picks it).
-  Frosted panels over a soft room of accent-coloured glows, in the app's
-  faces, keylines and accents. The counter's fills take an alpha through a
-  new `--background-color-*` hook in `globals.css` — the colour of the same
-  name stays opaque for text and the 3D viewer, and every other theme paints
-  exactly what it did. Blur only where something sharp can pass behind: the
-  sticky header, its two menus, the toast. Stamps become soft shadows.
-  Cherry and the `-dk` fills are deep enough to be read as text on frost,
-  and carry light ink as fills. `prefers-reduced-transparency: reduce` and
-  `prefers-contrast: more` draw every panel opaque, unblurred.
+  Liquid glass in the spirit of iOS 26: see-through panels, cards and the
+  header over a bright room of overlapping accent glows, blurred and
+  saturated, with lit rims, soft depth and generous radii; signs become
+  glossy bubbles that swell under the pointer and give under a press
+  (transform only, none with reduced motion). The faces and accent families
+  stay; the diner's checkerboard, chrome strip, layer lines and ticket
+  punches recede. The counter's fills and the reds take a fill colour of
+  their own through a new `--background-color-*` hook in `globals.css` — the
+  colour of the same name stays opaque for text and the 3D viewer, and every
+  other theme paints exactly what it did. One blur per surface, the
+  outermost only: 1 to 11 blurred layers a page, typically 3 to 6. Cherry and
+  the `-dk` shades are deep as text and carry light ink as fills; the bright
+  fills keep dark ink. `prefers-reduced-transparency: reduce` and
+  `prefers-contrast: more` draw everything opaque, unblurred.
 
   `check:contrast` now measures a translucent fill at its worst: over every
-  colour the room can be, over its veil on pure black and pure white when it
-  floats, and opaque. Glass clears AA on every pair. `SHOT_MEDIA` emulates
-  other media features for `npm run shots`, which measures glass the same
-  way and counts the blurred layers per page. See
+  combination of the room's glows, over that room blurred and saturated as
+  the glass does it, nested in the darkest glass, over its veil on pure black
+  and white when it floats, and opaque; a sign under its gloss, and its
+  softened edge. Glass clears AA on every pair, the tightest cherry text on
+  the page at 4.51. `SHOT_MEDIA` emulates other media features and
+  `SHOT_OVERLAYS` adds an open menu and a toast to `npm run shots`, which
+  measures glass the same way and counts the blurred layers per page. See
   [Glass](docs/theming.md#glass-fork-only).
 
 ### Changed

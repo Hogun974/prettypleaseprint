@@ -32,23 +32,28 @@
  * translucent when its theme gives it `--color-fill-<name>` (globals.css,
  * --background-color-*); its grounds are then the fill over each of:
  *
- *   - every colour the room can be, for a panel in the page. The room is
- *     --color-backdrop under the --color-glow-* layers, with the build
- *     plate's grid over it, and is never blurred under a panel (only what
- *     floats is). When the theme's CSS keeps each glow in its own quarter
- *     of the room (see apart()), a point is lit by one glow at most, at some
- *     strength between none and full: those are measured, each with and
- *     without the grid's lines over it. Otherwise any glows can stack, and
- *     what is measured is the per-channel minimum and maximum of every
- *     combination at full strength, a bound no mixture of them crosses;
+ *   - the room blurred and saturated, for the outermost glass in the page,
+ *     which blurs and saturates what is behind it (`--glass-saturate`), and
+ *     the room as it is, for a pill, which does not blur. The room is
+ *     --color-backdrop under the --color-glow-* layers and a --color-wash,
+ *     with the build plate's grid unless the theme turns it off. Every point
+ *     of it is a mixture of its corners — each layer absent or at full
+ *     alpha, in every combination — and a blur only mixes points, while each
+ *     channel of saturate() is linear in its input: so the per-channel
+ *     bounds of the corners, saturated, hold for anything the glass can
+ *     show. See corners() and behindGlass();
  *   - --color-veil over pure black and over pure white, for what floats
  *     (the sticky header, its menus): the page scrolls anything under them;
+ *   - the darkest any outermost glass can be, for glass inside glass (a
+ *     card in a panel). The check fails a theme where a glass fill is darker
+ *     than that in any channel, since deeper nesting could then be darker;
  *   - and the opaque colour of the same name, which is what is drawn when
  *     the system asks for reduced transparency or more contrast.
  *
- * A frost nested in another frost is lighter than either over the room, as
- * long as no frost is darker than the room's floor; the check fails a theme
- * where one is. A frost on a sign is drawn opaque (themes/glass.css).
+ * Glass on a sign is drawn opaque (themes/glass.css). A sign itself is
+ * opaque, measured also under the theme's --color-gloss; its edge is its
+ * fill or its keyline — softened to `currentColor` at a percentage, if the
+ * theme says so — over the fill.
  *
  * A theme can also make some signs dark — glass's cherry and -dk fills, deep
  * colours on a light counter — by a rule in its file that gives them
@@ -296,67 +301,84 @@ const solid = (id: string, name: string) => {
 };
 
 /**
- * The build plate's grid, drawn over the page in every theme: two layers of
- * ink at the alpha `.plate` gives them in globals.css, one per direction.
+ * The build plate's grid, drawn over the page in every theme but one that
+ * turns `.plate` off: two layers of ink at the alpha `.plate` gives them in
+ * globals.css, one per direction.
  */
 const PLATE = Number(/\.plate\s*\{[\s\S]*?var\(--color-ink\)\s+([\d.]+)%/.exec(globals)?.[1]);
 if (!PLATE) throw new Error(`No .plate grid alpha in ${GLOBALS}.`);
+const plateOff = (id: string) => /\.plate\s*\{[^}]*background-image:\s*none/.test(themeCss.get(id)!);
 
-/**
- * The darkest and lightest the room can be, channel by channel — see the
- * header. Every layer either absent or at full alpha, in every combination,
- * painted bottom to top: the backdrop, the glows (the first listed is on
- * top, as in CSS), then the grid. A theme without a backdrop is drawn on
- * cream, the diner's page.
- */
-function room(id: string): Rgba[] {
-  if (!has(id, "backdrop")) return [solid(id, "cream")];
-  const names = [...palettes.get(id)!.keys()].filter((n) => /^glow-\d+$/.test(n));
-  const base = solid(id, "backdrop");
-  const line: Rgba = [...solid(id, "ink").slice(0, 3), PLATE / 100] as Rgba;
-  const grid = (c: Rgba) => [c, over(line, c), over(line, over(line, c))];
-  if (apart(id, names)) {
-    // One glow at a time, at every strength from none to full (in twentieths:
-    // luminance along a strength is smooth, and can dip between the ends).
-    return names.flatMap((n) => {
-      const glow = get(id, n);
-      return Array.from({ length: 21 }, (_, k) => over([glow[0], glow[1], glow[2], (glow[3] * k) / 20], base));
-    }).flatMap(grid);
-  }
-  // Glows that may overlap: every combination at full strength, painted
-  // bottom to top (the first listed is on top, as in CSS), reduced to the
-  // per-channel bounds, which hold for any mixture of them.
-  const layers = [...names].sort((a, b) => Number(b.slice(5)) - Number(a.slice(5))).map((n) => get(id, n));
+/** Per-channel bounds of a set of colours: the darkest and lightest in each. */
+function box(colours: Rgba[]): [Rgba, Rgba] {
   const lo: Rgba = [255, 255, 255, 1];
   const hi: Rgba = [0, 0, 0, 1];
-  for (let mask = 0; mask < 1 << layers.length; mask++) {
-    for (const c of grid(layers.reduce((under, layer, i) => (mask & (1 << i) ? over(layer, under) : under), base))) {
-      for (const i of [0, 1, 2]) {
-        lo[i] = Math.min(lo[i]!, c[i]!);
-        hi[i] = Math.max(hi[i]!, c[i]!);
-      }
+  for (const c of colours) {
+    for (const i of [0, 1, 2]) {
+      lo[i] = Math.min(lo[i]!, c[i]!);
+      hi[i] = Math.max(hi[i]!, c[i]!);
     }
   }
   return [lo, hi];
 }
 
 /**
- * Whether no two glows can ever overlap, read from the theme's CSS: each is a
- * radial gradient from its own corner of the room, no more than half the
- * room's width and height across, so each stays in its own quarter at any
- * window size. Then a point of the room is lit by one glow at most.
+ * The room's corners: every colour it has with each layer either absent or
+ * at full alpha, in every combination, painted bottom to top — the backdrop,
+ * the glows (the first listed is on top, as in CSS), the wash over them all,
+ * then the grid. Any point of the room is a mixture of these, and so is any
+ * blur of it, which only averages points.
  */
-function apart(id: string, names: string[]): boolean {
-  const corners = new Map<string, string>();
-  for (const [, rx, ry, x, y, glow] of themeCss.get(id)!.matchAll(
-    /radial-gradient\(\s*([\d.]+)%\s+([\d.]+)%\s+at\s+([\d.]+)%\s+([\d.]+)%\s*,\s*var\(--color-(glow-\d+)\)/g,
-  )) {
-    const corner = `${x} ${y}`;
-    if (Number(rx) > 50 || Number(ry) > 50 || !/^(0|100) (0|100)$/.test(corner) || corners.has(corner)) return false;
-    corners.set(corner, glow!);
+function corners(id: string): Rgba[] {
+  const glows = [...palettes.get(id)!.keys()]
+    .filter((n) => /^glow-\d+$/.test(n))
+    .sort((a, b) => Number(b.slice(5)) - Number(a.slice(5)))
+    .map((n) => get(id, n));
+  const wash = has(id, "wash") ? get(id, "wash") : undefined;
+  const line: Rgba = [...solid(id, "ink").slice(0, 3), PLATE / 100] as Rgba;
+  const grid = (c: Rgba) => (plateOff(id) ? [c] : [c, over(line, c), over(line, over(line, c))]);
+  const out: Rgba[] = [];
+  for (let mask = 0; mask < 1 << glows.length; mask++) {
+    const lit = glows.reduce((under, glow, i) => (mask & (1 << i) ? over(glow, under) : under), solid(id, "backdrop"));
+    out.push(...grid(wash ? over(wash, lit) : lit));
   }
-  const drawn = [...corners.values()];
-  return names.every((n) => drawn.filter((g) => g === n).length === 1);
+  return out;
+}
+
+/**
+ * The darkest and lightest the room can be, channel by channel — what text
+ * written straight on the page sits on. A theme without a backdrop is drawn
+ * on cream, the diner's page.
+ */
+function room(id: string): Rgba[] {
+  return has(id, "backdrop") ? box(corners(id)) : [solid(id, "cream")];
+}
+
+/**
+ * The saturation a theme's glass applies to what it blurs
+ * (`--glass-saturate` in its CSS), as the colour matrix of CSS `saturate()`
+ * applied to sRGB values, which is where browsers apply it.
+ */
+const saturation = (id: string) => Number(/--glass-saturate:\s*([\d.]+)/.exec(themeCss.get(id)!)?.[1] ?? 1);
+function saturate([r, g, b]: Rgba, s: number): Rgba {
+  const clamp = (v: number) => Math.min(255, Math.max(0, v));
+  return [
+    clamp((0.213 + 0.787 * s) * r + (0.715 - 0.715 * s) * g + (0.072 - 0.072 * s) * b),
+    clamp((0.213 - 0.213 * s) * r + (0.715 + 0.285 * s) * g + (0.072 - 0.072 * s) * b),
+    clamp((0.213 - 0.213 * s) * r + (0.715 - 0.715 * s) * g + (0.072 + 0.928 * s) * b),
+    1,
+  ];
+}
+
+/**
+ * What outermost glass shows of the room behind it: the room blurred, then
+ * saturated. Each channel of the result is a linear function of the room's
+ * colours, so its extremes over any mixture of the corners are at a corner:
+ * the per-channel bounds of the saturated corners hold for every blur.
+ */
+function behindGlass(id: string): Rgba[] {
+  if (!has(id, "backdrop")) return room(id);
+  return box(corners(id).map((c) => saturate(c, saturation(id))));
 }
 
 /** What a floating layer is laid on: its veil over anything at all. */
@@ -364,24 +386,51 @@ function veiled(id: string): Rgba[] {
   return has(id, "veil") ? [over(get(id, "veil"), BLACK), over(get(id, "veil"), WHITE)] : [];
 }
 
+const translucent = (id: string, fill: string) => has(id, `fill-${fill}`) && get(id, `fill-${fill}`)[3] < 1;
+/** What a fill is painted in: --color-fill-<name> if the theme sets one (glass lights its reds), else its colour. */
+const paintOf = (id: string, fill: string) => (has(id, `fill-${fill}`) ? get(id, `fill-${fill}`) : get(id, fill));
+
 /**
- * Every colour a fill can be in a theme. An opaque fill is its colour. A
- * translucent one (--color-fill-<name>) is the fill over the room, over a
- * veil over black and white, under a veil over black and white (a menu's veil
- * is its background-image, painted over its fill), and its opaque colour, for
- * reduced transparency. "page" is the room itself.
+ * Where a piece of glass can be when it is the outermost: in the page,
+ * blurring the room or (a pill, which does not blur) over it as it is; or
+ * floating.
+ */
+function outermost(id: string, fill: string): Rgba[] {
+  const paint = get(id, `fill-${fill}`);
+  const veil = has(id, "veil") ? get(id, "veil") : undefined;
+  return [
+    ...[...room(id), ...behindGlass(id), ...veiled(id)].map((under) => over(paint, under)),
+    ...(veil ? [BLACK, WHITE].map((under) => over(veil, over(paint, under))) : []),
+  ];
+}
+
+/**
+ * The darkest any outermost glass can be, channel by channel. Glass inside
+ * glass (a card in a panel) is laid on some outermost glass, so on something
+ * no darker than this; and as long as no glass is darker than it (checked
+ * below), glass nested any deeper is no darker either.
+ */
+function nestFloor(id: string): Rgba {
+  const all = [...counter, "board"].filter((f) => translucent(id, f)).flatMap((f) => outermost(id, f));
+  return all.length ? box(all)[0] : BLACK;
+}
+
+/**
+ * Every colour a fill can be in a theme. An opaque fill is its colour — and,
+ * for a sign in a theme with a gloss, the gloss over it too. A translucent
+ * one (--color-fill-<name>) is: outermost, over the blurred and saturated
+ * room, over a veil over black and white, under a veil over black and white
+ * (a menu's veil is its background-image, painted over its fill); nested, over
+ * the darkest outermost glass; and opaque, for reduced transparency. "page"
+ * is the room itself.
  */
 function grounds(id: string, fill: string): Rgba[] {
   if (fill === "page") return room(id);
-  const paint = has(id, `fill-${fill}`) ? get(id, `fill-${fill}`) : get(id, fill);
-  if (paint[3] === 1) return [paint];
-  const opaque = solid(id, fill);
-  const veil = has(id, "veil") ? get(id, "veil") : undefined;
-  return [
-    opaque,
-    ...[...room(id), ...veiled(id)].map((under) => over(paint, under)),
-    ...(veil ? [BLACK, WHITE].map((under) => over(veil, over(paint, under))) : []),
-  ];
+  if (!translucent(id, fill)) {
+    const paint = paintOf(id, fill);
+    return scope.get(fill) === "sign" && has(id, "gloss") ? [paint, over(get(id, "gloss"), paint)] : [paint];
+  }
+  return [solid(id, fill), ...outermost(id, fill), over(get(id, `fill-${fill}`), nestFloor(id))];
 }
 
 /** The worst of a text colour against every colour its ground can be. */
@@ -389,25 +438,43 @@ const worstOn = (id: string, text: Rgba, ground: Rgba[]) => Math.min(...ground.m
 /** A pair: the ink the fill gives its content, on every colour of the fill. */
 const measure = (id: string, text: string, fill: string, plain = true) =>
   worstOn(id, solid(id, inkOn(id, fill, text, plain)), grounds(id, fill));
-/** An edge at 3:1: the fill or its keyline, whichever stands out more, on the worst ground. */
+/**
+ * The keyline a theme draws on a sign: its ink, or — where the theme softens
+ * it to `color-mix(in srgb, currentColor N%, transparent)` — that ink at N%
+ * over the fill it edges.
+ */
+const SOFT = (id: string) => Number(/border-color:\s*color-mix\(in srgb, currentColor ([\d.]+)%, transparent\)/.exec(themeCss.get(id)!)?.[1] ?? 100);
+const keylineOn = (id: string, ink: string, under: Rgba): Rgba => over([...solid(id, ink).slice(0, 3), SOFT(id) / 100] as Rgba, under);
+/**
+ * An edge at 3:1: the fill or its keyline, whichever stands out more, on the
+ * worst ground. A translucent fill is taken over the ground it sits on.
+ */
 const edge = (id: string, fill: string, keyline: string, on: Rgba[]) =>
-  Math.min(...on.map((g) => Math.max(ratio(solid(id, fill), g), ratio(solid(id, keyline), g))));
+  Math.min(
+    ...on.map((g) => {
+      const face = over(paintOf(id, fill), g);
+      return Math.max(ratio(face, g), ratio(keylineOn(id, keyline, face), g));
+    }),
+  );
 
-// The nesting argument in the header holds only if no frost is darker than
-// what it can be laid on, channel by channel.
+// The nesting argument holds only if no glass is darker, in any channel,
+// than the darkest outermost glass it can be laid on.
 const hex = (c: Rgba) => "#" + c.slice(0, 3).map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
 for (const id of ids) {
-  if (has(id, "backdrop")) {
-    const points = [...room(id)].sort((a, b) => luminance(a) - luminance(b));
-    const how = points.length > 2 ? "glows apart, each at every strength" : "glows that may overlap: per-channel bounds";
-    console.info(`${id}: the room's darkest point is ${hex(points[0]!)}, its lightest ${hex(points.at(-1)!)} (${how}).`);
-  }
-  const floor = [...room(id), ...veiled(id)].reduce((lo, c) => lo.map((v, i) => Math.min(v, c[i]!)) as Rgba);
-  for (const [name, colour] of palettes.get(id)!) {
-    // The frosts something can be nested in: the counter's, and the band's.
-    if (![...counter, "board"].some((f) => name === `fill-${f}`) || colour[3] === 1) continue;
+  if (!has(id, "backdrop")) continue;
+  const [lo, hi] = room(id);
+  const [glo] = behindGlass(id);
+  console.info(
+    `${id}: the room is between ${hex(lo!)} and ${hex(hi!)}, channel by channel; ` +
+      `blurred and saturated ×${saturation(id)} behind glass, no darker than ${hex(glo!)}; ` +
+      `glass inside glass lies on nothing darker than ${hex(nestFloor(id))}.`,
+  );
+  const floor = nestFloor(id);
+  for (const f of [...counter, "board"]) {
+    if (!translucent(id, f)) continue;
+    const colour = get(id, `fill-${f}`);
     if ([0, 1, 2].some((i) => colour[i]! < floor[i]!)) {
-      problems.push(`${id}: --color-${name} is darker than the room's floor in a channel; a frost nested in it could be darker than measured.`);
+      problems.push(`${id}: --color-fill-${f} is darker than the darkest glass it can be nested in; glass nested in it could be darker than measured.`);
     }
   }
 }
@@ -455,9 +522,11 @@ const BAND = "components/app-header.tsx, on the band";
 const onBand: Array<[string, (id: string) => number]> = [
   ["sun pill's edge", (id) => edge(id, "sun", inkOn(id, "sun", "ink"), grounds(id, "board"))],
   ["aqua avatar's edge", (id) => edge(id, "aqua", inkOn(id, "aqua", "ink"), grounds(id, "board"))],
-  ["cherry disc's edge", (id) => edge(id, "cherry", inkOn(id, "cherry", "ink"), grounds(id, "board"))],
+  ["cherry disc's edge", (id) => edge(id, "cherry", "board-ink", grounds(id, "board"))], // its text is the band's ink (app-header: [&_span]:text-board-ink)
   ["Activity button's edge (cream, keyline ink)", (id) => edge(id, "cream", "ink", grounds(id, "board"))],
-  ["hovered link's edge (cream-2, keyline ink)", (id) => edge(id, "cream-2", "ink", grounds(id, "board"))],
+  // hover:bg-cream-2 hover:border-ink: a variant's fill, so a plain keyline.
+  ["hovered link's edge (cream-2, keyline ink)", (id) =>
+    Math.min(...grounds(id, "board").map((g) => Math.max(ratio(over(paintOf(id, "cream-2"), g), g), ratio(solid(id, "ink"), g))))],
   ["focus ring (cherry-dk)", (id) => worstOn(id, solid(id, "cherry-dk"), grounds(id, "board"))],
 ];
 for (const [what, measure] of onBand) {

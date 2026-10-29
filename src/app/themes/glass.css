@@ -1,48 +1,49 @@
 /*
- * Glass — the diner's counter as frosted panels over a soft, coloured room.
+ * Glass — liquid glass over a bright, colourful room.
  *
  * FORK ONLY. The upstream design refuses blur on purpose ("a blurred shadow
  * reads as glass or paper; an offset block reads as a die-cut enamel sign",
- * globals.css), so this theme is never proposed there. It keeps what makes
- * the app recognisable — the four faces, the keylines, the accent colours,
- * the colour rule — and changes the material the counter is made of.
+ * globals.css), so this theme is never proposed there. It keeps the app's
+ * faces, its accent families and the colour rule, and lets the diner recede:
+ * no checkerboard, no ticket punches, no ribbed chrome, no hard stamps.
  *
- * What changes, and why:
+ * What it is made of, and why:
  *
- *   - The room is a backdrop of soft glows in the accent colours over a warm
- *     pale ground, one in each corner of the page, with the build
- *     plate's grid still drawn over it. The glows are tokens
- *     (--color-backdrop, --color-glow-*) because `npm run check:contrast`
- *     needs to know the darkest and lightest the room can get.
- *   - The counter (porcelain, the creams, the washes) is frosted: each fill
- *     is drawn in `--color-fill-<name>`, its own colour at an alpha, through
- *     the --background-color-<name> hook in globals.css. The token of the
- *     same name stays opaque, as it is also text (`text-cream` on a button),
- *     the 3D viewer's background and the reduced-transparency fallback.
- *   - Blur is used only where something sharp can pass behind: the sticky
- *     header, the two menus that drop from it, and the toast — three layers
- *     at most on any screen. Panels in the page sit on the backdrop, which
- *     has no detail for a blur to soften, so blurring them would cost a
- *     compositing layer each and change nothing anyone could see.
- *   - The hard offset stamp becomes a soft shadow. An offset block under a
- *     translucent panel shows through it as a dark slab; glass is lifted by
- *     a diffuse shadow and a lit top edge. The keylines stay: they are what
- *     makes an input or a button identifiable at 3:1 against a ground that
- *     is now partly see-through (WCAG 1.4.11), and they are the app's line.
- *   - The colour rule holds, with one shift. On a light counter, cherry has
- *     to be read as text (a hovered link, a refusal) and carry text as a
- *     fill (the Delivery chip, a hovered button) — dark enough for the first
- *     means too dark for dark ink. The diner lives with 3.9:1 there; glass
- *     makes cherry a deep red and lets it carry light ink, as cherry-dk
- *     always has. The other dark fills (cherry-dk, sun-dk, aqua-dk,
- *     mint-dk) are dark here too, being the counter's text colours, and
- *     carry the same light ink. Bright fills still carry dark ink.
+ *   - The room is the thing to see through the glass: four large glows in
+ *     luminous versions of the accents — aqua, sun, a cherry pink, mint —
+ *     overlapping on a cool pale ground, under a white wash. The wash is what
+ *     lets a heading or a note sit straight on the room and still clear AA;
+ *     the glass gets the colour back by saturating what it blurs.
+ *   - The counter (porcelain, the creams, the washes) is glass: each fill is
+ *     drawn in `--color-fill-<name>`, its colour at an alpha, through the
+ *     --background-color-<name> hook in globals.css. The token of the same
+ *     name stays opaque, as it is also text (`text-cream` on a button), the
+ *     3D viewer's background and the reduced-transparency fallback.
+ *   - One blur per surface, and only the outermost: a piece of glass that is
+ *     not inside another one blurs and saturates the room behind it; a card,
+ *     a chip or an input inside a panel is tinted glass over the panel's
+ *     already blurred ground, with no blur of its own. A blur inside a blur
+ *     would see only its parent (an element with a backdrop filter is the
+ *     backdrop root of everything in it) and cost a layer for nothing.
+ *   - Every piece of glass has a specular rim — a bright inset line along
+ *     its top and a thin luminous border — and a soft depth shadow. Inputs,
+ *     selects and text areas keep a dark keyline: a field has to be found at
+ *     3:1 (WCAG 1.4.11) on a ground that is now see-through.
+ *   - Signs (the bright fills) are bubbles: their own colour, opaque, with a
+ *     gloss along the top, a lit rim and a soft shadow; buttons swell a
+ *     little under the pointer and give under a press, by transform only.
+ *   - The colour rule holds: bright fills (sun, aqua, mint, chrome) carry
+ *     dark ink. On a light counter cherry has to be read as text (a hovered
+ *     link) and to carry text as a fill (the Delivery chip, a hovered
+ *     button); no red is dark enough for the first and light enough for dark
+ *     ink, so cherry is deep and carries light ink, as cherry-dk always has,
+ *     and so do sun-dk, aqua-dk and mint-dk, the counter's dark text colours.
  *
  * Accessibility: `prefers-reduced-transparency: reduce` and
- * `prefers-contrast: more` draw every panel opaque, with no blur — see the
- * end of this file. `npm run check:contrast` measures every pair against
- * the worst ground a translucent fill can land on, not the fill alone;
- * docs/theming.md has the table and the method.
+ * `prefers-contrast: more` draw every surface opaque, with no blur — see the
+ * end of this file. `npm run check:contrast` measures every pair against the
+ * worst colour a piece of glass can show, its blurred and saturated room
+ * included; docs/theming.md has the method and the numbers.
  */
 
 /*
@@ -57,129 +58,152 @@
 
 :root {
   @variant glass {
-    /* --- the counter's colours, opaque. What `text-cream` writes, what the
-           viewer reads, and what every panel falls back to when transparency
-           is reduced. Close to the diner's, a shade lighter and cooler so the
-           frost reads as white glass rather than as paper --- */
-    --color-cream: #fbf8f4;
-    --color-cream-2: #f4efe8;
-    --color-cream-3: #e9e2d8;
+    /* --- the counter's colours, opaque: cool whites. What `text-cream`
+           writes, what the viewer reads, and what every surface falls back
+           to when transparency is reduced --- */
+    --color-cream: #fbfcff;
+    --color-cream-2: #f1f3f9;
+    --color-cream-3: #e5e8f0;
     --color-porcelain: #ffffff;
-    /* The diner's ink. ink-2 and ink-3 are darker than the diner's: they
-       have to clear 4.5:1 on a frost over the darkest of the room, and the
-       diner's ink-3 does not even clear it on opaque cream. */
-    --color-ink: #221a14;
-    --color-ink-2: #4b4037;
-    --color-ink-3: #5b4f45;
+    /* Near-black inks, a little cool. ink-2 and ink-3 are much darker than
+       the diner's: they are read on glass over a colourful room, and the
+       check holds them to the darkest that glass can show. */
+    --color-ink: #16151c;
+    --color-ink-2: #2f2d38;
+    --color-ink-3: #3f3c48;
 
-    /* --- the accents. sun, aqua, mint and chrome keep the diner's values and
-           carry dark ink. cherry is the deep red that reads as text on frost
-           and carries light ink as a fill (see the header); the -dk shades
-           are darker than the diner's for the same reason: they are text on
-           the counter, and dark fills that carry light ink --- */
-    --color-cherry: #a21b17;
-    --color-cherry-dk: #861612;
-    --color-cherry-wash: #fbe2de;
+    /* --- the accents, luminous. The bright ones carry dark ink. cherry and
+           the -dk shades are deep: they are text on glass, and dark fills
+           that carry light ink (see the header) --- */
+    --color-sun: #ffcc1a;
+    --color-aqua: #2fd0dc;
+    --color-mint: #3ccf6e;
+    --color-chrome: #d9dee6;
+    --color-chrome-dk: #aab3bf;
 
-    --color-aqua-dk: #066a66;
-    --color-aqua-wash: #d6f2ef;
+    --color-cherry: #840d16;
+    --color-cherry-dk: #69090f;
+    --color-cherry-wash: #ffe3e7;
+    /* As fills, behind light ink, the reds can be lit: a bright red still
+       holds white at 4.5:1, where as text on glass it would not hold. */
+    --color-fill-cherry: #ad111a;
+    --color-fill-cherry-dk: #960c14;
 
-    --color-sun-dk: #694805;
-    --color-sun-wash: #fcefcf;
+    --color-aqua-dk: #004f57;
+    --color-aqua-wash: #d4f7fa;
 
-    --color-mint-dk: #18643f;
-    --color-mint-wash: #daf1e4;
+    --color-sun-dk: #523900;
+    --color-sun-wash: #fff3c4;
 
-    /* What a bright fill carries: the diner's ink, with the fainter two close
-       to it, because they must clear 4.5:1 on aqua, mint and chrome-dk,
-       whichever sign a line of them lands on. The diner's ink-3 is 1.5:1 on
-       mint, and this theme's counter ink-3 under 3:1. */
-    --color-sign-ink-2: #2e241d;
-    --color-sign-ink-3: #362b22;
+    --color-mint-dk: #094f25;
+    --color-mint-wash: #d6f8e1;
 
-    /* The light ink a dark fill carries: cherry, cherry-dk, sun-dk, aqua-dk
-       and mint-dk (the rule at the end of this file). The diner's cream,
-       with the fainter two only a little dimmer, because they must still
-       clear 4.5:1 on the darkest of those fills. */
-    --color-dark-sign-ink: #fffaf3;
-    --color-dark-sign-ink-2: #fbf1e5;
-    --color-dark-sign-ink-3: #f6eadb;
+    /* What a bright fill carries: the ink, the fainter two close to it, as
+       they must clear 4.5:1 on aqua, mint and chrome-dk alike. */
+    --color-sign-ink-2: #23212b;
+    --color-sign-ink-3: #2a2832;
 
-    /* --- the frost: each counter fill drawn at an alpha. The fainter the
-           fill, the more of the room shows through; porcelain, the cards and
-           inputs, is the most opaque, because the most text sits on it --- */
-    --color-fill-porcelain: color-mix(in srgb, var(--color-porcelain) 62%, transparent);
-    --color-fill-cream: color-mix(in srgb, var(--color-cream) 45%, transparent);
-    --color-fill-cream-2: color-mix(in srgb, var(--color-cream-2) 50%, transparent);
-    --color-fill-cream-3: color-mix(in srgb, var(--color-cream-3) 60%, transparent);
-    --color-fill-cherry-wash: color-mix(in srgb, var(--color-cherry-wash) 58%, transparent);
-    --color-fill-aqua-wash: color-mix(in srgb, var(--color-aqua-wash) 58%, transparent);
-    --color-fill-sun-wash: color-mix(in srgb, var(--color-sun-wash) 58%, transparent);
-    --color-fill-mint-wash: color-mix(in srgb, var(--color-mint-wash) 58%, transparent);
+    /* The light ink a dark fill carries (the rule after the tokens). */
+    --color-dark-sign-ink: #ffffff;
+    --color-dark-sign-ink-2: #fbf8ff;
+    --color-dark-sign-ink-3: #f5f2fb;
 
-    /* --- the menu board is glass too, light, with the counter's ink on it.
-           Opaque in --color-board for reduced transparency; the band itself
-           is mostly the veil under it (below) --- */
-    --color-board: #fdfbf8;
-    --color-fill-board: color-mix(in srgb, var(--color-board) 40%, transparent);
-    --color-board-ink: #221a14;
+    /* --- the glass: each counter fill at an alpha. Porcelain — cards,
+           inputs, the panels most text sits on — is the clearest that still
+           holds ink-3 at 4.5:1 over the darkest the room can saturate to --- */
+    --color-fill-porcelain: color-mix(in srgb, var(--color-porcelain) 44%, transparent);
+    --color-fill-cream: color-mix(in srgb, var(--color-cream) 34%, transparent);
+    --color-fill-cream-2: color-mix(in srgb, var(--color-cream-2) 38%, transparent);
+    --color-fill-cream-3: color-mix(in srgb, var(--color-cream-3) 46%, transparent);
+    --color-fill-cherry-wash: color-mix(in srgb, var(--color-cherry-wash) 44%, transparent);
+    --color-fill-aqua-wash: color-mix(in srgb, var(--color-aqua-wash) 44%, transparent);
+    --color-fill-sun-wash: color-mix(in srgb, var(--color-sun-wash) 44%, transparent);
+    --color-fill-mint-wash: color-mix(in srgb, var(--color-mint-wash) 44%, transparent);
 
-    /* --- what floats: the tint laid under the header and the menus, over
-           whatever the page scrolls beneath them. It, not the blur, is what
-           keeps their text legible over a dark heading or a black model:
-           `check:contrast` measures it over pure black --- */
-    --color-veil: color-mix(in srgb, var(--color-porcelain) 74%, transparent);
-    --color-fill-toast: color-mix(in srgb, var(--color-sun) 86%, transparent);
+    /* --- the header's band is clear glass on the header's veil --- */
+    --color-board: #ffffff;
+    --color-fill-board: color-mix(in srgb, var(--color-board) 20%, transparent);
+    --color-board-ink: #16151c;
 
-    /* --- the room: a warm pale ground and four glows, light rather than
-           paint, so they are written out rather than taken from the accents
-           (cherry is a deep red here, and a deep red glow is a bruise) --- */
-    --color-backdrop: #f6f2ec;
-    --color-glow-1: color-mix(in srgb, #14b3ae 28%, transparent);
-    --color-glow-2: color-mix(in srgb, #f5b227 42%, transparent);
-    --color-glow-3: color-mix(in srgb, #ff6f61 26%, transparent);
-    --color-glow-4: color-mix(in srgb, #35b073 26%, transparent);
+    /* --- what floats over the page — the header, its menus, the toast —
+           can have anything under it, a black model included. The veil is
+           the tint that keeps it legible over pure black, which is what the
+           check measures it on; the blur and the saturation are for the eye --- */
+    --color-veil: color-mix(in srgb, #ffffff 70%, transparent);
+    --color-fill-toast: color-mix(in srgb, var(--color-sun) 82%, transparent);
 
-    /* --- soft shadows instead of the stamp. --color-stamp is the shadow's
-           colour, settled at the root as in the diner --- */
-    --color-stamp: color-mix(in srgb, var(--color-ink) 20%, transparent);
-    --shadow-stamp: 0 1px 2px var(--color-stamp), 0 6px 14px -6px var(--color-stamp);
+    /* --- the room: a cool pale ground, four glows that overlap, and a white
+           wash over them. Light, not paint, so written out --- */
+    --color-backdrop: #eef2fb;
+    --color-glow-1: color-mix(in srgb, #1ccfe0 72%, transparent);
+    --color-glow-2: color-mix(in srgb, #ffc21a 70%, transparent);
+    --color-glow-3: color-mix(in srgb, #ff4f86 60%, transparent);
+    --color-glow-4: color-mix(in srgb, #2fd06a 58%, transparent);
+    --color-wash: color-mix(in srgb, #ffffff 40%, transparent);
+
+    /* --- light on the glass: the rim, the gloss on a bubble, the shadow --- */
+    --color-rim: color-mix(in srgb, #ffffff 78%, transparent);
+    --color-gloss: color-mix(in srgb, #ffffff 16%, transparent);
+    --color-stamp: color-mix(in srgb, #1b2140 22%, transparent);
+    --shadow-stamp:
+      inset 0 1px 0 var(--color-rim), inset 0 10px 14px -10px var(--color-gloss),
+      0 6px 16px -6px var(--color-stamp);
     --shadow-stamp-lg:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 70%, transparent),
-      0 2px 4px var(--color-stamp), 0 16px 36px -14px var(--color-stamp);
+      inset 0 1px 0 var(--color-rim), inset 0 12px 18px -12px var(--color-gloss),
+      0 10px 24px -8px var(--color-stamp);
+
+    /* --- generous radii --- */
+    --radius-card: 20px;
+    --radius-panel: 28px;
   }
 }
 
+/* The blur and the saturation every outermost piece of glass applies. A
+   number the check reads: it measures what this saturation can make of the
+   room. Kept off the variant block so the check reads it plainly. */
+:root[data-theme="glass"] {
+  --glass-blur: 22px;
+  --glass-saturate: 1.7;
+}
+
 /* ---------------------------------------------------------------------------
-   What the blur needs beyond tokens. Every rule is scoped to
+   What the glass needs beyond tokens. Every rule is scoped to
    [data-theme="glass"], so no other theme can see it.
    --------------------------------------------------------------------------- */
 
 /*
- * The room. On the root, so it is the canvas behind everything; the body lets
- * it through, and its build-plate grid stays. Sized to the whole page and
- * scrolled with it, not fixed to the window: a fixed background is repainted
- * on every scroll, under a header that is already blurring what passes
- * beneath it, and the glows are soft enough not to need to stay put.
- *
- * Each glow rises from its own corner and reaches at most half the room's
- * width and height, so it stays in its own quarter at any window size and no
- * two ever stack. That is what lets `check:contrast` measure the room point
- * by point (one glow at a time) instead of against every glow at once, a
- * darker colour than any the room can show. Keep them so, or the check falls
- * back to that bound and the frost has to thicken to pass it.
+ * The room. On the root, so it is the canvas behind everything, sized to the
+ * whole page and scrolled with it — a fixed background is repainted on every
+ * scroll, under glass that is blurring it. The glows overlap; the check
+ * measures every combination of them. The body lets it through, and the
+ * build plate's grid goes: the glass is the texture here.
  */
 [data-theme="glass"] {
   background-color: var(--color-backdrop);
   background-image:
-    radial-gradient(50% 50% at 0% 0%, var(--color-glow-1), transparent),
-    radial-gradient(50% 50% at 100% 0%, var(--color-glow-2), transparent),
-    radial-gradient(50% 50% at 100% 100%, var(--color-glow-3), transparent),
-    radial-gradient(50% 50% at 0% 100%, var(--color-glow-4), transparent);
+    linear-gradient(var(--color-wash), var(--color-wash)),
+    radial-gradient(70% 60% at 8% 10%, var(--color-glow-1), transparent),
+    radial-gradient(65% 60% at 95% 5%, var(--color-glow-2), transparent),
+    radial-gradient(70% 65% at 92% 95%, var(--color-glow-3), transparent),
+    radial-gradient(65% 60% at 5% 92%, var(--color-glow-4), transparent);
   background-repeat: no-repeat;
 }
 [data-theme="glass"] body {
   background-color: transparent;
+}
+[data-theme="glass"] .plate {
+  background-image: none;
+}
+
+/* The diner's trim recedes: the checkerboard, the chrome strip under the
+   header, the ribbed layer lines, the punches at the top of a ticket. */
+[data-theme="glass"] :is(.checker, header.sticky > .bg-chrome),
+[data-theme="glass"] .ticket::before,
+[data-theme="glass"] .ticket::after {
+  display: none;
+}
+[data-theme="glass"] .layers {
+  background-image: none;
 }
 
 /* Dark fills carry light ink (see the header). On the plain fill classes:
@@ -192,8 +216,8 @@
 }
 
 /* A piece of counter on a sign — a ticket on the queue's yellow panel — is
-   opaque. Its worst ground would be the sign rather than the room, and a
-   frost over a dark fill is a muddy ground no ink is sure to clear. */
+   opaque. Its worst ground would be the sign rather than the room, and glass
+   over a dark fill is a muddy ground no ink is sure to clear. */
 [data-theme="glass"] :is(.bg-sun, .bg-aqua, .bg-mint, .bg-cherry, .bg-chrome, .bg-sun-dk, .bg-aqua-dk, .bg-mint-dk, .bg-cherry-dk, .bg-chrome-dk) {
   --background-color-porcelain: var(--color-porcelain);
   --background-color-cream: var(--color-cream);
@@ -206,38 +230,54 @@
 }
 
 /*
- * The header: one blurred layer for the whole sticky header, band, trim and
- * passkey banner alike. On a pseudo-element rather than the header, because
- * an element with a backdrop-filter is the backdrop root of everything
- * inside it — the menus that drop out of the header would blur only the
- * header, and show the page under them sharp. z-index -1 inside the header's
- * own stacking context (sticky with a z-index) paints it under the band.
+ * Glass: every counter fill but the body, which only lets the room through.
+ * A rim and a soft shadow on all of it; a luminous border in place of the
+ * keyline, except on a form field, which keeps a dark one to be found by.
  */
-[data-theme="glass"] header.sticky::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: var(--color-veil);
-  backdrop-filter: blur(18px);
+[data-theme="glass"] :is(.bg-porcelain, .bg-cream, .bg-cream-2, .bg-cream-3, .bg-cherry-wash, .bg-aqua-wash, .bg-sun-wash, .bg-mint-wash):not(body) {
+  border-color: var(--color-rim);
+  box-shadow: inset 0 1px 0 var(--color-rim), inset 1px 0 0 color-mix(in srgb, #ffffff 35%, transparent),
+    0 8px 28px -12px var(--color-stamp);
+}
+/* The Activity button sits on the header's clear band, where a white rim
+   would vanish: it keeps a softened keyline, as the signs beside it do. */
+[data-theme="glass"] header.sticky .rounded-chip:is(.bg-cream, .bg-cream-2, .bg-porcelain) {
+  border-color: color-mix(in srgb, currentColor 70%, transparent);
+}
+[data-theme="glass"] :is(input, select, textarea):is(.bg-porcelain, .bg-cream, .bg-cream-2) {
+  border-color: var(--color-ink);
+  border-width: 2px;
 }
 
-/* The two menus that drop from it: the veil over their frost, and a blur of
-   their own, since they hang over the page below the header's. */
-[data-theme="glass"] header.sticky .rounded-panel {
-  background-image: linear-gradient(var(--color-veil), var(--color-veil));
-  backdrop-filter: blur(18px);
+/*
+ * One blur per surface: the outermost glass blurs and saturates what is
+ * behind it. Not glass inside glass, nor glass on a sign (opaque, above), nor
+ * anything in the header, which has its own — and not a pill (a button, a
+ * chip): over a room with no sharp detail its blur would show nothing, and
+ * a page has dozens. `npm run shots` counts the layers per page.
+ */
+[data-theme="glass"] :is(.bg-porcelain, .bg-cream, .bg-cream-2, .bg-cream-3, .bg-cherry-wash, .bg-aqua-wash, .bg-sun-wash, .bg-mint-wash):not(body, .rounded-chip):not(
+    :is(.bg-porcelain, .bg-cream, .bg-cream-2, .bg-cream-3, .bg-cherry-wash, .bg-aqua-wash, .bg-sun-wash, .bg-mint-wash):not(body) *,
+    :is(.bg-sun, .bg-aqua, .bg-mint, .bg-cherry, .bg-chrome, .bg-sun-dk, .bg-aqua-dk, .bg-mint-dk, .bg-cherry-dk, .bg-chrome-dk) *,
+    header.sticky *
+  ) {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
-/* The toast: a frosted sun sign over whatever it lands on. */
-[data-theme="glass"] .ppp-toast {
-  background-color: var(--color-fill-toast, var(--color-sun));
-  backdrop-filter: blur(14px);
+/*
+ * Signs are bubbles: a gloss along the top, a lit rim, a soft shadow, and
+ * the keyline softened to half the ink they carry — `currentColor`, so dark
+ * on a bright fill and light on a dark one. Laid over the fill, that edge
+ * still stands at 3:1 against the page, which `check:contrast` measures.
+ */
+[data-theme="glass"] :is(.bg-sun, .bg-aqua, .bg-mint, .bg-cherry, .bg-chrome, .bg-sun-dk, .bg-aqua-dk, .bg-mint-dk, .bg-cherry-dk, .bg-chrome-dk) {
+  border-color: color-mix(in srgb, currentColor 70%, transparent);
+  box-shadow: var(--shadow-stamp);
 }
 
-/* Stamps are soft shadows. Tailwind writes the stamp's geometry into the
-   shadow-stamp utilities, so they are pointed back at the tokens here; the
-   `.stamp` buttons in globals.css read the tokens already. */
+/* Stamps are the soft shadows above. Tailwind writes the stamp's geometry
+   into the shadow-stamp utilities, so they are pointed back at the tokens;
+   the `.stamp` buttons in globals.css read the tokens already. */
 [data-theme="glass"] .shadow-stamp {
   --tw-shadow: var(--shadow-stamp);
 }
@@ -245,12 +285,67 @@
   --tw-shadow: var(--shadow-stamp-lg);
 }
 
+/* A bubble swells under the pointer and gives under a press: a transform,
+   so nothing around it moves. */
+[data-theme="glass"] .stamp {
+  transition:
+    transform 180ms cubic-bezier(0.3, 1.4, 0.5, 1),
+    box-shadow 180ms ease-out,
+    background-color 160ms ease-out;
+}
+[data-theme="glass"] .stamp:hover {
+  transform: scale(1.04);
+}
+[data-theme="glass"] .stamp:active {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="glass"] .stamp:is(:hover, :active) {
+    transform: none;
+  }
+}
+
+/*
+ * The header: one blurred layer for the whole sticky header, band and passkey
+ * banner alike, carrying the veil. On a pseudo-element rather than the header,
+ * because an element with a backdrop filter is the backdrop root of everything
+ * inside it — the menus that drop out of the header would blur only the
+ * header. z-index -1 inside the header's own stacking context (sticky with a
+ * z-index) paints it under the band.
+ */
+[data-theme="glass"] header.sticky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--color-veil);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+[data-theme="glass"] .bg-board {
+  border-color: var(--color-rim);
+  box-shadow: inset 0 -1px 0 var(--color-rim);
+}
+
+/* The two menus that drop from it: the veil over their glass, and a blur of
+   their own, since they hang over the page below the header's. */
+[data-theme="glass"] header.sticky .rounded-panel {
+  background-image: linear-gradient(var(--color-veil), var(--color-veil));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+/* The toast: a sun bubble of glass over whatever it lands on. */
+[data-theme="glass"] .ppp-toast {
+  background-color: var(--color-fill-toast, var(--color-sun));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
 /*
  * Reduced transparency, and more contrast: no glass. Every fill falls back
  * to its opaque token (a custom property set to `initial` is unset, and
  * each fill's var() takes its fallback), the veil goes, nothing is blurred.
- * The room stays — it is a background, not a surface anything is read on.
- * More contrast also takes the fainter inks most of the way to ink.
+ * The room stays with reduced transparency — it is a background, and the
+ * check holds text on it to AA — and goes with more contrast. More contrast
+ * also takes the fainter inks most of the way to ink.
  */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   :root[data-theme="glass"] {
@@ -266,14 +361,15 @@
     --color-fill-toast: initial;
     --color-veil: initial;
   }
-  [data-theme="glass"] header.sticky::before,
-  [data-theme="glass"] :is(header.sticky .rounded-panel, .ppp-toast) {
-    backdrop-filter: none;
+  [data-theme="glass"] *,
+  [data-theme="glass"] header.sticky::before {
+    backdrop-filter: none !important;
   }
 }
 @media (prefers-contrast: more) {
   :root[data-theme="glass"] {
-    --color-ink-2: #382f28;
-    --color-ink-3: #42372e;
+    --color-ink-2: #211f29;
+    --color-ink-3: #29262f;
+    background-image: none;
   }
 }
