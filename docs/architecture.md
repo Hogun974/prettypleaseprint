@@ -485,6 +485,7 @@ src/lib/
   csp.ts                 Content-Security-Policy builder + nonce
   safe-redirect.ts       redirect targets, decided by a URL parser
   client-ip.ts           whose address the audit trail believes
+  theme.ts               the list of themes, and which one a request is drawn in
   db.ts, runtime.ts      the Prisma client; build-phase detection
 src/app/
   signin/  reauth/       sign-in; the re-authentication prompt
@@ -500,6 +501,7 @@ src/app/
   me/                    your own tickets and the profile card
   frr/                   the feature-request track: board, new, queue, [id]
   docs/                  the Swagger console (a route, not a page)
+  themes/                every theme but the diner, one CSS file each — see docs/theming.md
   actions/               server actions — thin adapters over src/lib
 src/app/admin/           the printer owner's pages; 404 for anyone else
   invites/               the guest list: invite, reset, suspend

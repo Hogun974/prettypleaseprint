@@ -38,6 +38,28 @@ Notable changes. Every entry names a released version; deployments pin
   upload. `npm run verify:import` is the eleventh suite, and runs against a
   stand-in for Printables so that the far end can be made to misbehave.
 
+- **A second theme, "diner after hours"** (#105, step two; nothing changes
+  for anyone yet). The same diner at night: a walnut counter, cream keylines
+  and stamp shadows, the neon fills as bright as by day and still carrying
+  dark ink. Nobody can choose it in the app yet — per-person and instance
+  choices are later work — but the mechanism is in place: themes are listed
+  once in `src/lib/theme.ts`, `themeForRequest()` decides the theme for a
+  request, and the root layout writes it into `<html data-theme>`. `auto`
+  follows the system's dark setting, in CSS, with no script.
+
+  The colour rule — bright fills carry dark ink — is kept by the fills
+  themselves: every `bg-sun`, `bg-aqua`, `bg-cherry`… swaps `ink` for a
+  sign's ink inside it, and every counter fill puts the counter's back, so no
+  component changed its classes. `npm run check:contrast` (now in CI) reads the
+  palettes from the CSS and measures every pair in every theme against WCAG
+  AA; after hours clears it on all of them, the tightest at 4.53:1. It also
+  reports six pairs the diner has below AA — `ink-3` on cream and porcelain,
+  dark ink on cherry chips — which a theme cannot fix without changing the
+  default. `SHOT_THEME=after-hours npm run shots` draws the screenshots in a
+  theme, the shots now cover the owner's back-office pages too, and each run
+  measures what every page renders into `contrast.json`. See
+  [Themes](docs/theming.md).
+
 ### Changed
 
 - **Every colour the app draws with is a theme variable** (#105, step one; no

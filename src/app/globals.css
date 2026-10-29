@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Themes other than the diner: each file redefines tokens from the blocks
+   below under its own `data-theme`, and nothing else. See src/lib/theme.ts. */
+@import "./themes/after-hours.css";
+
 /*
  * Pretty Please Print — the counter at a 1950s diner, run by a 3D printer.
  *
@@ -12,6 +16,10 @@
  * Colour rule, and it is also the accessible rule: bright fills carry DARK ink.
  * Enamel signage worked that way because it had to be read from a moving car.
  * The single exception is the cherry-dark fill, which carries cream.
+ *
+ * A theme keeps the rule however dark its counter gets: `ink` is the ink of
+ * the counter, and a bright fill swaps in the ink of a sign for everything
+ * inside it — see "Signs and the counter" at the end of this file.
  */
 
 @theme {
@@ -73,9 +81,14 @@
   /*
    * Hard offset shadows, no blur. A blurred shadow reads as glass or paper;
    * an offset block reads as a die-cut enamel sign, which is the reference.
+   *
+   * In --color-stamp rather than --color-ink: Tailwind writes this value into
+   * every shadow-stamp utility, where a var() resolves on the element, so a
+   * sign's dark ink would cast a dark shadow on a dark counter.
+   * --color-stamp is settled once, at the root.
    */
-  --shadow-stamp: 3px 3px 0 var(--color-ink);
-  --shadow-stamp-lg: 5px 5px 0 var(--color-ink);
+  --shadow-stamp: 3px 3px 0 var(--color-stamp);
+  --shadow-stamp-lg: 5px 5px 0 var(--color-stamp);
   --shadow-soft: 0 2px 0 color-mix(in srgb, var(--color-ink) 16%, transparent);
 
   --font-display: var(--font-slab), Georgia, serif;
@@ -99,8 +112,39 @@
   --color-scene-rim: #dfe6ee;
   --color-scene-grid: #c9b48c;
 
-  /* --- what keeps a cream "?" legible on a swatch of any colour --- */
+  /* --- what keeps a cream "?" legible on a swatch of any colour: the
+         glyph, and the shade around it. The glyph is not text-cream because
+         cream is the counter, and a dark theme's counter is dark; on a swatch
+         of any colour the glyph has to stay light whatever the counter is --- */
+  --color-swatch-mark: var(--color-cream);
   --color-shade: #1b2126;
+
+  /*
+   * The ink a sign carries — what `ink` becomes inside a bright fill (see
+   * "Signs and the counter" below). The diner has one ink for both, so these
+   * are its inks; a theme with a dark counter gives signs a dark ink of their
+   * own here. The model in the 3D viewer is drawn in it too: it is lit by the
+   * same lamps whatever the counter is.
+   */
+  --color-sign-ink: var(--color-ink);
+  --color-sign-ink-2: var(--color-ink-2);
+  --color-sign-ink-3: var(--color-ink-3);
+
+  /*
+   * The counter's own inks, held where a sign cannot reach them. A var() in a
+   * custom property is resolved on the element that declares it, and these
+   * are declared on the root: they keep the root's ink — the theme's — while a
+   * bright fill further down redeclares `ink`. A panel on a sign (a card on
+   * the queue's yellow "Waiting on you") reads these back. Not for themes to
+   * set: a theme sets `ink`, and these follow.
+   */
+  --color-counter-ink: var(--color-ink);
+  --color-counter-ink-2: var(--color-ink-2);
+  --color-counter-ink-3: var(--color-ink-3);
+
+  /* The offset block under a stamp, settled at the root for the reason given
+     at --shadow-stamp. The counter's ink by default. */
+  --color-stamp: var(--color-ink);
 }
 
 @layer base {
@@ -114,9 +158,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* A selection is a sun fill, so it carries a sign's ink. */
   ::selection {
     background: var(--color-sun);
-    color: var(--color-ink);
+    color: var(--color-sign-ink);
   }
 
   /* Thick, offset, and in the brand red — a focus ring should be as loud as
@@ -289,7 +334,7 @@
 }
 .stamp:active {
   transform: translate(3px, 3px);
-  box-shadow: 0 0 0 var(--color-ink);
+  box-shadow: 0 0 0 var(--color-stamp);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -311,3 +356,69 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Signs and the counter.
+
+   The colour rule above has two kinds of ground. The counter — cream, cream-2,
+   cream-3, porcelain, and the pale washes — is where text sits most of the
+   time, in `ink`. A sign — sun, aqua, mint, cherry, chrome and the dark fills —
+   carries dark ink however dark the counter is: it is lit.
+
+   In the diner one ink serves both, which is why components write `text-ink`
+   on a sun fill and on a cream card alike, and why nothing needs to change in
+   them. A theme with a dark counter makes `ink` light; written on a sun fill,
+   that would be light text on yellow. So each fill says which ink it carries,
+   for itself and everything inside it: a sign swaps `ink` for the sign's ink,
+   and a piece of counter puts the counter's ink back, for a card that sits on
+   a sign. The fill is where the rule lives, so a new component inherits it by
+   choosing its fill and nothing else.
+
+   Declared on the utility rather than in a selector of their own, so every
+   variant comes along: `hover:bg-sun` swaps the ink exactly while the fill is
+   there. In the diner each swap puts back the value it replaces, and nothing
+   renders differently.
+
+   A fill this list does not name keeps whatever ink it sits in: name it here
+   (`npm run check:contrast` refuses a fill class it cannot place). So does a
+   fill drawn with an opacity modifier (`bg-sun/50`), which is a different
+   utility; none is used. And `bg-ink` is neither: it is the dark bar of the
+   header by day and the lit one at night, and carries `text-cream`, which
+   turns over with it.
+   --------------------------------------------------------------------------- */
+
+@utility on-sign {
+  --color-ink: var(--color-sign-ink);
+  --color-ink-2: var(--color-sign-ink-2);
+  --color-ink-3: var(--color-sign-ink-3);
+}
+
+@utility on-counter {
+  --color-ink: var(--color-counter-ink);
+  --color-ink-2: var(--color-counter-ink-2);
+  --color-ink-3: var(--color-counter-ink-3);
+}
+
+/* Signs. cherry-dk and sun-dk are among them for a theme whose counter is
+   dark: there they are the light red and amber that read on it, so they are
+   lit too, and carry a sign's ink. */
+@utility bg-sun { @apply on-sign; }
+@utility bg-sun-dk { @apply on-sign; }
+@utility bg-aqua { @apply on-sign; }
+@utility bg-aqua-dk { @apply on-sign; }
+@utility bg-mint { @apply on-sign; }
+@utility bg-mint-dk { @apply on-sign; }
+@utility bg-cherry { @apply on-sign; }
+@utility bg-cherry-dk { @apply on-sign; }
+@utility bg-chrome { @apply on-sign; }
+@utility bg-chrome-dk { @apply on-sign; }
+
+/* The counter. */
+@utility bg-cream { @apply on-counter; }
+@utility bg-cream-2 { @apply on-counter; }
+@utility bg-cream-3 { @apply on-counter; }
+@utility bg-porcelain { @apply on-counter; }
+@utility bg-cherry-wash { @apply on-counter; }
+@utility bg-aqua-wash { @apply on-counter; }
+@utility bg-sun-wash { @apply on-counter; }
+@utility bg-mint-wash { @apply on-counter; }

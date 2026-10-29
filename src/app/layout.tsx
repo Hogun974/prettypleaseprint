@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { SourceLink } from "@/components/source-link";
 import { sourceUrl } from "@/lib/runtime";
+import { themeForRequest } from "@/lib/theme";
 
 /*
  * Four faces, each with a job, which is how a real diner sign works: a script
@@ -63,12 +64,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
+      // The palette. Decided on the server so the first paint is already in
+      // it — a theme applied by script after load would flash the diner.
+      data-theme={await themeForRequest()}
       className={`${script.variable} ${slab.variable} ${archivo.variable} ${courier.variable}`}
     >
       <body className="plate flex min-h-screen flex-col bg-cream text-ink antialiased">

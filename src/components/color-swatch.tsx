@@ -35,7 +35,7 @@ export function ColorSwatch({
       style={{ background: style }}
     >
       {mode === "whatever" && mark && !stripe && (
-        <span className="font-display text-[0.72em] leading-none text-cream [text-shadow:0_1px_2px_var(--color-shade),0_0_2px_var(--color-shade)]">
+        <span className="font-display text-[0.72em] leading-none text-swatch-mark [text-shadow:0_1px_2px_var(--color-shade),0_0_2px_var(--color-shade)]">
           ?
         </span>
       )}

@@ -109,6 +109,7 @@ Checks that need no server, all of them in CI's `guard` job:
 npm run typecheck                  # tsc --noEmit
 npm run check:secrets -- --all     # credential shapes across every tracked file
 npm run check:links                # internal markdown links and heading anchors
+npm run check:contrast             # every theme's colour pairs against WCAG AA
 for t in scripts/tests/*.test.sh; do bash "$t"; done   # the three shell tools, sandboxed
 ```
 

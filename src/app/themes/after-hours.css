@@ -1,0 +1,99 @@
+/*
+ * Diner after hours — the same diner, at night.
+ *
+ * The counter goes dark and the neon stays on. Everything here redefines a
+ * token from globals.css and nothing else: components do not know which theme
+ * they are drawn in.
+ *
+ * What changes, and why each group moves the way it does:
+ *
+ *   - The counter (cream, cream-2, cream-3, porcelain) is dark walnut, and the
+ *     cards (porcelain) are the lightest of it: at night what is nearer the
+ *     lamp is lighter, where by day the white card was.
+ *   - `ink`, the counter's ink, is the diner's cream turned over. Keylines and
+ *     stamp shadows are drawn in it, so a card is still a die-cut sign with a
+ *     hard edge, now in light.
+ *   - The bright fills keep the diner's values — they are the neon, and the
+ *     neon is what this theme is about — and keep carrying dark ink. That is
+ *     the colour rule, and `--color-sign-ink` is what keeps it: a sign swaps
+ *     `ink` for it (globals.css, "Signs and the counter"). Cherry alone is
+ *     brighter, because dark ink on the diner's cherry is 3.9:1 and at night
+ *     it is the colour that has to be read on the most chips.
+ *   - cherry-dk and sun-dk are text colours on the counter as much as fills.
+ *     By day they are the darker shades that read on cream; here they are the
+ *     lighter ones that read on walnut, and as fills they are lit and carry a
+ *     sign's ink. The primary button's `text-cream` follows by itself: cream
+ *     is now the dark of the counter, so the cherry button reads dark on
+ *     light red — bright fill, dark ink, the rule at night.
+ *   - The washes are the same hues, dark. They are counter, and carry its ink.
+ *   - The viewer's lamps do not change. They are light, not paint: the model
+ *     is the colour of the filament whatever the room is.
+ *
+ * `npm run check:contrast` measures every pair against WCAG AA in both themes;
+ * docs/theming.md has the table.
+ */
+
+/*
+ * When after hours applies: chosen outright, or chosen as "auto" by someone
+ * whose system is set to dark. The root layout writes the choice into
+ * `data-theme` on <html>; the media query is the browser's, so "auto" needs
+ * no script and follows the system as it changes.
+ *
+ * Also usable as a variant (`after-hours:…`) should a component ever need
+ * one. Nothing does: a component that needs it is a sign that a token is
+ * missing.
+ */
+@custom-variant after-hours {
+  &:where([data-theme="after-hours"], [data-theme="after-hours"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme="auto"], [data-theme="auto"] *) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  @variant after-hours {
+    /* Native controls — scrollbars, the colour picker, a <select>'s list —
+       drawn for a dark page. */
+    color-scheme: dark;
+
+    /* --- the counter, after closing: walnut and lamp-lit cards --- */
+    --color-cream: #17120e;
+    --color-cream-2: #211a14;
+    --color-cream-3: #33281f;
+    --color-porcelain: #2b221b;
+    --color-ink: #f4e8d6;
+    --color-ink-2: #d2c1ab;
+    --color-ink-3: #a8957f;
+
+    /* --- the neon. cherry brighter, as above; cherry-dk the light red that
+           reads on walnut, and the focus ring with it --- */
+    --color-cherry: #ff5a4b;
+    --color-cherry-dk: #ff7a6b;
+    --color-cherry-wash: #3d1a16;
+
+    --color-aqua-dk: #3fd0ca;
+    --color-aqua-wash: #10302e;
+
+    --color-sun-dk: #f0b64a;
+    --color-sun-wash: #382a0e;
+
+    --color-mint-dk: #5fd49a;
+    --color-mint-wash: #12301f;
+
+    /* --- what a lit sign carries. The diner's warm black; the fainter two
+           are darker than the diner's, close to it, because on a sign they
+           must still clear 4.5:1 on cherry, whichever sign a line of them
+           lands on; the diner's ink-2 would be 2.9:1 on this cherry and its
+           ink-3 1.3:1 --- */
+    --color-sign-ink: #221a14;
+    --color-sign-ink-2: #2e241d;
+    --color-sign-ink-3: #33281f;
+
+    /* The "?" on a "whatever" swatch stays light on any colour. */
+    --color-swatch-mark: #fff6e9;
+  }
+}

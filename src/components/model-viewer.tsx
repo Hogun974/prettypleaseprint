@@ -180,12 +180,15 @@ export function ModelViewer({
         // A faint edge overlay, as the handoff specifies. STL only: a 3MF
         // arrives as a group of meshes, and deriving one edge set from it
         // would mean walking the tree for a line that is 16% opaque anyway.
+        // In a sign's ink, not the counter's: the edges lie on the model,
+        // which the same lamps light in every theme, so they are drawn as
+        // they are by day rather than in a dark counter's light ink.
         if (geometry) {
           inner.add(
             new THREE.LineSegments(
               new THREE.EdgesGeometry(geometry, 28),
               new THREE.LineBasicMaterial({
-                color: token("ink"),
+                color: token("sign-ink"),
                 transparent: true,
                 opacity: 0.16,
               }),
