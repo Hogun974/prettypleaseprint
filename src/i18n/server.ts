@@ -9,9 +9,8 @@ import { CLIENT_GROUPS } from "./client-groups";
  *   const ago = await getRelativeTime();
  *   ago(story.createdAt)   // "3 hours ago" / "il y a 3 heures"
  *
- * Only translated screens use this. The others call `relativeTime` directly
- * and stay English, so a page that is not translated yet never reads
- * "Ruben · il y a 3 heures" in the middle of English copy.
+ * Every screen uses this. `relativeTime` called with no words is English,
+ * which is what the JSON API and the logs want, and no page.
  */
 export async function getRelativeTime(): Promise<(date: Date) => string> {
   const [locale, t] = await Promise.all([getLocale(), getTranslations("time")]);

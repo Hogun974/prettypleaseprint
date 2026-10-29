@@ -51,8 +51,8 @@ export function Kicker({ children }: { children: ReactNode }) {
 export function AuthShell({
   children,
   // A prop rather than a lookup: this module is imported by client components
-  // and cannot read the request's language, and the screens that use the shell
-  // are translated one at a time. One that has been passes its own words.
+  // and cannot read the request's language. Each screen passes its own words;
+  // the English default is what a screen gets that does not.
   sign = "Open · come on in",
 }: {
   children: ReactNode;
