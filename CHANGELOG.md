@@ -58,7 +58,43 @@ Notable changes. Every entry names a released version; deployments pin
   are each refused by name; nothing is guessed. A config that sets neither
   behaves exactly as before.
 
+- **A second theme, "diner after hours"** (#105, step two; nothing changes
+  for anyone yet). The same diner at night: a walnut counter, cream keylines
+  and stamp shadows, the neon fills as bright as by day and still carrying
+  dark ink. Nobody can choose it in the app yet — per-person and instance
+  choices are later work — but the mechanism is in place: themes are listed
+  once in `src/lib/theme.ts`, `themeForRequest()` decides the theme for a
+  request, and the root layout writes it into `<html data-theme>`. `auto`
+  follows the system's dark setting, in CSS, with no script.
+
+  The colour rule — bright fills carry dark ink — is kept by the fills
+  themselves: every `bg-sun`, `bg-aqua`, `bg-cherry`… swaps `ink` for a
+  sign's ink inside it, and every counter fill puts the counter's back, so no
+  component changed its classes. `npm run check:contrast` (now in CI) reads the
+  palettes from the CSS and measures every pair in every theme against WCAG
+  AA; after hours clears it on all of them, the tightest at 4.53:1. It also
+  reports seven pairs the diner has below AA — `ink-3` on cream and porcelain,
+  dark ink on cherry chips, the focus ring on the header's band — which a theme cannot fix without changing the
+  default. `SHOT_THEME=after-hours npm run shots` draws the screenshots in a
+  theme, the shots now cover the owner's back-office pages too, and each run
+  measures what every page renders into `contrast.json`. See
+  [Themes](docs/theming.md).
+
 ### Changed
+
+- **Every colour the app draws with is a theme variable** (#105, step one; no
+  visible change). The 3D viewer's background, lights, edges and build plate,
+  the ink-at-an-alpha of the layer lines, the plate grid, the starburst and
+  `--color-rule`, and the shadow behind a "whatever" swatch's `?` were written
+  out where they were used; they now come from `globals.css` — the viewer
+  reads them with `getComputedStyle`, and says so if one is missing. The
+  viewer's lamps get tokens of their own, so a darker counter would not mean a
+  darker lamp. Tokens only code reads sit in an `@theme static` block, because
+  Tailwind drops theme variables no class uses. `STATUS_CHIP`, twelve hard-coded
+  colours nothing had imported since the diner redesign, is gone, and so is a
+  per-column `--tear-color` that restated its own default. E-mails keep their
+  literal colours: a mail client has no CSS variables. Screenshots of every
+  page before and after differ by at most 1/255 on the faint lines.
 
 - **Opening a ticket from a model's bytes lives in one place.** It was the body
   of the upload route while that was the only way a model arrived;

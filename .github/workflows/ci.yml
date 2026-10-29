@@ -62,6 +62,11 @@ jobs:
       # once renaming a directory out from under references into it.
       - name: Documentation links
         run: npm run check:links
+      # A theme repaints every page, and a pair that falls below AA in one is
+      # invisible from the default. This measures every theme's pairs from the
+      # CSS itself — see docs/theming.md.
+      - name: Theme contrast
+        run: npm run check:contrast
       # The wizards are shell, and nothing else in this job executes shell.
       # Each test file runs its script in a sandbox: a temp directory, stub
       # executables for docker, gh and curl, and a PATH that holds only those
