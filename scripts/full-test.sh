@@ -113,7 +113,7 @@ PORTS="${PPP_FULLTEST_PORTS:-3000 5432 1025 8025 4010}"
 # In CI's order (the `verify` job of .github/workflows/ci.yml). A test pins
 # this list to that file, because the hand-rolled predecessor of this script
 # had quietly lost verify:catalog.
-SUITES="verify:auth verify:upload verify:import verify:queue verify:frr verify:benefits verify:catalog verify:settings verify:preferences verify:setup verify:api verify:passkey probe:security"
+SUITES="verify:auth verify:upload verify:import verify:queue verify:frr verify:benefits verify:catalog verify:catalog-sync verify:settings verify:preferences verify:setup verify:api verify:passkey probe:security"
 
 ENV_FILES=".env .env.backup .env.docker"
 
@@ -412,6 +412,8 @@ rm -f $ENV_FILES
   echo "DB_PASSWORD=$(openssl rand -hex 24)"
   echo "ADMIN_EMAIL=ci-admin@example.test"
   echo "ADMIN_NAME=Ruben Haas"
+  # verify:catalog-sync calls the sync route with the token this hashes.
+  echo "CATALOG_SYNC_TOKEN_HASH=$(printf %s ci-catalog-sync | sha256sum | cut -d" " -f1)"
   # The build overlay tags what it builds ${PPP_REGISTRY}/ppp-app:${PPP_TAG}.
   # Left at `latest`, a local build would overwrite the image this developer
   # pulled, and the next `docker compose up` of their own stack would run it.

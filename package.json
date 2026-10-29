@@ -45,6 +45,7 @@
     "verify:frr": "tsx scripts/verify-frr.ts",
     "verify:benefits": "tsx scripts/verify-benefits.ts",
     "verify:catalog": "tsx scripts/verify-catalog.ts",
+    "verify:catalog-sync": "tsx scripts/verify-catalog-sync.ts",
     "verify:settings": "tsx scripts/verify-settings.ts",
     "verify:preferences": "tsx scripts/verify-preferences.ts",
     "verify:setup": "tsx scripts/verify-setup.ts",
