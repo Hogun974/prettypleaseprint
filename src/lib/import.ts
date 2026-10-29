@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import type { Spoken } from "@/i18n/spoken";
 
 import {
   SOURCE_LABEL,
@@ -43,7 +44,8 @@ import { ACCEPTED_EXTENSIONS, MAX_UPLOAD_BYTES, formatBytes } from "@/lib/upload
  * points at the upload that always works. Nothing here falls back to guessing.
  */
 
-const problem = (status: number, message: string) => new StoryProblem(status, message);
+const problem = (status: number, message: string, spoken?: Spoken) =>
+  new StoryProblem(status, message, spoken);
 
 /** What to do instead, appended to every failure that is not the requester's. */
 const UPLOAD_INSTEAD = "Download the file and upload it here instead.";
@@ -94,7 +96,7 @@ const userAgent = () => `PrettyPleasePrint (+${appSourceUrl()})`;
 export async function importSourcesOrRefuse(): Promise<ImportSource[]> {
   const enabled = await importSources();
   if (enabled.length === 0) {
-    throw problem(501, "Importing from a link is not switched on for this instance.");
+    throw problem(501, "Importing from a link is not switched on for this instance.", { key: "problems.import.off" });
   }
   return enabled;
 }
@@ -131,8 +133,8 @@ async function readCapped(response: Response, limit: number): Promise<Uint8Array
   return out.subarray(0, length);
 }
 
-const unavailable = (what: string) =>
-  problem(502, `Printables ${what}. ${UPLOAD_INSTEAD}`);
+const unavailable = (what: string, key: string, values?: Record<string, string>) =>
+  problem(502, `Printables ${what}. ${UPLOAD_INSTEAD}`, { key: `problems.import.printables.${key}`, values });
 
 async function graphql(query: string, variables: Record<string, string>): Promise<unknown> {
   let response: Response;
@@ -150,20 +152,20 @@ async function graphql(query: string, variables: Record<string, string>): Promis
     });
   } catch (error) {
     console.error("[import] printables api unreachable", error);
-    throw unavailable("could not be reached from here");
+    throw unavailable("could not be reached from here", "unreachable");
   }
   if (!response.ok) {
     await response.body?.cancel().catch(() => {});
     console.error(`[import] printables api answered ${response.status}`);
-    throw unavailable(`answered ${response.status}`);
+    throw unavailable(`answered ${response.status}`, "status", { status: String(response.status) });
   }
 
   const raw = await readCapped(response, MAX_API_BYTES).catch(() => null);
-  if (!raw) throw unavailable("sent an answer this app could not read");
+  if (!raw) throw unavailable("sent an answer this app could not read", "unreadable");
   try {
     return JSON.parse(new TextDecoder().decode(raw));
   } catch {
-    throw unavailable("sent an answer this app could not read");
+    throw unavailable("sent an answer this app could not read", "unreadable");
   }
 }
 
@@ -242,13 +244,13 @@ async function listPrintables(modelId: string): Promise<ImportListing> {
   const parsed = ListingSchema.safeParse(await graphql(LISTING_QUERY, { id: modelId }));
   if (!parsed.success) {
     console.error("[import] printables listing has an unexpected shape", parsed.error.issues[0]);
-    throw unavailable("answered in a shape this app does not recognise — its API may have changed");
+    throw unavailable("answered in a shape this app does not recognise — its API may have changed", "changed");
   }
   const print = parsed.data.data.print;
-  if (!print) throw problem(404, "Printables has no model at that link.");
+  if (!print) throw problem(404, "Printables has no model at that link.", { key: "problems.import.noModel" });
   // The id that comes back is the one stored and shown. If it is not the one
   // asked for, something is answering that is not what this code expects.
-  if (print.id !== modelId) throw unavailable("answered about a different model");
+  if (print.id !== modelId) throw unavailable("answered about a different model", "otherModel");
 
   // The slug is decoration on a link people will click. Kept only if it looks
   // like one; the id alone still finds the model.
@@ -290,7 +292,10 @@ const NOT_A_LINK = (enabled: readonly ImportSource[]) =>
 export async function listImportable(rawUrl: unknown): Promise<ImportListing> {
   const enabled = await importSourcesOrRefuse();
   const found = typeof rawUrl === "string" ? identifySource(rawUrl, enabled) : null;
-  if (!found) throw problem(422, NOT_A_LINK(enabled));
+  if (!found) throw problem(422, NOT_A_LINK(enabled), {
+    key: "problems.import.notALink",
+    values: { sources: enabled.map((s) => SOURCE_LABEL[s]).join(" / ") },
+  });
   return listPrintables(found.modelId);
 }
 
@@ -310,13 +315,19 @@ export async function fetchImportable(
   const listing = await listImportable(rawUrl);
 
   const fileId = typeof rawFileId === "string" || typeof rawFileId === "number" ? String(rawFileId) : "";
-  if (!/^\d{1,12}$/.test(fileId)) throw problem(400, "Say which file to import.");
+  if (!/^\d{1,12}$/.test(fileId)) throw problem(400, "Say which file to import.", { key: "problems.import.whichFile" });
   const file = listing.files.find((candidate) => candidate.id === fileId);
-  if (!file) throw problem(404, "That file is not one of that model's printable files.");
+  if (!file) throw problem(404, "That file is not one of that model's printable files.", { key: "problems.import.notThatFile" });
   if (file.tooLarge) {
     throw problem(
       413,
       `That file is ${formatBytes(file.size)} — the limit is ${formatBytes(MAX_UPLOAD_BYTES)}.`,
+      {
+        key: "problems.import.tooLarge",
+        // Sizes are words, not numbers: only a translation reads this key (an
+        // English reader is shown the message above), so they are said in French.
+        values: { size: formatBytes(file.size, "fr"), limit: formatBytes(MAX_UPLOAD_BYTES, "fr") },
+      },
     );
   }
 
@@ -331,7 +342,7 @@ export async function fetchImportable(
   );
   const link = minted.success ? minted.data.data.getDownloadLink?.output?.link : null;
   if (!minted.success || !minted.data.data.getDownloadLink?.ok || !link) {
-    throw unavailable("would not hand over that file");
+    throw unavailable("would not hand over that file", "refused");
   }
 
   // The one address in all of this that the remote end chose. It is fetched
@@ -341,11 +352,11 @@ export async function fetchImportable(
   try {
     target = new URL(link);
   } catch {
-    throw unavailable("gave a download link that is not a URL");
+    throw unavailable("gave a download link that is not a URL", "badLink");
   }
   if (target.origin !== printables().fileOrigin || target.username || target.password) {
     console.error(`[import] refused a download link on ${target.origin}`);
-    throw unavailable("pointed at an address this app does not fetch from");
+    throw unavailable("pointed at an address this app does not fetch from", "badHost");
   }
 
   let response: Response;
@@ -357,11 +368,11 @@ export async function fetchImportable(
     });
   } catch (error) {
     console.error("[import] download failed", error);
-    throw unavailable("did not deliver the file");
+    throw unavailable("did not deliver the file", "notDelivered");
   }
   if (response.status !== 200) {
     await response.body?.cancel().catch(() => {});
-    throw unavailable(`answered ${response.status} for the file`);
+    throw unavailable(`answered ${response.status} for the file`, "statusFile", { status: String(response.status) });
   }
 
   // Held to the size the listing gave, which was already held to the cap. A
@@ -372,9 +383,9 @@ export async function fetchImportable(
     bytes = await readCapped(response, file.size);
   } catch (error) {
     console.error("[import] download was cut short", error);
-    throw unavailable("did not deliver the whole file");
+    throw unavailable("did not deliver the whole file", "incomplete");
   }
-  if (!bytes) throw unavailable("sent more than the file it listed");
+  if (!bytes) throw unavailable("sent more than the file it listed", "oversized");
 
   return { name: file.name, bytes, listing };
 }

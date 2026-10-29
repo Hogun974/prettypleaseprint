@@ -43,7 +43,7 @@ async function picture(): Promise<string> {
   });
   return materials
     .map((m) => `${m.name}:${m.active ? "on" : "off"}[${m.colors.map((c) => `${c.name}${c.hex}${c.mode === "solid" ? "" : `/${c.mode}`}:${c.active ? "on" : "off"}`).join(",")}]`)
-    .join(" ");
+    .join(" | ");
 }
 
 async function seed() {
@@ -127,8 +127,8 @@ async function main() {
   check("the same changes as the dry run", JSON.stringify(run.json?.changes) === JSON.stringify(dry.json?.changes));
   const after = await picture();
   const want =
-    "PLA:on[Teal#2a9d8f:off,Bone white#eeeeee:on,Whatever's on#b6bcc2/whatever:on,Rouge#ff0000:on] " +
-    "TPU:off[Teal#2a9d8f:on] Resin:off[] " +
+    "PLA:on[Teal#2a9d8f:off,Bone white#eeeeee:on,Whatever's on#b6bcc2/whatever:on,Rouge#ff0000:on] | " +
+    "TPU:off[Teal#2a9d8f:on] | Resin:off[] | " +
     "PETG-HF:on[Noir#000000:on,Whatever's on#b6bcc2/whatever:on]";
   check("the catalogue the upload form reads", after === want, after);
   check("matched case-insensitively, the owner's spelling kept", !after.includes("pla:") && after.includes("Bone white"));
@@ -153,7 +153,7 @@ async function main() {
 
   section("A spool comes back");
   const back = await sync({ materials: [...INVENTORY.materials, { name: "TPU", colors: [] }] });
-  const tpu = (await picture()).split(" ").find((p) => p.startsWith("TPU"));
+  const tpu = (await picture()).split(" | ").find((p) => p.startsWith("TPU"));
   check("its material is switched back on", back.status === 200 && tpu?.startsWith("TPU:on") === true, tpu);
   check("given a whatever choice, its unlisted colour switched off", tpu === "TPU:on[Teal#2a9d8f:off,Whatever's on#b6bcc2/whatever:on]", tpu);
 

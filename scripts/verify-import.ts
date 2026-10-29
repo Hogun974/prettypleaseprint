@@ -386,6 +386,14 @@ async function main() {
     if (r.status !== 422) refusedList.push(`${JSON.stringify(url)} → ${r.status}`);
   }
   check("a link that is not even a string is 422, not a crash", refusedList.length === 0, refusedList.join(" | "));
+  // The form says a refusal in the reader's language from the key the API
+  // sends beside its English sentence; the sentence itself does not change.
+  const notALink = (await (await aylaB.post("/api/import/files", { url: hostile[0] })).json()) as
+    { error?: string; errorKey?: string; errorValues?: { sources?: string } };
+  check("a refusal keeps its English sentence and carries its key",
+        notALink.error === "That is not a link to a model on Printables." &&
+          notALink.errorKey === "problems.import.notALink" && notALink.errorValues?.sources === "Printables",
+        JSON.stringify(notALink));
   const untouched = await hits();
   check("none of them caused a single outbound request",
         untouched.graphql === 0 && untouched.files === 0 && untouched.elsewhere === 0, JSON.stringify(untouched));

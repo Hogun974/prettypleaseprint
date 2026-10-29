@@ -28,6 +28,7 @@ export const UPLOAD_FORM_WORDS = [
   "problems.upload",
   "problems.requeue",
   "problems.api",
+  "problems.import",
 ] as const;
 
 /** What the 3D viewer says while it loads, and when it cannot. */

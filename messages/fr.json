@@ -626,6 +626,28 @@
     "api": {
       "signIn": "Connectez-vous d’abord.",
       "ourEnd": "Quelque chose a coincé de notre côté."
+    },
+    "import": {
+      "off": "L’import par lien n’est pas activé sur cette instance.",
+      "noModel": "Printables n’a aucun modèle à cette adresse.",
+      "notALink": "Ce n’est pas un lien vers un modèle sur {sources}.",
+      "whichFile": "Indiquez quel fichier importer.",
+      "notThatFile": "Ce fichier ne fait pas partie des fichiers imprimables de ce modèle.",
+      "tooLarge": "Ce fichier fait {size} — la limite est de {limit}.",
+      "printables": {
+        "unreachable": "Printables est injoignable d’ici. Téléchargez le fichier et déposez-le ici à la place.",
+        "status": "Printables a répondu {status}. Téléchargez le fichier et déposez-le ici à la place.",
+        "unreadable": "Printables a envoyé une réponse que cette application ne sait pas lire. Téléchargez le fichier et déposez-le ici à la place.",
+        "changed": "Printables a répondu sous une forme inconnue — son API a peut-être changé. Téléchargez le fichier et déposez-le ici à la place.",
+        "otherModel": "Printables a répondu au sujet d’un autre modèle. Téléchargez le fichier et déposez-le ici à la place.",
+        "refused": "Printables n’a pas voulu fournir ce fichier. Téléchargez le fichier et déposez-le ici à la place.",
+        "badLink": "Printables a donné un lien de téléchargement qui n’est pas une adresse. Téléchargez le fichier et déposez-le ici à la place.",
+        "badHost": "Printables a renvoyé vers une adresse que cette application ne contacte pas. Téléchargez le fichier et déposez-le ici à la place.",
+        "notDelivered": "Printables n’a pas livré le fichier. Téléchargez le fichier et déposez-le ici à la place.",
+        "statusFile": "Printables a répondu {status} pour le fichier. Téléchargez le fichier et déposez-le ici à la place.",
+        "incomplete": "Printables n’a pas livré le fichier en entier. Téléchargez le fichier et déposez-le ici à la place.",
+        "oversized": "Printables a envoyé plus que le fichier annoncé. Téléchargez le fichier et déposez-le ici à la place."
+      }
     }
   },
   "admin": {

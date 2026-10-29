@@ -626,6 +626,28 @@
     "api": {
       "signIn": "Sign in first.",
       "ourEnd": "Something went wrong at our end."
+    },
+    "import": {
+      "off": "Importing from a link is not switched on for this instance.",
+      "noModel": "Printables has no model at that link.",
+      "notALink": "That is not a link to a model on {sources}.",
+      "whichFile": "Say which file to import.",
+      "notThatFile": "That file is not one of that model’s printable files.",
+      "tooLarge": "That file is {size} — the limit is {limit}.",
+      "printables": {
+        "unreachable": "Printables could not be reached from here. Download the file and upload it here instead.",
+        "status": "Printables answered {status}. Download the file and upload it here instead.",
+        "unreadable": "Printables sent an answer this app could not read. Download the file and upload it here instead.",
+        "changed": "Printables answered in a shape this app does not recognise — its API may have changed. Download the file and upload it here instead.",
+        "otherModel": "Printables answered about a different model. Download the file and upload it here instead.",
+        "refused": "Printables would not hand over that file. Download the file and upload it here instead.",
+        "badLink": "Printables gave a download link that is not a URL. Download the file and upload it here instead.",
+        "badHost": "Printables pointed at an address this app does not fetch from. Download the file and upload it here instead.",
+        "notDelivered": "Printables did not deliver the file. Download the file and upload it here instead.",
+        "statusFile": "Printables answered {status} for the file. Download the file and upload it here instead.",
+        "incomplete": "Printables did not deliver the whole file. Download the file and upload it here instead.",
+        "oversized": "Printables sent more than the file it listed. Download the file and upload it here instead."
+      }
     }
   },
   "admin": {
