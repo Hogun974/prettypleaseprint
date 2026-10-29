@@ -6,6 +6,17 @@
 [![Stars](https://img.shields.io/github/stars/danileau/prettypleaseprint?style=flat)](https://github.com/danileau/prettypleaseprint/stargazers)
 [![Forks](https://img.shields.io/github/forks/danileau/prettypleaseprint?style=flat)](https://github.com/danileau/prettypleaseprint/network/members)
 
+> **This is a modified version.** Branch `fork-integration` of
+> [Hogun974/prettypleaseprint](https://github.com/Hogun974/prettypleaseprint),
+> modified by Hogun974 from 28 October 2026 onwards, from
+> [danileau/prettypleaseprint](https://github.com/danileau/prettypleaseprint)
+> at `fcadf1c` (6 October 2026). What changed and when is in the git history and
+> under *Unreleased* in the [CHANGELOG](CHANGELOG.md): the slicer helper's
+> profiles and Windows installer, instance settings, per-person preferences,
+> translation (French), the "after hours" and "glass" themes, and a first-run
+> setup. The "glass" theme exists only in this fork. It is distributed under the
+> same licence, [AGPL-3.0-or-later](LICENSE).
+
 **Invite-only 3D print requests for a small office.** One person owns the
 printer. Everyone else uploads a model, says what they are hoping for, and
 follows it through the print stages on a board — instead of asking in a
