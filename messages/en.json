@@ -108,5 +108,121 @@
     "slicer": "Slicer",
     "slicerHelp": "The name on the slicer button of every ticket — “Open in your slicer” for another slicer. Only the label: the helper on each machine decides what opens.",
     "otherSlicer": "Another slicer"
+  },
+  "setup": {
+    "kicker": "First run",
+    "title": "Before the doors open",
+    "lead": "Six short steps to get the counter ready. Each one can be skipped, and everything here can be changed later at Settings.",
+    "leadAgain": "The six steps a new instance starts with, to go through again. Everything here is also at Settings.",
+    "railLabel": "Setup steps",
+    "stepOf": "Step {n} of {total}",
+    "steps": {
+      "account": "Your account",
+      "address": "The address",
+      "look": "Language and look",
+      "mail": "Mail",
+      "slicer": "Slicer",
+      "people": "People"
+    },
+    "back": "Back",
+    "next": "Next",
+    "skipStep": "Skip this step",
+    "saveNext": "Save and continue",
+    "reauthNote": "Saving asks for your password or passkey again if you signed in more than five minutes ago, as it does at Settings.",
+    "skipAll": "Skip the rest of the setup",
+    "skipAllHelp": "It will not open by itself again. It stays at Settings, whenever you want it.",
+    "doneAlready": "This instance is past its first run; nothing here opens by itself any more.",
+    "backToSettings": "Back to Settings",
+    "notice": {
+      "note": "Note",
+      "holdOn": "Hold on",
+      "good": "Good"
+    },
+    "toast": {
+      "saved": "Saved — in effect from the next request",
+      "unchanged": "Nothing to change",
+      "sent": "Sent — check your inbox"
+    },
+    "account": {
+      "lead": "Your account is open: the link from the logs gave it a username and a password, and that is the way in that always works.",
+      "name": "Name",
+      "username": "Username",
+      "email": "Address",
+      "hasPasskey": "{count, plural, one {This account has a passkey. Signing in is a fingerprint or a face.} other {This account has # passkeys. Signing in is a fingerprint or a face.}}",
+      "passkeyWhy": "One thing worth thirty seconds: save a passkey. It puts your fingerprint, face or device PIN where the password goes — nothing to remember, nothing to phish.",
+      "passkeyLater": "Needs a browser that does passkeys, with JavaScript on. Not now? The account menu offers it whenever you like."
+    },
+    "address": {
+      "lead": "Sign-in cookies, passkeys and every link in an e-mail are tied to one address: APP_URL, in .env.docker. This step only checks it — it stays in the environment.",
+      "seen": "This page, as asked for",
+      "unknown": "not said by this request",
+      "match": "They match: this is the address the app expects.",
+      "mismatch": "They differ. Sign-in cookies are set for {app}, Better Auth refuses forms sent from anywhere else, and invitations and reset links point there — so from {seen}, signing in and passkeys fail, and links lead elsewhere. Open the app at {app}, or set APP_URL to the address people will use and restart the stack.",
+      "rpIdOk": "Passkeys are bound to {rpId}, which covers {host}.",
+      "rpIdBad": "Passkeys are bound to {rpId}, which does not cover {host}: browsers will refuse to make or use one. PASSKEY_RP_ID has to be {host} or a domain above it — and it is permanent once somebody has a passkey, so fix it before."
+    },
+    "look": {
+      "lead": "For everyone who has not chosen on their own page, the sign-in page included. The same two defaults as at Settings, saved the same way."
+    },
+    "mail": {
+      "lead": "Mail only ever delivers a link — an invitation, or a password reset. Without it the app shows you the link to hand over yourself, which works too.",
+      "transport": "Transport",
+      "kind": {
+        "resend": "Configured — Resend",
+        "smtp": "Configured — SMTP",
+        "none": "Not configured"
+      },
+      "from": "Sent as",
+      "to": "Test goes to",
+      "send": "Send me a test message",
+      "sendHelp": "To your own address only, and at most {count} in {minutes} minutes.",
+      "noneHow": "To send mail, set one of SMTP_URL or RESEND_API_KEY in .env.docker, with MAIL_FROM for the address it comes from, then restart the stack:",
+      "noneFine": "Or leave it: running without mail is a supported way to run this app.",
+      "problem": {
+        "noTransport": "There is no transport to send through.",
+        "tooMany": "That makes {count} test messages in {minutes} minutes. Give it a moment before the next.",
+        "refused": "The transport refused the message. The app’s log says why.",
+        "refusedCode": "The transport refused the message ({code}). The app’s log says why."
+      }
+    },
+    "slicer": {
+      "lead": "Every ticket has a button that opens its model in a slicer, through a small helper installed once on the computer with the printer. The button’s name first, then the helper.",
+      "helper": "The helper",
+      "platform": "This browser says it runs on {os}.",
+      "os": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux",
+        "other": "a system the helper has no installer for"
+      },
+      "linux": "On the computer with the slicer, from a checkout of the source:",
+      "windows": "It needs Git for Windows. Open PowerShell in a checkout of the source — Shift + right-click in the folder, then “Open PowerShell window here” — and run:",
+      "windowsNote": "No administrator rights: it installs under your own profile, and -ExecutionPolicy Bypass applies to this one run only.",
+      "macos": "There is no installer for macOS: the link is registered by a small app you make once in Script Editor. The steps are in the guide:",
+      "macosLink": "Setting it up on macOS",
+      "other": "Install it on the computer that has the slicer — a phone or a tablet cannot run it. The guide covers Linux, Windows and macOS.",
+      "conf": "Then give it this instance’s address, in ~/.config/ppp/slicer.conf:",
+      "guide": "The slicer guide",
+      "source": "The source"
+    },
+    "people": {
+      "lead": "Nobody gets in without an invitation. Send the first one from the guest list: by mail if mail is set up, or as a link you hand over yourself.",
+      "guestList": "Open the guest list",
+      "finish": "Finish — take me to the pass",
+      "finishInvite": "Finish and send the first invitation"
+    },
+    "revisit": {
+      "title": "First-run setup",
+      "body": "The six steps a new instance starts with: the address, mail, the slicer helper and the rest.",
+      "link": "Go through it again"
+    },
+    "passkey": {
+      "add": "Save a passkey",
+      "working": "Waiting for your device…",
+      "done": "Passkey saved. Next time, signing in is a fingerprint or a face — the password still works if you would rather.",
+      "failed": "That did not complete. The account menu offers it again whenever you like.",
+      "good": "Good",
+      "holdOn": "Hold on"
+    }
   }
 }

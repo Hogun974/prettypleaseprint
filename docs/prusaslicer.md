@@ -49,6 +49,10 @@ only new moving part, and it talks to nothing but this app's own API.
 
 ## Setup (Linux)
 
+The printer owner's [first-run setup](deployment.md#first-run) shows the line
+below, or the Windows one, for the system the browser reports, with the
+`slicer.conf` line for the instance already filled in.
+
 On the machine with the printer, PrusaSlicer and your browser, from a checkout
 of this repo:
 

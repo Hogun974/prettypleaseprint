@@ -20,4 +20,5 @@ export const CLIENT_GROUPS = [
   "header.activity",
   "header.account",
   "header.nudge",
+  "setup.passkey",
 ] as const;

@@ -17,9 +17,11 @@ import { DEFAULT_THEME, THEME_CHOICES, type ThemeChoice } from "@/lib/theme";
  *     is used, and the page shows the field locked and names the variable. A
  *     deployment that configured itself in `.env.docker` keeps doing exactly
  *     what it did; the page is a second door, never a second opinion.
- *   - **The defaults are today's behaviour.** Nothing is written by the
- *     migration, and a missing row or a null column reads as "not set here".
- *     An upgraded instance cannot tell the table exists until its owner saves.
+ *   - **The defaults are today's behaviour.** No migration writes a setting,
+ *     and a missing row or a null column reads as "not set here". An upgraded
+ *     instance cannot tell the table exists until its owner saves. (The setup
+ *     migration does insert the row on an instance already in use, to record
+ *     that its setup is behind it — with every setting in it null.)
  *   - **Read on every use.** No cache, no copy at module load: one primary-key
  *     lookup per request that needs a setting, so a save is in effect from the
  *     next request without a restart. That is also why a value that cannot be
@@ -38,8 +40,16 @@ import { DEFAULT_THEME, THEME_CHOICES, type ThemeChoice } from "@/lib/theme";
 
 type Env = Record<string, string | undefined>;
 
-/** The columns of the one row that are settings, rather than bookkeeping. */
-type Row = Omit<InstanceSettings, "id" | "updatedAt">;
+/**
+ * The columns of the one row that are settings, rather than bookkeeping.
+ *
+ * `setupCompletedAt` is bookkeeping: it records that the first-run setup was
+ * finished or skipped (src/lib/setup.ts), which nobody chooses on a form, no
+ * variable overrides and no fallback stands in for. Leaving it out here by
+ * name keeps the rule above — a column without an entry does not compile —
+ * true for every column that *is* a setting.
+ */
+type Row = Omit<InstanceSettings, "id" | "updatedAt" | "setupCompletedAt">;
 export type SettingKey = keyof Row;
 
 /** What a column holds when it holds something. */

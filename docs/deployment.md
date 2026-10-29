@@ -356,10 +356,38 @@ a one-use link for setting a username and a password:
 docker compose --env-file .env.docker -f docker-compose.prod.yml logs migrate
 ```
 
-Open it within thirty minutes, then invite the office from `/admin/invites`.
-The seed is an upsert, so it is safe on every start and keeps the admin's name
-in step with the environment — but it will refuse to create a *second* admin,
-and so will the database, and it never resets a password that already exists.
+Open it within thirty minutes. The seed is an upsert, so it is safe on every
+start and keeps the admin's name in step with the environment — but it will
+refuse to create a *second* admin, and so will the database, and it never
+resets a password that already exists.
+
+**What a new owner sees next.** Sign in with the username and password you
+just chose, and instead of the queue you land on `/admin/setup`, *Before the
+doors open* — six short steps, one per screen:
+
+| Step | What it does |
+| --- | --- |
+| Your account | Shows the account the link made, and offers to save a passkey. |
+| The address | Compares `APP_URL` with the address your browser used, and `PASSKEY_RP_ID` with `APP_URL`. A mismatch is spelled out: sign-in cookies, passkeys and the links in e-mails all depend on it. Only a check — fix it in `.env.docker` and restart. |
+| Language and look | The default language and theme, as at `/admin/settings`. |
+| Mail | Whether a transport is configured, and *Send me a test message* — to your own address, at most three in fifteen minutes. With none, what to set. |
+| Slicer | The default slicer, and the command that installs the helper on the system your browser reports, with the `slicer.conf` line for this instance ([PrusaSlicer](prusaslicer.md)). |
+| People | A link to the guest list, `/admin/invites`, to send the first invitation. |
+
+Every step can be skipped, and *Skip the rest of the setup* is on each of
+them. Finishing or skipping is recorded (`setup.completed`) and stops the setup
+opening by itself; it stays at the top of `/admin/settings`, under
+*First-run setup*. Only the landing page redirects to it, so leaving half-way
+to look at something else is fine — the next sign-in brings you back until you
+finish or skip. Nothing in it cannot also be done at `/admin/settings`, under
+the same rules: the two steps that save ask for a fresh sign-in after five
+minutes and write `settings.changed`, as the settings page does.
+
+**Upgrading never shows it.** The migration that adds it marks every instance
+that has been used as past its setup — anyone with a password or a passkey,
+an account besides the owner's, an invitation, a ticket, a line in the audit
+trail, or saved settings. Only a fresh install, or one whose owner was seeded
+and never opened the link, starts there.
 
 ### Settings that live in the app
 
@@ -398,7 +426,13 @@ as `settings.changed` with the old and the new value.
 
 The settings are one row in the `instanceSettings` table, so there is nothing
 new to back up beyond the database. A missing row means every setting is at its
-default, and the migration that adds the table inserts none.
+default, and no migration writes a setting: the one for the first-run setup
+inserts the row on an instance already in use, to record that the setup is
+behind it, with every setting in it left at its default.
+
+The first-run setup ([above](#first-run)) sets three of these — the default
+language, theme and slicer — through the same save as this page, and the page
+links back to it.
 
 `PASSKEY_RP_NAME` stays in the environment. The passkey library copies it when
 the app starts, so it cannot change per request without patching the library's

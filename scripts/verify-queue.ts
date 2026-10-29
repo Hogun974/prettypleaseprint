@@ -160,6 +160,14 @@ async function main() {
   check("a client's home is the rail, not the queue",
         rendered(await home.text()).includes("The backlog"));
 
+  // An instance past its first run: on a fresh one the owner's home is the
+  // first-run setup instead, until it is finished or skipped — verify:setup's
+  // subject, not this suite's. Only ever from null, so a date it already has
+  // is kept.
+  await db.$executeRaw`
+    INSERT INTO "instanceSettings" ("id", "updatedAt", "setupCompletedAt") VALUES (1, now(), now())
+    ON CONFLICT ("id") DO UPDATE SET "setupCompletedAt" = now()
+      WHERE "instanceSettings"."setupCompletedAt" IS NULL`;
   const adminHome = await ruben.go(`${APP}/`);
   check("the admin's home is the queue",
         rendered(await adminHome.text()).includes("queue"));

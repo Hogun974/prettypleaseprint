@@ -151,15 +151,22 @@ export function Input({ className = "", ...props }: ComponentProps<"input">) {
  */
 export function Notice({
   tone = "info",
+  label,
   children,
 }: {
   tone?: "info" | "warn" | "good";
+  /**
+   * The word for the tone, from a translated screen. This module cannot read
+   * the request's language (see `AuthShell`), so the English is the default
+   * and a screen that has been translated passes its own.
+   */
+  label?: string;
   children: ReactNode;
 }) {
   const skin = {
-    info: { bg: "bg-cream-2", label: "Note" },
-    warn: { bg: "bg-sun", label: "Hold on" },
-    good: { bg: "bg-mint-wash", label: "Good" },
+    info: { bg: "bg-cream-2", label: label ?? "Note" },
+    warn: { bg: "bg-sun", label: label ?? "Hold on" },
+    good: { bg: "bg-mint-wash", label: label ?? "Good" },
   }[tone];
   return (
     <div

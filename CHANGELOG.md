@@ -179,6 +179,45 @@ Notable changes. Every entry names a released version; deployments pin
   thirteenth suite (CI and `scripts/full-test.sh`), and `verify:settings`
   covers the three defaults.
 
+- **A first-run setup for a new instance's owner** (#106). It starts where the
+  bootstrap ends: once the owner has set their password through the link the
+  migrator prints and signed in, their landing page sends them to
+  `/admin/setup` — six short steps, one per screen, any of them skippable:
+
+  1. **Your account** — the one the link made, and a passkey for it, saved the
+     way the header's nudge saves one.
+  2. **The address** — `APP_URL` against the address the browser used, said
+     plainly when they differ (sign-in cookies, passkeys and the links in
+     e-mails all break), and `PASSKEY_RP_ID` against `APP_URL`. A check only:
+     both stay in the environment.
+  3. **Language and look** — the instance's default language and theme.
+  4. **Mail** — whether a transport is configured, and *Send me a test
+     message*, to the owner's own address and nobody else's, at most three in
+     fifteen minutes, each attempt in the audit trail as `mail.test_sent`.
+     With no transport it says what to set. It never shows a connection string.
+  5. **Slicer** — the default slicer, and the helper's installer for the system
+     the browser reports: the `.sh` on Linux, the `.ps1` on Windows with how to
+     run it, the manual section of the guide on macOS; and the `slicer.conf`
+     line with this instance's address.
+  6. **People** — the guest list, to send the first invitation.
+
+  Nothing in it cannot also be done at `/admin/settings`: the two steps that
+  save call the same function, behind the same fresh sign-in, and write the
+  same `settings.changed` line. Finishing or skipping writes
+  `setup.completed`, and from then on the setup only opens from the link at
+  the top of `/admin/settings`. Only `/` redirects to it, so leaving half-way
+  traps nobody. Clients get 404, as on every admin page. Plain forms that work
+  without JavaScript (apart from saving a passkey), in English and in French.
+
+  **An upgrade never shows it.** One additive migration adds
+  `instanceSettings.setupCompletedAt` and fills it in on every instance that
+  has been used — a password set, a passkey, an account besides the owner's,
+  an invitation, a ticket, an audit line, or saved settings — and leaves it
+  null only on a fresh install, or on one whose owner was seeded and never
+  opened the link. The previous image runs unchanged against the migrated
+  database. `npm run verify:setup` is the fourteenth suite (CI and
+  `scripts/full-test.sh`).
+
 ### Changed
 
 - **Every colour the app draws with is a theme variable** (#105, step one; no

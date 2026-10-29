@@ -368,6 +368,12 @@ async function main() {
     // pinned by IMPORT_SOURCES, the sender name left to the owner.
     ["settings", `${APP}/admin/settings`],
     ["frr", `${APP}/frr`],
+    // The first-run setup, every step. A fresh stack has not finished it, so
+    // these show it as a new owner sees it, skip button and all; the slicer
+    // step shows the installer for the system this Chrome reports.
+    ...(["account", "address", "look", "mail", "slicer", "people"] as const).map(
+      (step): [string, string] => [`setup-${step}`, `${APP}/admin/setup?step=${step}`],
+    ),
   ];
   for (const [name, url] of adminPages) {
     await adminPage.goto(url, { waitUntil: "networkidle2" });

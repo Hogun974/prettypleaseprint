@@ -113,7 +113,7 @@ PORTS="${PPP_FULLTEST_PORTS:-3000 5432 1025 8025 4010}"
 # In CI's order (the `verify` job of .github/workflows/ci.yml). A test pins
 # this list to that file, because the hand-rolled predecessor of this script
 # had quietly lost verify:catalog.
-SUITES="verify:auth verify:upload verify:import verify:queue verify:frr verify:benefits verify:catalog verify:settings verify:preferences verify:api verify:passkey probe:security"
+SUITES="verify:auth verify:upload verify:import verify:queue verify:frr verify:benefits verify:catalog verify:settings verify:preferences verify:setup verify:api verify:passkey probe:security"
 
 ENV_FILES=".env .env.backup .env.docker"
 

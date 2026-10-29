@@ -42,6 +42,7 @@ npm run verify:benefits       # the owner-managed benefits (tip) catalogue
 npm run verify:catalog        # the owner-managed material/colour catalogue
 npm run verify:settings       # instance settings at /admin/settings, env vs. saved
 npm run verify:preferences    # language, theme and slicer on /me vs. the instance defaults
+npm run verify:setup          # the first-run setup at /admin/setup, fresh and upgraded
 npm run verify:api            # the JSON API, the OpenAPI document and the console
 npm run verify:passkey        # WebAuthn ceremonies in a real browser
 npm run probe:security        # 122 OWASP-mapped security probes
@@ -152,7 +153,7 @@ scripts/full-test.sh --restore                    # undo what a killed run left 
 
 It runs the cheap gates — typecheck, links, contrast, translations, secrets —
 a `trivy` filesystem scan if `trivy` is installed, and `verify:models`; then
-raises the stack, waits for `/api/health`, runs the twelve integration suites — all of them, even after one
+raises the stack, waits for `/api/health`, runs the thirteen integration suites — all of them, even after one
 fails — and the two image pins CI keeps (no npm in the runtime images; the
 migrator still runs without it).
 

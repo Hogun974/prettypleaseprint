@@ -541,6 +541,12 @@ model InstanceSettings {
   defaultLocale String?
   defaultTheme  String?
   defaultSlicer String?
+  /// When the first-run setup at /admin/setup was finished or skipped. Not a
+  /// setting — nobody chooses it — so it has no entry in the registry, and
+  /// `settings.ts` leaves it out of the row's settings by name, as it does
+  /// `updatedAt`. Null while the owner's landing page still sends them there;
+  /// filled in by its migration on every instance that was already in use.
+  setupCompletedAt DateTime?
   updatedAt     DateTime @updatedAt
 
   @@map("instanceSettings")

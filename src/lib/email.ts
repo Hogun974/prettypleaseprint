@@ -198,6 +198,34 @@ export function inviteEmail(opts: {
   };
 }
 
+/**
+ * The first-run setup's "send me a test message" (src/lib/setup-admin.ts).
+ * Only ever to the owner's own address, and it carries no link: a message
+ * that proves mail arrives has no reason to hand anybody anything to click.
+ */
+export function testEmail(opts: { to: string }): Mail {
+  return {
+    to: opts.to,
+    subject: "Test message from Pretty Please Print",
+    text:
+      `This is the test message you asked for from the first-run setup.\n\n` +
+      `It arrived, so invitations and password-reset links will reach people the same way, ` +
+      `from the same sender. Nothing to do — you can delete it.`,
+    html: shell(
+      "TEST &middot; ONE, TWO",
+      `<h1 style="margin:0 0 14px;font-family:${SLAB};font-size:29px;line-height:1.1;color:${INK}">Order up — mail works</h1>
+       <p style="margin:0 0 20px">
+         This is the test message you asked for from the first-run setup. It
+         arrived, so invitations and password-reset links will reach people the
+         same way, from the same sender.
+       </p>
+       <p style="margin:0;padding:9px 13px;background:${SUN};border:2px solid ${INK};border-radius:999px;display:inline-block;font-family:${MONO};font-size:11px;font-weight:bold;letter-spacing:1px;color:${INK}">
+         NOTHING TO DO &middot; YOU CAN DELETE IT
+       </p>`,
+    ),
+  };
+}
+
 export function passwordResetEmail(opts: {
   to: string;
   url: string;

@@ -5,7 +5,7 @@ maintainer — so the bar is not "be an expert", it is "leave it working".
 
 ## The contract
 
-Thirteen verification suites. Twelve of them run in CI **against the built container
+Fourteen verification suites. Thirteen of them run in CI **against the built container
 image** rather than a dev server; `verify:models` is a pure-function test of the
 upload validator and runs in its own gate with nothing else up. They are the
 specification; if a change makes one fail, that is the change talking.
@@ -21,6 +21,7 @@ npm run verify:benefits   # the owner-managed benefits (tip) catalogue
 npm run verify:catalog    # the owner-managed material and colour catalogue
 npm run verify:settings   # instance settings, and the environment winning over them
 npm run verify:preferences # a person's language, theme and slicer against the defaults
+npm run verify:setup      # the first-run setup: who is sent there, and what each step may do
 npm run verify:api        # the JSON API, the OpenAPI document, the console
 npm run verify:passkey    # WebAuthn ceremonies in a real browser
 npm run probe:security    # OWASP-mapped probes

@@ -186,6 +186,12 @@ jobs:
       # slicer button), and that nobody can change somebody else's.
       - name: Personal preferences, against the instance's defaults
         run: npm run verify:preferences
+      # The first-run setup at /admin/setup: a fresh instance sends its owner
+      # there once, clients get 404, each step saves through the same rules as
+      # /admin/settings, the test message reaches the owner and nobody else, and
+      # the migration's backfill keeps an upgraded instance out of it.
+      - name: First-run setup
+        run: npm run verify:setup
       # The second front door onto the same operations. Runs against the built
       # image, which is the only place the production CSP is in force — the
       # console's inline-script nonce and its stylesheet-in-a-file are both

@@ -118,6 +118,14 @@ There is deliberately no `ADMIN_PASSWORD`. It would sit in `.env.docker`, in
 of the host, still valid months later. A link that expires in half an hour is a
 smaller thing to leak.
 
+The bootstrap ends there, and the [first-run setup](deployment.md#first-run)
+starts: the owner's first landing after signing in is `/admin/setup`, until
+they finish or skip it. It is not a second way in. It is reachable only by a
+signed-in owner (clients get 404, like every admin page), it makes no account,
+and everything it saves goes through `/admin/settings`' own rules — a fresh
+sign-in after five minutes, and the audit trail. There is still no screen that
+creates the owner.
+
 ### Invite-only, enforced in one place
 
 A `User` row can only come into existence when a pending invite matches the

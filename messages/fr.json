@@ -108,5 +108,121 @@
     "slicer": "Trancheur",
     "slicerHelp": "Le nom sur le bouton du trancheur, sur chaque ticket — « Ouvrir dans votre trancheur » pour un autre. Rien que l’étiquette : l’assistant de chaque machine décide de ce qui s’ouvre.",
     "otherSlicer": "Un autre trancheur"
+  },
+  "setup": {
+    "kicker": "Premier service",
+    "title": "La mise en place",
+    "lead": "Six petites étapes pour préparer le comptoir avant d’ouvrir. Chacune peut être passée, et tout se modifie plus tard dans Réglages.",
+    "leadAgain": "Les six étapes par lesquelles commence une nouvelle instance, à reprendre. Tout ce qui est ici se trouve aussi dans Réglages.",
+    "railLabel": "Étapes de la mise en place",
+    "stepOf": "Étape {n} sur {total}",
+    "steps": {
+      "account": "Votre compte",
+      "address": "L’adresse",
+      "look": "Langue et allure",
+      "mail": "Courrier",
+      "slicer": "Trancheur",
+      "people": "Les invités"
+    },
+    "back": "Retour",
+    "next": "Suivant",
+    "skipStep": "Passer cette étape",
+    "saveNext": "Enregistrer et continuer",
+    "reauthNote": "L’enregistrement vous redemande votre mot de passe ou votre clé d’accès si votre connexion remonte à plus de cinq minutes, comme dans Réglages.",
+    "skipAll": "Passer le reste de la mise en place",
+    "skipAllHelp": "Elle ne s’ouvrira plus d’elle-même. Elle reste dans Réglages, quand vous voulez.",
+    "doneAlready": "Cette instance a passé son premier service : plus rien ici ne s’ouvre de lui-même.",
+    "backToSettings": "Retour aux Réglages",
+    "notice": {
+      "note": "À noter",
+      "holdOn": "Un instant",
+      "good": "C’est bon"
+    },
+    "toast": {
+      "saved": "Enregistré — en place dès la prochaine requête",
+      "unchanged": "Rien à changer",
+      "sent": "Envoyé — regardez votre boîte"
+    },
+    "account": {
+      "lead": "Votre compte est ouvert : le lien des journaux lui a donné un identifiant et un mot de passe, et c’est l’entrée qui marche toujours.",
+      "name": "Nom",
+      "username": "Identifiant",
+      "email": "Adresse",
+      "hasPasskey": "{count, plural, one {Ce compte a une clé d’accès. Se connecter, c’est une empreinte ou un visage.} other {Ce compte a # clés d’accès. Se connecter, c’est une empreinte ou un visage.}}",
+      "passkeyWhy": "Une chose qui vaut trente secondes : enregistrer une clé d’accès. Votre empreinte, votre visage ou le code de l’appareil prennent la place du mot de passe — rien à retenir, rien à se faire voler.",
+      "passkeyLater": "Il faut un navigateur qui gère les clés d’accès, avec JavaScript activé. Pas maintenant ? Le menu du compte la propose quand vous voulez."
+    },
+    "address": {
+      "lead": "Les cookies de connexion, les clés d’accès et chaque lien d’un e-mail tiennent à une seule adresse : APP_URL, dans .env.docker. Cette étape ne fait que la vérifier — elle reste dans l’environnement.",
+      "seen": "Cette page, telle que demandée",
+      "unknown": "non précisée par cette requête",
+      "match": "Elles concordent : c’est bien l’adresse que l’application attend.",
+      "mismatch": "Elles diffèrent. Les cookies de connexion sont posés pour {app}, Better Auth refuse les formulaires envoyés d’ailleurs, et les invitations comme les liens de réinitialisation pointent là-bas — depuis {seen}, la connexion et les clés d’accès échouent, et les liens mènent ailleurs. Ouvrez l’application sur {app}, ou réglez APP_URL sur l’adresse que tout le monde utilisera, puis redémarrez la pile.",
+      "rpIdOk": "Les clés d’accès sont liées à {rpId}, qui couvre {host}.",
+      "rpIdBad": "Les clés d’accès sont liées à {rpId}, qui ne couvre pas {host} : les navigateurs refuseront d’en créer ou d’en utiliser. PASSKEY_RP_ID doit être {host} ou un domaine au-dessus — et il est définitif dès que quelqu’un a une clé, alors corrigez-le avant."
+    },
+    "look": {
+      "lead": "Pour tous ceux qui n’ont pas choisi sur leur propre page, page de connexion comprise. Les deux mêmes réglages par défaut que dans Réglages, enregistrés de la même façon."
+    },
+    "mail": {
+      "lead": "Le courrier ne sert qu’à porter un lien — une invitation ou une réinitialisation de mot de passe. Sans lui, l’application vous montre le lien à transmettre vous-même, et ça marche aussi.",
+      "transport": "Transport",
+      "kind": {
+        "resend": "Configuré — Resend",
+        "smtp": "Configuré — SMTP",
+        "none": "Non configuré"
+      },
+      "from": "Envoyé au nom de",
+      "to": "L’essai part à",
+      "send": "M’envoyer un message d’essai",
+      "sendHelp": "À votre propre adresse seulement, et au plus {count} en {minutes} minutes.",
+      "noneHow": "Pour envoyer du courrier, réglez SMTP_URL ou RESEND_API_KEY dans .env.docker, avec MAIL_FROM pour l’adresse d’expédition, puis redémarrez la pile :",
+      "noneFine": "Ou laissez ainsi : tourner sans courrier est une façon prévue de faire tourner l’application.",
+      "problem": {
+        "noTransport": "Il n’y a aucun transport par lequel envoyer.",
+        "tooMany": "Cela fait {count} messages d’essai en {minutes} minutes. Laissez passer un moment avant le prochain.",
+        "refused": "Le transport a refusé le message. Le journal de l’application dit pourquoi.",
+        "refusedCode": "Le transport a refusé le message ({code}). Le journal de l’application dit pourquoi."
+      }
+    },
+    "slicer": {
+      "lead": "Chaque commande a un bouton qui ouvre son modèle dans un trancheur, grâce à un petit assistant installé une fois sur l’ordinateur relié à l’imprimante. D’abord le nom du bouton, ensuite l’assistant.",
+      "helper": "L’assistant",
+      "platform": "Ce navigateur dit tourner sous {os}.",
+      "os": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux",
+        "other": "un système pour lequel l’assistant n’a pas d’installeur"
+      },
+      "linux": "Sur l’ordinateur qui a le trancheur, depuis une copie des sources :",
+      "windows": "Il faut Git for Windows. Ouvrez PowerShell dans une copie des sources — Maj + clic droit dans le dossier, puis « Ouvrir la fenêtre PowerShell ici » — et lancez :",
+      "windowsNote": "Pas besoin de droits d’administrateur : tout s’installe dans votre propre profil, et -ExecutionPolicy Bypass ne vaut que pour ce lancement.",
+      "macos": "Il n’y a pas d’installeur pour macOS : le lien s’enregistre par une petite application que vous créez une fois dans Éditeur de script. La marche à suivre est dans le guide :",
+      "macosLink": "L’installer sur macOS",
+      "other": "Installez-le sur l’ordinateur qui a le trancheur — un téléphone ou une tablette ne peut pas le faire tourner. Le guide couvre Linux, Windows et macOS.",
+      "conf": "Puis donnez-lui l’adresse de cette instance, dans ~/.config/ppp/slicer.conf :",
+      "guide": "Le guide du trancheur",
+      "source": "Les sources"
+    },
+    "people": {
+      "lead": "Personne n’entre sans invitation. Envoyez la première depuis la liste des invités : par courrier s’il est en place, ou sous forme de lien que vous transmettez vous-même.",
+      "guestList": "Ouvrir la liste des invités",
+      "finish": "Terminer — direction le passe",
+      "finishInvite": "Terminer et envoyer la première invitation"
+    },
+    "revisit": {
+      "title": "Mise en place",
+      "body": "Les six étapes par lesquelles commence une nouvelle instance : l’adresse, le courrier, l’assistant du trancheur et le reste.",
+      "link": "La reprendre"
+    },
+    "passkey": {
+      "add": "Enregistrer une clé d’accès",
+      "working": "En attente de votre appareil…",
+      "done": "Clé d’accès enregistrée. La prochaine fois, se connecter, c’est une empreinte ou un visage — le mot de passe marche toujours si vous préférez.",
+      "failed": "Ça n’a pas abouti. Le menu du compte la repropose quand vous voulez.",
+      "good": "C’est bon",
+      "holdOn": "Un instant"
+    }
   }
 }

@@ -60,6 +60,10 @@ export type AuditAction =
   | "benefit.updated"
   // instance settings (/admin/settings): detail is { key: { from, to } }
   | "settings.changed"
+  // the first-run setup (/admin/setup): subject is how it ended, detail
+  // { how, step }; and its test message, detail { transport, delivered, code? }
+  | "setup.completed"
+  | "mail.test_sent"
   // feature requests (the 'frr' track)
   | "feature.created"
   | "feature.status_changed"
