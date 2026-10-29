@@ -149,9 +149,9 @@ scripts/full-test.sh --no-build                   # reuse the images of the last
 scripts/full-test.sh --restore                    # undo what a killed run left behind
 ```
 
-It runs the three cheap gates, a `trivy` filesystem scan if `trivy` is
-installed, and `verify:models`; then raises the stack, waits for
-`/api/health`, runs the ten integration suites — all of them, even after one
+It runs the cheap gates — typecheck, links, contrast, translations, secrets —
+a `trivy` filesystem scan if `trivy` is installed, and `verify:models`; then
+raises the stack, waits for `/api/health`, runs the eleven integration suites — all of them, even after one
 fails — and the two image pins CI keeps (no npm in the runtime images; the
 migrator still runs without it).
 

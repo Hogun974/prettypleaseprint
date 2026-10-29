@@ -70,12 +70,12 @@ Notable changes. Every entry names a released version; deployments pin
   The colour rule — bright fills carry dark ink — is kept by the fills
   themselves: every `bg-sun`, `bg-aqua`, `bg-cherry`… swaps `ink` for a
   sign's ink inside it, and every counter fill puts the counter's back, so no
-  component changed its classes. `npm run check:contrast` (now in CI) reads the
-  palettes from the CSS and measures every pair in every theme against WCAG
-  AA; after hours clears it on all of them, the tightest at 4.53:1. It also
-  reports seven pairs the diner has below AA — `ink-3` on cream and porcelain,
-  dark ink on cherry chips, the focus ring on the header's band — which a theme cannot fix without changing the
-  default. `SHOT_THEME=after-hours npm run shots` draws the screenshots in a
+  component changed its classes. `npm run check:contrast` (now in CI and in
+  `scripts/full-test.sh`) reads the palettes from the CSS and measures every
+  pair in every theme against WCAG AA; after hours clears it on all of them,
+  the tightest at 4.53:1. It also reports seven pairs the diner has below AA —
+  `ink-3` on cream and porcelain, dark ink on cherry chips, the focus ring on
+  the header's band — which a theme cannot fix without changing the default. `SHOT_THEME=after-hours npm run shots` draws the screenshots in a
   theme, the shots now cover the owner's back-office pages too, and each run
   measures what every page renders into `contrast.json`. See
   [Themes](docs/theming.md).

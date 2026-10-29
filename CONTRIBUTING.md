@@ -26,7 +26,8 @@ npm run probe:security    # OWASP-mapped probes
 ```
 
 Plus the cheap gates: `npm run typecheck`, `npm run check:secrets -- --all`,
-`npm run check:links`, `npm run check:messages` (translations against English —
+`npm run check:links`, `npm run check:contrast` (every theme's colour pairs
+against WCAG AA), `npm run check:messages` (translations against English —
 see [Translation](docs/i18n.md) before adding user-facing copy). `scripts/full-test.sh` runs all of it the way CI does —
 gates, a fresh stack, every suite — and puts your env files back afterwards.
 

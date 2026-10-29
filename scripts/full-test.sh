@@ -12,8 +12,8 @@
 #   1. Refuses to start if it could hurt something that is already here: a ppp
 #      stack of any kind (the container names are fixed, so there can only be
 #      one), a port the stack needs, or env files a killed run left saved.
-#   2. The static gates — typecheck, links, translations, secrets, trivy, the
-#      upload validator — BEFORE touching any env file, so the secret scanner
+#   2. The static gates — typecheck, links, contrast, translations, secrets,
+#      trivy, the upload validator — BEFORE touching any env file, so the secret scanner
 #      sees your real .env* and not a generated one.
 #   3. Saves .env, .env.backup and .env.docker, writes a throwaway .env.docker
 #      and raises the stack under its own project name on a data directory
@@ -368,6 +368,7 @@ echo "${B}ppp full test${R}  ${DIM}· $ROOT · logs in $OUT${R}"
 
 step typecheck npm run -s typecheck || true
 step check-links npm run -s check:links || true
+step check-contrast npm run -s check:contrast || true
 step check-messages npm run -s check:messages || true
 # Untranslated keys pass the gate by design (docs/i18n.md: an English-only
 # change must not wait on a translator), so a PASS alone would bury them in a
