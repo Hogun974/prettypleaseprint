@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { InstanceSettings } from "@prisma/client";
 
 import { DEFAULT_LOCALE, LOCALES, type Locale } from "@/i18n/locales";
+import type { Spoken } from "@/i18n/spoken";
 import { db } from "@/lib/db";
 import { enabledSources, type ImportSource } from "@/lib/import-source";
 import { DEFAULT_SLICER, SLICER_IDS, type SlicerId } from "@/lib/slicers";
@@ -157,18 +158,32 @@ const importSourcesSchema = z.string().transform((raw, ctx): ImportSource[] => {
   }
 });
 
+/**
+ * The sender name's refusals, each with the key of the whole sentence the
+ * form shows ("Sender name: …"), so the page can say it in the reader's
+ * language. The other settings are chosen from a list, and refuse only a
+ * crafted request; their refusals stay as written.
+ */
+const EMPTY_NAME = "Give the sender a name, or leave it empty for the default.";
+const LONG_NAME = "Keep it under 80 characters.";
+const NAME_ONLY =
+  "A name only — no quotes, angle brackets, backslashes or line breaks. The address stays in MAIL_FROM.";
+const SENDER_NAME_ISSUES: Record<string, string> = {
+  [EMPTY_NAME]: "problems.settings.senderName.empty",
+  [LONG_NAME]: "problems.settings.senderName.tooLong",
+  [NAME_ONLY]: "problems.settings.senderName.nameOnly",
+};
+
 const mailFromNameSchema = z
   .string()
   .trim()
-  .min(1, "Give the sender a name, or leave it empty for the default.")
-  .max(80, "Keep it under 80 characters.")
+  .min(1, EMPTY_NAME)
+  .max(80, LONG_NAME)
   // Control characters (a line break is a new header), and the quote and
   // backslash that could close the quotes `mailFromLine` puts round it. Angle
   // brackets too: an address belongs in MAIL_FROM, and one typed here would
   // read as a second one.
-  .refine((name) => !/[\u0000-\u001f\u007f"\\<>]/.test(name), {
-    message: "A name only — no quotes, angle brackets, backslashes or line breaks. The address stays in MAIL_FROM.",
-  });
+  .refine((name) => !/[\u0000-\u001f\u007f"\\<>]/.test(name), { message: NAME_ONLY });
 
 /**
  * One of a list that lives in code — the languages, the themes, the slicers —
@@ -369,7 +384,7 @@ export function resolveSettings(row: Partial<Row> | null, env: Env): ResolvedSet
 export function parseSettingsForm(
   form: FormData,
   env: Env,
-): { changes: Partial<Record<SettingKey, string | null>> } | { problem: string } {
+): { changes: Partial<Record<SettingKey, string | null>> } | { problem: string; spoken?: Spoken } {
   const submitted: Partial<Record<SettingKey, string | null>> = {};
   for (const key of SETTING_KEYS) {
     const value = SETTINGS[key].fromForm(form);
@@ -381,7 +396,11 @@ export function parseSettingsForm(
   if (!parsed.success) {
     const issue = parsed.error.issues[0]!;
     const key = issue.path[0] as SettingKey;
-    return { problem: `${SETTINGS[key]?.label ?? String(key)}: ${issue.message}` };
+    const spokenKey = key === "mailFromName" ? SENDER_NAME_ISSUES[issue.message] : undefined;
+    return {
+      problem: `${SETTINGS[key]?.label ?? String(key)}: ${issue.message}`,
+      ...(spokenKey ? { spoken: { key: spokenKey } } : {}),
+    };
   }
 
   const changes: Partial<Record<SettingKey, string | null>> = {};
@@ -390,6 +409,7 @@ export function parseSettingsForm(
     if (s.env && s.env.read(env) !== undefined) {
       return {
         problem: `${s.label} is set by ${s.env.name} in the environment, which wins. Change it there.`,
+        spoken: { key: `problems.settings.locked.${key}`, values: { env: s.env.name } },
       };
     }
     changes[key] =

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/authz";
-import { relativeTime } from "@/lib/catalog";
+import { getRelativeTime } from "@/i18n/server";
 import { AppHeader } from "@/components/app-header";
 import { AuditDashboard } from "@/components/audit-dashboard";
 import { REFUSAL_ACTIONS, mix, refusals, stages } from "@/lib/dashboard";
@@ -30,11 +31,11 @@ export const dynamic = "force-dynamic";
 
 type Lens = "all" | "access" | "uploads";
 
-const LENSES: Array<{ key: Lens; label: string; actions?: string[] }> = [
-  { key: "all", label: "Everything" },
+/** Each lens's label is `admin.audit.lens.<key>`. */
+const LENSES: Array<{ key: Lens; actions?: string[] }> = [
+  { key: "all" },
   {
     key: "access",
-    label: "Who got in",
     actions: [
       "invite.sent", "invite.resent", "invite.revoked", "invite.accepted",
       "invite.rejected", "auth.signed_in", "auth.signed_out", "user.role_changed",
@@ -42,7 +43,6 @@ const LENSES: Array<{ key: Lens; label: string; actions?: string[] }> = [
   },
   {
     key: "uploads",
-    label: "Models",
     actions: [
       "story.created", "upload.rejected", "story.status_changed",
       "story.declined", "story.flagged", "story.priority_changed", "file.downloaded",
@@ -73,7 +73,11 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<{ lens?: string }>;
 }) {
-  const admin = await requireAdmin();
+  const [admin, t, ago] = await Promise.all([
+    requireAdmin(),
+    getTranslations("admin.audit"),
+    getRelativeTime(),
+  ]);
   const { lens: raw } = await searchParams;
   const lens = (LENSES.find((l) => l.key === raw)?.key ?? "all") as Lens;
   const actions = LENSES.find((l) => l.key === lens)?.actions;
@@ -98,21 +102,19 @@ export default async function AuditPage({
       <AppHeader user={admin} active="/admin/audit" />
 
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Admin · the record</Kicker>
+        <Kicker>{t("kicker")}</Kicker>
         <h1 className="m-0 mb-[13.2px] text-[46px] leading-[0.98] text-ink">
-          Audit log
+          {t("title")}
         </h1>
         <p className="m-0 mb-[26.4px] max-w-[620px] text-[16.5px] leading-[1.5] text-ink-2 text-pretty">
-          Every action that changes who can get in, or what happens to
-          someone&rsquo;s model. Nothing here is ever edited or removed.
+          {t("lead")}
           {refusalsToday > 0 && (
             <>
               {" "}
               <strong className="font-bold text-cherry-dk">
-                {refusalsToday} refusal{refusalsToday === 1 ? "" : "s"} in the
-                last day
+                {t("refusalsToday", { count: refusalsToday })}
               </strong>{" "}
-              — worth a look if that is more than you expect.
+              {t("worthALook")}
             </>
           )}
         </p>
@@ -129,7 +131,7 @@ export default async function AuditPage({
                 l.key === lens ? "bg-cherry-dk text-cream" : "bg-porcelain text-ink hover:bg-sun"
               }`}
             >
-              {l.label}
+              {t(`lens.${l.key}`)}
             </Link>
           ))}
         </nav>
@@ -138,12 +140,12 @@ export default async function AuditPage({
           <table className="w-full min-w-[46rem] border-collapse">
             <thead>
               <tr className="border-b-[3px] border-ink bg-cream-2">
-                {["When", "Action", "Who", "What", "From"].map((h) => (
+                {(["when", "action", "who", "what", "from"] as const).map((h) => (
                   <th
                     key={h}
                     className="px-[17.6px] py-[11px] text-left font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-ink"
                   >
-                    {h}
+                    {t(`column.${h}`)}
                   </th>
                 ))}
               </tr>
@@ -152,7 +154,7 @@ export default async function AuditPage({
               {events.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-[17.6px] py-[22px] font-mono text-[12px] uppercase text-ink-3">
-                    Nothing recorded yet.
+                    {t("empty")}
                   </td>
                 </tr>
               )}
@@ -160,7 +162,7 @@ export default async function AuditPage({
                 <tr key={e.id} className="border-b-2 border-dashed border-rule last:border-b-0">
                   <td className="whitespace-nowrap px-[17.6px] py-[11px] align-top font-mono text-[12px] tabular-nums text-ink-3">
                     <time dateTime={e.at.toISOString()} title={e.at.toISOString()}>
-                      {relativeTime(e.at)}
+                      {ago(e.at)}
                     </time>
                   </td>
                   <td className="whitespace-nowrap px-[17.6px] py-[11px] align-top">
@@ -176,7 +178,7 @@ export default async function AuditPage({
                   <td className="px-[17.6px] py-[11px] align-top text-[13.5px]">
                     <span className="font-mono text-[12.5px]">{e.subject ?? "—"}</span>
                     {e.detail != null && (
-                      <Detail detail={e.detail as Record<string, unknown>} />
+                      <Detail detail={e.detail as Record<string, unknown>} label={(k, value) => t(`detail.${k}`, { value })} />
                     )}
                   </td>
                   <td className="px-[17.6px] py-[11px] align-top font-mono text-[12px] text-ink-3">
@@ -189,20 +191,30 @@ export default async function AuditPage({
         </div>
 
         <p className="m-0 mt-[13.2px] font-mono text-[11.5px] uppercase text-ink-3">
-          Showing the most recent {events.length}
-          {events.length === 200 ? " of more" : ""}.
+          {t(events.length === 200 ? "showingOfMore" : "showing", { count: events.length })}
         </p>
       </main>
     </>
   );
 }
 
-/** The few fields worth showing inline; the rest stay in the database. */
-function Detail({ detail }: { detail: Record<string, unknown> }) {
-  const interesting = ["reason", "title", "filename", "format", "dims", "role"];
-  const shown = interesting
+/**
+ * The few fields worth showing inline; the rest stay in the database. The
+ * field's name is said in the reader's language; its value is what was
+ * recorded, as it was recorded.
+ */
+const INTERESTING = ["reason", "title", "filename", "format", "dims", "role"] as const;
+
+function Detail({
+  detail,
+  label,
+}: {
+  detail: Record<string, unknown>;
+  label: (key: (typeof INTERESTING)[number], value: string) => string;
+}) {
+  const shown = INTERESTING
     .filter((k) => detail[k] != null)
-    .map((k) => `${k}: ${String(detail[k])}`);
+    .map((k) => label(k, String(detail[k])));
   if (shown.length === 0) return null;
   return (
     <span className="mt-[3px] block text-[12.5px] text-ink-3">

@@ -73,7 +73,13 @@ class Browser {
     return r;
   }
   /** Replay one server-action form: its hidden inputs, then `values` on top. */
-  async submit(url: string, html: string, formIndex: number, values: Record<string, string>) {
+  async submit(
+    url: string,
+    html: string,
+    formIndex: number,
+    values: Record<string, string>,
+    headers: Record<string, string> = {},
+  ) {
     const forms = html.match(/<form\b[\s\S]*?<\/form>/g) ?? [];
     const form = forms[formIndex];
     if (!form) throw new Error(`no form #${formIndex} on ${url}`);
@@ -85,7 +91,7 @@ class Browser {
       if (n) body.append(unescapeHtml(n), unescapeHtml(v));
     }
     for (const [k, v] of Object.entries(values)) body.set(k, v);
-    return this.raw(url, { method: "POST", body });
+    return this.raw(url, { method: "POST", body, headers });
   }
   /** The session row's token, for backdating it. */
   sessionToken(): string {
@@ -375,6 +381,41 @@ async function main() {
   check("a crafted post that changes a locked setting is refused, naming the variable",
         refusal(forced).includes("IMPORT_SOURCES"), refusal(forced) || `${forced.headers.get("location")}`);
   check("and the saved value is untouched, with nothing recorded",
+        (await row())?.importSources === "" && (await settingsAudits()).length === 2);
+
+  // ------------------------------------------------------------------
+  section("the settings screen speaks the reader's language");
+  // A refusal comes back as a sentence in the query string, made in the
+  // language of the request that posted the form; English is the sentence it
+  // always was. Nothing here saves anything.
+  const FR = { "accept-language": "fr-FR,fr;q=0.9" };
+  const NB = " ";
+  const toastOf = (r: Response) => new URL(r.headers.get("location") || "/", APP).searchParams.get("toast") ?? "";
+  check("the English refusal of a locked setting is word for word what it was",
+        refusal(forced) === "Import from a link is set by IMPORT_SOURCES in the environment, which wins. Change it there.",
+        refusal(forced));
+  const quoted = await ruben.submit(`${APP}/admin/settings`, page, findForm(page, ['name="mailFromName"']), {
+    mailFromName: 'The "best" printer',
+  });
+  check("and so is a sender name's",
+        refusal(quoted) === "Sender name: A name only — no quotes, angle brackets, backslashes or line breaks. " +
+          "The address stays in MAIL_FROM.", refusal(quoted));
+
+  const frPage = await (await ruben.go(`${APP}/admin/settings`, { headers: FR })).text();
+  check("the French page is French, the variable's name as it is",
+        frPage.includes("Le règlement de la maison") && frPage.includes("fixé par <code>IMPORT_SOURCES</code>") &&
+          !frPage.includes("House rules"));
+  const frForm = findForm(frPage, ['name="mailFromName"']);
+  const lockedFr = await ruben.submit(`${APP}/admin/settings`, frPage, frForm, { importSources: "" }, FR);
+  check("a locked setting is refused in French, still naming the variable",
+        refusal(lockedFr) === "Importer depuis un lien est fixé par IMPORT_SOURCES dans l’environnement, " +
+          "qui l’emporte. Changez-le là-bas.", refusal(lockedFr));
+  const quotedFr = await ruben.submit(`${APP}/admin/settings`, frPage, frForm, { mailFromName: 'The "best" printer' }, FR);
+  check("so is a sender name", refusal(quotedFr).startsWith(`Nom de l’expéditeur${NB}: un nom seulement`),
+        refusal(quotedFr));
+  const untouchedFr = await ruben.submit(`${APP}/admin/settings`, frPage, frForm, {}, FR);
+  check("and an untouched form says so in French", toastOf(untouchedFr) === "Rien à changer", toastOf(untouchedFr));
+  check("none of it saved or recorded anything",
         (await row())?.importSources === "" && (await settingsAudits()).length === 2);
 
   // ------------------------------------------------------------------

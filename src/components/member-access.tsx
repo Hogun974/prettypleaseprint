@@ -6,7 +6,22 @@ import { useFormStatus } from "react-dom";
 import { setMemberAccessAction, type InviteFormState } from "@/app/admin/invites/actions";
 import { Notice } from "@/components/ui";
 
-function Submit({ revoke, name }: { revoke: boolean; name: string }) {
+/**
+ * Its words come from the server page that draws it (admin.guests), as
+ * props: owner-only words stay out of the client catalogue that every page
+ * carries (src/i18n/client-groups.ts).
+ */
+export type MemberAccessLabels = {
+  /** "Revoke access?", or "Suspended" for somebody already shut out. */
+  summary: string;
+  help: string;
+  /** "Revoke Ayla's access", or "Restore Ayla's access". */
+  submit: string;
+  working: string;
+  holdOn: string;
+};
+
+function Submit({ revoke, labels }: { revoke: boolean; labels: MemberAccessLabels }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -18,7 +33,7 @@ function Submit({ revoke, name }: { revoke: boolean; name: string }) {
           : "stamp cursor-pointer rounded-chip border-[3px] border-ink bg-mint px-[15px] py-[6px] font-mono text-[11.5px] font-bold uppercase text-ink hover:bg-aqua disabled:opacity-50"
       }
     >
-      {pending ? "Working…" : revoke ? `Revoke ${name}'s access` : `Restore ${name}'s access`}
+      {pending ? labels.working : labels.submit}
     </button>
   );
 }
@@ -33,12 +48,12 @@ function Submit({ revoke, name }: { revoke: boolean; name: string }) {
  */
 export function MemberAccess({
   userId,
-  name,
   suspended,
+  labels,
 }: {
   userId: string;
-  name: string;
   suspended: boolean;
+  labels: MemberAccessLabels;
 }) {
   const [state, formAction] = useActionState<InviteFormState, FormData>(
     setMemberAccessAction,
@@ -60,31 +75,20 @@ export function MemberAccess({
             : "stamp inline-block cursor-pointer list-none rounded-chip border-[3px] border-ink bg-cherry-wash px-[15px] py-[8px] text-[14px] font-bold text-cherry-dk hover:bg-cherry-dk hover:text-cream"
         }
       >
-        {suspended ? "Suspended" : "Revoke access?"}
+        {labels.summary}
       </summary>
       <form action={formAction} className="mt-[8px] max-w-[560px]">
         <input type="hidden" name="userId" value={userId} />
         <input type="hidden" name="revoke" value={suspended ? "false" : "true"} />
         <div className="rounded-card border-[3px] border-ink bg-cream-2 p-[11px]">
           <p className="m-0 mb-[8px] text-[13.5px] leading-[1.45] text-ink-2">
-            {suspended ? (
-              <>
-                {name} cannot sign in. Restoring lets them back in with the
-                password or passkey they already had — nothing was deleted.
-              </>
-            ) : (
-              <>
-                Signs {name} out everywhere and refuses any new sign-in. Their
-                tickets, comments and history stay exactly as they are, and you
-                can restore access at any time. Recorded in the audit log.
-              </>
-            )}
+            {labels.help}
           </p>
-          <Submit revoke={!suspended} name={name} />
+          <Submit revoke={!suspended} labels={labels} />
         </div>
         {state.error && (
           <div className="mt-[8px]">
-            <Notice tone="warn">{state.error}</Notice>
+            <Notice tone="warn" label={labels.holdOn}>{state.error}</Notice>
           </div>
         )}
       </form>

@@ -504,6 +504,387 @@
         "SESSION_REQUIRED": "Il faut être connecté pour enregistrer une clé d’accès.",
         "UNKNOWN_ERROR": "Une erreur inattendue s’est produite."
       }
+    },
+    "catalog": {
+      "colourName": "Donnez à la couleur un nom de 1 à 40 caractères.",
+      "swatch": "Choisissez un type de pastille valable.",
+      "colour": "Choisissez une couleur valable.",
+      "secondColour": "Choisissez une seconde teinte de dégradé valable.",
+      "materialName": "Le nom d’une matière doit faire de 1 à 40 caractères.",
+      "materialTaken": "{name} est déjà au catalogue.",
+      "materialGone": "Cette matière n’existe plus.",
+      "direction": "Choisissez un sens valable.",
+      "materialAtEnd": "Cette matière est déjà en bout de liste.",
+      "colourTaken": "{material} a déjà une couleur nommée {name}.",
+      "colourGone": "Cette couleur n’existe plus.",
+      "colourAtEnd": "Cette couleur est déjà en bout de liste."
+    },
+    "benefit": {
+      "noName": "Donnez un nom au pourboire.",
+      "tooLong": "Restez bref — moins de 80 caractères.",
+      "checkName": "Vérifiez le nom.",
+      "ownerOnly": "Seule la personne qui s’occupe de l’imprimante gère les pourboires.",
+      "duplicate": "« {label} » est déjà sur la liste.",
+      "gone": "Ce pourboire n’existe plus."
+    },
+    "invite": {
+      "alreadyMember": "{email} a déjà un compte.",
+      "alreadyInvited": "{email} a déjà une invitation qui n’a pas encore servi.",
+      "notOpen": "Cette invitation n’est plus ouverte.",
+      "notAnEmail": "Cela ne ressemble pas à une adresse e-mail.",
+      "checkForm": "Vérifiez le formulaire.",
+      "waiting": "Cette adresse a déjà une invitation en attente.",
+      "notSent": "L’invitation n’a pas pu partir. Vérifiez le transport du courrier, puis réessayez."
+    },
+    "member": {
+      "noSuchMember": "Ce membre n’existe pas.",
+      "linkFailed": "Ce lien n’a pas pu être créé. Réessayez.",
+      "ownerStays": "La personne qui s’occupe de l’imprimante ne peut pas être suspendue — l’application serait verrouillée."
+    },
+    "settings": {
+      "ownerOnly": "Seule la personne qui s’occupe de l’imprimante change les réglages.",
+      "senderName": {
+        "empty": "Nom de l’expéditeur : donnez un nom à l’expéditeur, ou laissez vide pour le nom par défaut.",
+        "tooLong": "Nom de l’expéditeur : moins de 80 caractères, s’il vous plaît.",
+        "nameOnly": "Nom de l’expéditeur : un nom seulement — sans guillemets, chevrons, barres obliques inverses ni retours à la ligne. L’adresse reste dans MAIL_FROM."
+      },
+      "locked": {
+        "importSources": "Importer depuis un lien est fixé par {env} dans l’environnement, qui l’emporte. Changez-le là-bas.",
+        "mailFromName": "Le nom de l’expéditeur est fixé par {env} dans l’environnement, qui l’emporte. Changez-le là-bas."
+      }
     }
+  },
+  "admin": {
+    "catalog": {
+      "kicker": "Admin · ce qu’il y a en réserve",
+      "title": "Matières et couleurs",
+      "lead": "Ne proposez que les combinaisons que vous pouvez vraiment imprimer aujourd’hui. Les flèches règlent l’ordre affiché sur le formulaire de commande. Désactiver une entrée la masque un temps ; la supprimer retire du catalogue la matière et ses couleurs. Les anciens tickets restent tels quels dans les deux cas.",
+      "addMaterial": "Ajouter une matière",
+      "addMaterialButton": "Ajouter la matière",
+      "order": "Ordre pour {name}",
+      "moveUp": "Monter {name}",
+      "moveUpTitle": "Monter",
+      "moveDown": "Descendre {name}",
+      "moveDownTitle": "Descendre",
+      "colorFor": "{color} en {material}",
+      "available": "Disponible",
+      "offShelf": "Hors carte",
+      "turnOff": "Désactiver",
+      "turnOn": "Activer",
+      "on": "Active",
+      "off": "Inactive",
+      "noColours": "Pas encore de couleur. Cette matière restera absente du formulaire de commande.",
+      "editMaterial": "Renommer la matière {name}",
+      "materialNameFor": "Nom de la matière {name}",
+      "save": "Enregistrer",
+      "done": {
+        "materialAdded": "Matière {name} ajoutée. Donnez-lui au moins une couleur pour la proposer.",
+        "materialOn": "La matière {name} est maintenant disponible.",
+        "materialOff": "La matière {name} n’est plus disponible.",
+        "materialRenamed": "Matière {from} renommée en {to}.",
+        "materialRemoved": "La matière {name} et ses couleurs ont été supprimées. Les anciens tickets restent tels quels.",
+        "materialUp": "Matière {name} montée d’un cran.",
+        "materialDown": "Matière {name} descendue d’un cran.",
+        "colourAdded": "Couleur {name} ajoutée en {material}.",
+        "colourUpdated": "Couleur {name} modifiée en {material}.",
+        "colourOn": "La couleur {name} est maintenant disponible en {material}.",
+        "colourOff": "La couleur {name} n’est plus disponible en {material}.",
+        "colourRemoved": "La couleur {name} a été retirée de {material}. Les anciens tickets restent tels quels.",
+        "colourUp": "Couleur {name} montée d’un cran en {material}.",
+        "colourDown": "Couleur {name} descendue d’un cran en {material}."
+      }
+    },
+    "catalogEdit": {
+      "removeColorConfirm": "Retirer {name} de {material} ? Les anciens tickets seront conservés.",
+      "removeColorLabel": "Retirer {name} de {material}",
+      "delete": "Supprimer",
+      "removeMaterialConfirm": "Retirer {name} et toutes ses couleurs ? Les anciens tickets seront conservés.",
+      "remove": "Retirer",
+      "editColor": "Modifier {name} en {material}",
+      "colourName": "Nom de la couleur",
+      "swatch": "Pastille",
+      "solid": "Unie",
+      "gradient": "Dégradé",
+      "whatever": "Au choix",
+      "from": "De",
+      "to": "À",
+      "colour": "Couleur",
+      "colourValueFor": "Teinte pour {name}",
+      "secondColourFor": "Seconde teinte du dégradé pour {name}",
+      "secondColour": "Seconde teinte du dégradé",
+      "rainbowShort": "Arc-en-ciel auto",
+      "rainbow": "Arc-en-ciel choisi automatiquement",
+      "save": "Enregistrer",
+      "addColour": "Ajouter une couleur",
+      "addColourPlaceholder": "Orange signalisation",
+      "add": "Ajouter"
+    },
+    "prints": {
+      "kicker": "Admin · qui a envoyé quoi",
+      "title": "Impressions par personne",
+      "lead": "Choisissez une ou plusieurs personnes pour voir tout ce qu’elles ont envoyé, quel qu’en soit l’état — en attente, sur le plateau, terminé ou refusé. Choisissez quelqu’un une seconde fois pour le retirer.",
+      "people": "Personnes",
+      "you": "vous",
+      "suspended": "suspendu",
+      "clear": "Effacer",
+      "nobody": "Personne de choisi. Choisissez quelqu’un ci-dessus.",
+      "and": "et",
+      "nothingFrom": "Rien de {whose} pour l’instant",
+      "ticketsFrom": "{count, plural, one {# ticket} other {# tickets}} de {whose}",
+      "noUploads": "Aucun envoi.",
+      "nothingOlder": "Rien de plus ancien.",
+      "quantity": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+      "older": "Tickets plus anciens"
+    },
+    "benefits": {
+      "kicker": "Pourboires",
+      "title": "Ce qui vous revient",
+      "lead": "Les pourboires qu’on peut vous proposer en demandant une impression. Marquez ceux que vous préférez en ce moment — ils sont étoilés sur le formulaire de commande, pour qu’on sache ce qui vous ferait vraiment plaisir. Retirez-en un pour l’enlever de la liste sans toucher aux anciennes demandes qui l’ont proposé.",
+      "addLabel": "Ajouter un pourboire",
+      "addPlaceholder": "Une tournée de cafés",
+      "add": "Ajouter",
+      "rename": "Renommer {label}",
+      "save": "Enregistrer",
+      "preferred": "★ Préféré",
+      "markPreferred": "Marquer comme préféré",
+      "retire": "Retirer",
+      "empty": "Aucun pourboire sur la liste — ajoutez-en un ci-dessus, sinon personne ne peut en proposer.",
+      "retired": "Retirés",
+      "restore": "Remettre",
+      "toast": {
+        "added": "Sur la liste : « {label} »",
+        "renamed": "Nouveau nom : « {label} »",
+        "preferred": "Parmi vos préférés : « {label} »",
+        "notPreferred": "Plus parmi vos préférés : « {label} »",
+        "restored": "De retour sur la liste : « {label} »",
+        "retired": "Hors de la liste : « {label} »"
+      }
+    },
+    "invites": {
+      "kicker": "Admin · qui a sa table",
+      "title": "La liste des invités",
+      "lead": "{members, plural, one {# personne peut} other {# personnes peuvent}} vous envoyer des modèles, et {open, plural, one {# invitation est} other {# invitations sont}} encore en attente. Les liens expirent au bout de {days} jours et ne servent qu’une fois.",
+      "whoIsIn": "Qui est entré",
+      "suspended": "Suspendu",
+      "theirPrints": "Ses impressions",
+      "invitations": "Invitations",
+      "none": "Personne pour l’instant. La salle est bien calme.",
+      "invitedBy": "invitation envoyée par {name} · {when}",
+      "state": {
+        "Pending": "En attente",
+        "Accepted": "Acceptée",
+        "Revoked": "Retirée",
+        "Expired": "Expirée"
+      },
+      "expires": "expire {when}",
+      "joined": "acceptée {when}",
+      "sendAgain": "Renvoyer",
+      "withdraw": "Retirer"
+    },
+    "guests": {
+      "sending": "Envoi…",
+      "send": "Envoyer l’invitation",
+      "inviteTitle": "Inviter quelqu’un",
+      "inviteLead": "La personne reçoit un lien qui ne sert qu’une fois et expire au bout d’une semaine. Il n’y a pas d’autre entrée.",
+      "email": "Adresse e-mail",
+      "name": "Nom (facultatif)",
+      "emailed": "Envoyé · {email} a reçu un lien par e-mail",
+      "created": "Invitation créée pour {email}",
+      "inviteNote": "ne sert qu’une fois, expire dans 7 jours",
+      "holdOn": "Un instant",
+      "good": "C’est bon",
+      "working": "En cours…",
+      "revokeName": "Couper l’accès à {name}",
+      "restoreName": "Rendre l’accès à {name}",
+      "suspended": "Suspendu",
+      "revokeAccess": "Couper l’accès ?",
+      "suspendedHelp": "{name} ne peut pas se connecter. Rendre l’accès lui permet de revenir avec le mot de passe ou la clé d’accès qu’il avait — rien n’a été supprimé.",
+      "revokeHelp": "Déconnecte {name} partout et refuse toute nouvelle connexion. Ses tickets, ses commentaires et son historique restent exactement tels quels, et vous pouvez rendre l’accès à tout moment. Consigné dans le journal.",
+      "minting": "Création…",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "forgotten": "Mot de passe oublié ?",
+      "resetHelp": "Crée un lien à usage unique qui permet à {name} de choisir un nouveau mot de passe, valable {minutes} minutes. Il ne connecte personne, il déconnecte {name} partout, et il est consigné dans le journal.",
+      "resetSent": "Envoyé à {email}. Le lien est dans le message et nulle part ailleurs — pas même ici.",
+      "resetNote": "ne sert qu’une fois, expire dans {minutes} minutes",
+      "handOver": "À transmettre — {note}",
+      "handOverLink": "Lien de connexion à transmettre",
+      "copied": "Copié",
+      "copy": "Copier",
+      "handOverHelp": "Personne n’a reçu d’e-mail — aucun serveur de courrier n’est configuré. Transmettez-le comme vous le feriez d’habitude."
+    },
+    "audit": {
+      "kicker": "Admin · le registre",
+      "title": "Journal",
+      "lead": "Chaque action qui change qui peut entrer, ou ce qu’il advient du modèle de quelqu’un. Rien ici n’est jamais modifié ni effacé.",
+      "refusalsToday": "{count, plural, one {# refus dans la dernière journée} other {# refus dans la dernière journée}}",
+      "worthALook": "— à regarder si c’est plus que prévu.",
+      "lens": {
+        "all": "Tout",
+        "access": "Qui est entré",
+        "uploads": "Modèles"
+      },
+      "column": {
+        "when": "Quand",
+        "action": "Action",
+        "who": "Qui",
+        "what": "Quoi",
+        "from": "Depuis"
+      },
+      "empty": "Rien d’enregistré pour l’instant.",
+      "detail": {
+        "reason": "motif : {value}",
+        "title": "titre : {value}",
+        "filename": "fichier : {value}",
+        "format": "format : {value}",
+        "dims": "dimensions : {value}",
+        "role": "rôle : {value}"
+      },
+      "showing": "Les {count} plus récents.",
+      "showingOfMore": "Les {count} plus récents, sur davantage."
+    },
+    "dashboard": {
+      "unit": {
+        "minutes": "{n} min",
+        "hours": "{n} h",
+        "days": "{n} j"
+      },
+      "status": {
+        "Requested": "Demandé",
+        "Accepted": "Accepté",
+        "Printing": "En impression",
+        "Delivery": "À remettre",
+        "Done": "Terminé",
+        "Declined": "Refusé"
+      },
+      "size": {
+        "under1": "moins de 1 Mo",
+        "1to10": "1 – 10 Mo",
+        "10to50": "10 – 50 Mo",
+        "over50": "plus de 50 Mo"
+      },
+      "refusals": {
+        "kicker": "{days} derniers jours",
+        "title": "Ce qui est refusé",
+        "one": "refus",
+        "many": "refus",
+        "none": "Personne n’a été refoulé. C’est la lecture attendue — ce panneau est là pour la semaine où ce ne sera pas le cas.",
+        "someone": "quelqu’un"
+      },
+      "stages": {
+        "kicker": "Sur le tableau en ce moment",
+        "title": "Où le travail attend",
+        "longest": "Le plus long",
+        "usually": "D’habitude",
+        "usuallyHelp": "<em>D’habitude</em>, c’est la durée médiane de cette étape, mesurée dans le journal. Une file longue mais rapide n’est pas le même problème qu’une file courte et lente."
+      },
+      "mix": {
+        "kicker": "{count, plural, one {# demande en tout} other {# demandes en tout}}",
+        "title": "Ce qui est demandé",
+        "empty": "Rien d’envoyé pour l’instant.",
+        "material": "Matière",
+        "colour": "Couleur",
+        "size": "Taille de fichier · le plus gros {largest}"
+      }
+    },
+    "settings": {
+      "kicker": "Réglages",
+      "title": "Le règlement de la maison",
+      "lead": "Les quelques réglages de cette instance que vous pouvez changer sans toucher au serveur. Un enregistrement prend effet dès la requête suivante — sans redémarrage. Ce que l’environnement fixe l’emporte, et s’affiche ici verrouillé, avec la variable qui le fixe.",
+      "setBy": "fixé par <code>{env}</code>",
+      "importSources": "Importer depuis un lien",
+      "importSourcesHelp": "Permet de partir de la page d’un modèle plutôt que d’un fichier envoyé. Le serveur va alors chercher le fichier lui-même : il lui faut un accès HTTPS sortant vers ce site.",
+      "off": "Désactivé",
+      "senderName": "Nom de l’expéditeur",
+      "senderNameHelp": "Le nom sous lequel arrivent les invitations et les liens de réinitialisation. L’adresse reste dans <code>MAIL_FROM</code>.",
+      "noName": "Pas de nom — l’adresse seule",
+      "goesOutAs": "Le courrier part au nom de <b>{sender}</b>",
+      "noTransportYet": " — dès qu’il y aura un transport ; il n’y en a pas encore.",
+      "save": "Enregistrer",
+      "reauth": "Vous redemande votre mot de passe ou votre clé d’accès si votre connexion remonte à plus de cinq minutes.",
+      "allFromEnv": "Tout ici est fixé par l’environnement.",
+      "env": {
+        "title": "Fixé par l’environnement",
+        "lead": "En lecture seule. Cela se décide là où l’application est lancée, dans <code>.env.docker</code>, et change avec un redémarrage.",
+        "signIn": "Connexion",
+        "signInHow": "Nom d’utilisateur et mot de passe · clés d’accès · jetons d’API (bearer)",
+        "breach": "Fuites connues",
+        "breachOff": "Désactivé — les mots de passe ne sont pas comparés aux fuites connues",
+        "breachOn": "Activé — un mot de passe présent dans une fuite connue est refusé",
+        "passkeyName": "Nom des clés d’accès",
+        "passkeyNameWhy": "Reste dans l’environnement : la bibliothèque des clés d’accès le lit une seule fois, au démarrage, et une clé garde le nom sous lequel elle a été créée.",
+        "mail": "Courrier",
+        "mailKind": {
+          "resend": "Configuré — Resend",
+          "smtp": "Configuré — SMTP",
+          "none": "Non configuré — les liens d’invitation et de réinitialisation vous sont montrés, à transmettre vous-même"
+        },
+        "clientAddress": "Adresse du client",
+        "proxy": {
+          "cloudflare": "Lue dans CF-Connecting-IP (Cloudflare)",
+          "forwarded": "Lue tout à gauche de X-Forwarded-For",
+          "none": "Pas de confiance — le journal n’enregistre aucune adresse"
+        },
+        "source": "Sources",
+        "running": "Version",
+        "notSet": "Non renseigné"
+      }
+    },
+    "ticket": {
+      "declined": "Refusé — plus rien à faire",
+      "accept": "Accepter",
+      "moveTo": "{status, select, Accepted {Accepter le ticket} Printing {Lancer l’impression} Delivery {Prêt à remettre} Done {Marquer comme remis} other {Passer à {status}}}",
+      "changeFlag": "Modifier le signalement",
+      "flag": "Signaler un souci",
+      "flagReason": "Ce qui ne va pas avec le modèle",
+      "flagPlaceholder": "parois trop fines à deux endroits",
+      "flagIt": "Signaler",
+      "clearFlag": "Lever le signalement",
+      "decline": "Refuser",
+      "declineConfirm": "Refuser ce ticket ? C’est définitif.",
+      "declineYes": "Oui, refuser"
+    }
+  },
+  "account": {
+    "kickerOwner": "Derrière le comptoir",
+    "kickerMember": "Au comptoir",
+    "roleOwner": "S’occupe de l’imprimante, voit chaque ticket",
+    "roleMember": "Invité par {owner} · ne voit que ses propres tickets",
+    "cards": {
+      "printedForGroup": "Imprimé pour la salle",
+      "waitingOnYou": "Vous attendent",
+      "geometry": "Géométrie sortie du plateau",
+      "beersOwedYou": "Bières qu’on vous doit",
+      "requestsMade": "Commandes passées",
+      "readyToCollect": "Prêt à récupérer",
+      "inYourHands": "Entre vos mains",
+      "beersOwedTo": "Bières dues à {owner}",
+      "usualMaterial": "Votre matière habituelle"
+    },
+    "listOwner": "Tout ce que la salle vous a envoyé",
+    "listMember": "Vos commandes",
+    "emptyOwner": "Personne ne vous a encore rien envoyé.",
+    "emptyMember": "Pas encore de commande.",
+    "needsALook": "à regarder",
+    "declinedToo": "Les commandes refusées sont aussi listées ici — le rail ne porte que ce qui avance encore.",
+    "holdOn": "Un instant"
+  },
+  "notifications": {
+    "story": {
+      "moved": "{status, select, Accepted {{name} a accepté « {title} ».} Printing {{name} a lancé l’impression de « {title} ».} Delivery {{name} a terminé « {title} » : prêt à récupérer.} Done {{name} a remis « {title} ».} other {{name} a passé « {title} » à l’étape {status}.}}",
+      "declined": "{name} a refusé « {title} ».",
+      "flagged": "{name} a signalé un souci sur « {title} » : {reason}",
+      "flagCleared": "{name} a levé le signalement sur « {title} ».",
+      "requeued": "{name} a repassé commande de « {title} ».",
+      "uploaded": "{name} a envoyé « {title} ».",
+      "imported": "{name} a importé « {title} »."
+    },
+    "feature": {
+      "filed": "{name} a glissé une idée dans la boîte — « {title} ».",
+      "moved": "{name} a passé « {title} » à l’étape {status, select, Accepted {« acceptée »} InProgress {« en cours »} Shipped {« livrée »} Done {« terminée »} other {« {status} »}}.",
+      "declined": "{name} a refusé « {title} »."
+    },
+    "withdrew": "{name} a retiré {ref} — « {title} ».",
+    "priority": "{name} a mis « {title} » en {priority, select, low {priorité basse} medium {priorité normale} high {priorité haute} other {priorité {priority}}}.",
+    "commented": "{name} a commenté « {title} »."
   }
 }

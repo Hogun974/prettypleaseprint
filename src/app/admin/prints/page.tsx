@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
+import { getRelativeTime } from "@/i18n/server";
 import { requireAdmin } from "@/lib/authz";
 import { storyRef } from "@/lib/scope";
 import { LIST_LIMIT_MAX, listPeopleWithPrints, listStories } from "@/lib/stories";
-import { quantityText, relativeTime } from "@/lib/catalog";
 import { AppHeader } from "@/components/app-header";
 import { Kicker, PriorityChip, StatusChip } from "@/components/ui";
 import { ColorSwatch } from "@/components/color-swatch";
@@ -44,7 +45,12 @@ export default async function PrintsByPersonPage({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const [params, admin] = await Promise.all([searchParams, requireAdmin()]);
+  const [params, admin, t, ago] = await Promise.all([
+    searchParams,
+    requireAdmin(),
+    getTranslations("admin.prints"),
+    getRelativeTime(),
+  ]);
   const people = await listPeopleWithPrints(admin);
 
   // Only ids that name somebody real, in roster order, each once. Whatever
@@ -64,22 +70,24 @@ export default async function PrintsByPersonPage({
 
   const total = selected.reduce((sum, p) => sum + p.prints, 0);
   const names = selected.map((p) => p.name);
+  // "Ayla and Bea", "Ayla, Bea and Cleo": no serial comma, which is why this
+  // is not `Intl.ListFormat` — that one adds it in English.
+  const and = ` ${t("and")} `;
   const whose =
-    names.length <= 2 ? names.join(" and ") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+    names.length <= 2 ? names.join(and) : `${names.slice(0, -1).join(", ")}${and}${names.at(-1)}`;
 
   return (
     <>
       <AppHeader user={admin} active="/admin/prints" />
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Admin · who sent what</Kicker>
-        <h1 className="m-0 mb-[13.2px] text-[46px] leading-[0.98] text-ink">Prints by person</h1>
+        <Kicker>{t("kicker")}</Kicker>
+        <h1 className="m-0 mb-[13.2px] text-[46px] leading-[0.98] text-ink">{t("title")}</h1>
         <p className="m-0 mb-[22px] max-w-[680px] text-[16.5px] leading-[1.5] text-ink-2 text-pretty">
-          Pick one person or several to see everything they have uploaded, in any state —
-          waiting, on the bed, finished or declined. Pick somebody again to take them out.
+          {t("lead")}
         </p>
 
         {/* ---- the people: each one a link that toggles itself ---- */}
-        <nav aria-label="People" className="mb-[26.4px] flex flex-wrap items-center gap-[8.8px]">
+        <nav aria-label={t("people")} className="mb-[26.4px] flex flex-wrap items-center gap-[8.8px]">
           {people.map((p) => {
             const on = asked.has(p.id);
             const next = on ? selectedIds.filter((id) => id !== p.id) : [...selectedIds, p.id];
@@ -102,9 +110,9 @@ export default async function PrintsByPersonPage({
                 <span className={`font-mono text-[12px] ${on ? "text-cream" : "text-ink-3"}`}>
                   {p.prints}
                 </span>
-                {p.isOwner && <span className="font-mono text-[10.5px] uppercase tracking-[0.06em]">you</span>}
+                {p.isOwner && <span className="font-mono text-[10.5px] uppercase tracking-[0.06em]">{t("you")}</span>}
                 {p.suspended && (
-                  <span className="font-mono text-[10.5px] uppercase tracking-[0.06em]">suspended</span>
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.06em]">{t("suspended")}</span>
                 )}
               </Link>
             );
@@ -114,26 +122,24 @@ export default async function PrintsByPersonPage({
               href="/admin/prints"
               className="ml-[4px] font-mono text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 underline decoration-2 underline-offset-4 hover:text-cherry-dk"
             >
-              Clear
+              {t("clear")}
             </Link>
           )}
         </nav>
 
         {selected.length === 0 ? (
           <p className="m-0 max-w-[680px] rounded-panel border-[3px] border-dashed border-ink-3 bg-porcelain p-[22px] font-mono text-[12px] uppercase tracking-[0.06em] text-ink-3">
-            Nobody picked yet. Choose somebody above.
+            {t("nobody")}
           </p>
         ) : (
           <>
             <h2 className="m-0 mb-[13.2px] font-display text-[24px] text-ink">
-              {total === 0
-                ? `Nothing from ${whose} yet`
-                : `${total} ${total === 1 ? "ticket" : "tickets"} from ${whose}`}
+              {total === 0 ? t("nothingFrom", { whose }) : t("ticketsFrom", { count: total, whose })}
             </h2>
             <div className="overflow-hidden rounded-panel border-[3px] border-ink bg-porcelain shadow-stamp">
               {stories.length === 0 ? (
                 <p className="m-0 p-[22px] font-mono text-[12px] uppercase tracking-[0.06em] text-ink-3">
-                  {total === 0 ? "No uploads." : "Nothing older than that."}
+                  {total === 0 ? t("noUploads") : t("nothingOlder")}
                 </p>
               ) : (
                 stories.map((story, i) => (
@@ -156,8 +162,8 @@ export default async function PrintsByPersonPage({
                         {story.title}
                       </Link>
                       <p className="m-0 mt-[3px] font-mono text-[11px] uppercase tracking-[0.04em] text-ink-3">
-                        {storyRef(story.id)} · {story.uploader.name} · {quantityText(story.quantity)} ·{" "}
-                        {story.material} · {relativeTime(story.createdAt)}
+                        {storyRef(story.id)} · {story.uploader.name} · {t("quantity", { count: story.quantity })} ·{" "}
+                        {story.material} · {ago(story.createdAt)}
                       </p>
                     </div>
                     <PriorityChip priority={story.priority} quiet />
@@ -172,7 +178,7 @@ export default async function PrintsByPersonPage({
                   href={`${hrefFor(selectedIds)}&before=${nextCursor}`}
                   className="stamp inline-block rounded-chip border-[3px] border-ink bg-aqua px-[17.6px] py-[8px] text-[14px] font-bold text-ink hover:bg-sun"
                 >
-                  Older tickets
+                  {t("older")}
                 </Link>
               </p>
             )}

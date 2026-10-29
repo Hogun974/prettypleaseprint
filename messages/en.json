@@ -504,6 +504,387 @@
         "SESSION_REQUIRED": "Passkey registration requires an authenticated session",
         "UNKNOWN_ERROR": "Unknown error"
       }
+    },
+    "catalog": {
+      "colourName": "Give the colour a name between 1 and 40 characters.",
+      "swatch": "Choose a valid swatch type.",
+      "colour": "Choose a valid colour.",
+      "secondColour": "Choose a valid second gradient colour.",
+      "materialName": "Material names must be between 1 and 40 characters.",
+      "materialTaken": "{name} is already in the catalog.",
+      "materialGone": "That material no longer exists.",
+      "direction": "Choose a valid direction.",
+      "materialAtEnd": "That material is already at the end of the list.",
+      "colourTaken": "{material} already has a colour named {name}.",
+      "colourGone": "That colour no longer exists.",
+      "colourAtEnd": "That colour is already at the end of the list."
+    },
+    "benefit": {
+      "noName": "Give the benefit a name.",
+      "tooLong": "Keep it short — under 80 characters.",
+      "checkName": "Check the name.",
+      "ownerOnly": "Only the printer owner manages benefits.",
+      "duplicate": "“{label}” is already on the list.",
+      "gone": "That benefit no longer exists."
+    },
+    "invite": {
+      "alreadyMember": "{email} already has an account.",
+      "alreadyInvited": "{email} already has an invite that has not been used yet.",
+      "notOpen": "That invite is no longer open.",
+      "notAnEmail": "That does not look like an email address.",
+      "checkForm": "Check the form.",
+      "waiting": "That address already has an invite waiting.",
+      "notSent": "The invite could not be sent. Check the mail transport and try again."
+    },
+    "member": {
+      "noSuchMember": "No such member.",
+      "linkFailed": "That link could not be created. Try again.",
+      "ownerStays": "The printer owner cannot be suspended — that would lock the app."
+    },
+    "settings": {
+      "ownerOnly": "Only the printer owner changes the settings.",
+      "senderName": {
+        "empty": "Sender name: Give the sender a name, or leave it empty for the default.",
+        "tooLong": "Sender name: Keep it under 80 characters.",
+        "nameOnly": "Sender name: A name only — no quotes, angle brackets, backslashes or line breaks. The address stays in MAIL_FROM."
+      },
+      "locked": {
+        "importSources": "Import from a link is set by {env} in the environment, which wins. Change it there.",
+        "mailFromName": "Sender name is set by {env} in the environment, which wins. Change it there."
+      }
     }
+  },
+  "admin": {
+    "catalog": {
+      "kicker": "Admin · what is on the shelf",
+      "title": "Materials & colours",
+      "lead": "Offer only combinations you can actually print today. Use the arrows to set the order shown on the request form. Turning something off hides it temporarily; removing it deletes the catalog entry and its colours. Old tickets are unchanged either way.",
+      "addMaterial": "Add a material",
+      "addMaterialButton": "Add material",
+      "order": "Order {name}",
+      "moveUp": "Move {name} up",
+      "moveUpTitle": "Move up",
+      "moveDown": "Move {name} down",
+      "moveDownTitle": "Move down",
+      "colorFor": "{color} for {material}",
+      "available": "Available",
+      "offShelf": "Off shelf",
+      "turnOff": "Turn off",
+      "turnOn": "Turn on",
+      "on": "On",
+      "off": "Off",
+      "noColours": "No colours yet. This material will stay off the order form.",
+      "editMaterial": "Edit material name {name}",
+      "materialNameFor": "Material name for {name}",
+      "save": "Save",
+      "done": {
+        "materialAdded": "{name} added. Give it at least one colour to offer it.",
+        "materialOn": "{name} is now available.",
+        "materialOff": "{name} is now unavailable.",
+        "materialRenamed": "{from} renamed to {to}.",
+        "materialRemoved": "{name} and its colours were removed. Old tickets are unchanged.",
+        "materialUp": "{name} moved up.",
+        "materialDown": "{name} moved down.",
+        "colourAdded": "{name} added to {material}.",
+        "colourUpdated": "{name} updated for {material}.",
+        "colourOn": "{name} is now available for {material}.",
+        "colourOff": "{name} is now unavailable for {material}.",
+        "colourRemoved": "{name} was removed from {material}. Old tickets are unchanged.",
+        "colourUp": "{name} moved up for {material}.",
+        "colourDown": "{name} moved down for {material}."
+      }
+    },
+    "catalogEdit": {
+      "removeColorConfirm": "Remove {name} from {material}? Old tickets will be kept.",
+      "removeColorLabel": "Remove {name} from {material}",
+      "delete": "Delete",
+      "removeMaterialConfirm": "Remove {name} and all of its colours? Old tickets will be kept.",
+      "remove": "Remove",
+      "editColor": "Edit {name} for {material}",
+      "colourName": "Colour name",
+      "swatch": "Swatch",
+      "solid": "Solid",
+      "gradient": "Gradient",
+      "whatever": "Whatever",
+      "from": "From",
+      "to": "To",
+      "colour": "Colour",
+      "colourValueFor": "Colour value for {name}",
+      "secondColourFor": "Second gradient colour for {name}",
+      "secondColour": "Second gradient colour",
+      "rainbowShort": "Rainbow automatic",
+      "rainbow": "Rainbow chosen automatically",
+      "save": "Save",
+      "addColour": "Add a colour",
+      "addColourPlaceholder": "Signal orange",
+      "add": "Add"
+    },
+    "prints": {
+      "kicker": "Admin · who sent what",
+      "title": "Prints by person",
+      "lead": "Pick one person or several to see everything they have uploaded, in any state — waiting, on the bed, finished or declined. Pick somebody again to take them out.",
+      "people": "People",
+      "you": "you",
+      "suspended": "suspended",
+      "clear": "Clear",
+      "nobody": "Nobody picked yet. Choose somebody above.",
+      "and": "and",
+      "nothingFrom": "Nothing from {whose} yet",
+      "ticketsFrom": "{count, plural, one {# ticket} other {# tickets}} from {whose}",
+      "noUploads": "No uploads.",
+      "nothingOlder": "Nothing older than that.",
+      "quantity": "{count, plural, one {# print} other {# prints}}",
+      "older": "Older tickets"
+    },
+    "benefits": {
+      "kicker": "Benefits",
+      "title": "What’s in it for you",
+      "lead": "The tips people can offer when they ask for a print. Mark the ones you currently prefer — those are starred on the upload form so people know what you actually want. Retire one to take it off the list without touching past requests that offered it.",
+      "addLabel": "Add a benefit",
+      "addPlaceholder": "A round of coffees",
+      "add": "Add",
+      "rename": "Rename {label}",
+      "save": "Save",
+      "preferred": "★ Preferred",
+      "markPreferred": "Mark preferred",
+      "retire": "Retire",
+      "empty": "No benefits on the list — add one above, or nobody can offer a tip.",
+      "retired": "Retired",
+      "restore": "Restore",
+      "toast": {
+        "added": "Added “{label}”",
+        "renamed": "Renamed to “{label}”",
+        "preferred": "“{label}” marked preferred",
+        "notPreferred": "“{label}” no longer preferred",
+        "restored": "“{label}” back on the list",
+        "retired": "“{label}” retired"
+      }
+    },
+    "invites": {
+      "kicker": "Admin · who gets a table",
+      "title": "The guest list",
+      "lead": "{members, plural, one {# person} other {# people}} can send you models, and {open, plural, one {# invite is} other {# invites are}} still outstanding. Links expire after {days} days and work exactly once.",
+      "whoIsIn": "Who is in",
+      "suspended": "Suspended",
+      "theirPrints": "Their prints",
+      "invitations": "Invitations",
+      "none": "Nobody yet. The office is very quiet.",
+      "invitedBy": "invited by {name} · {when}",
+      "state": {
+        "Pending": "Pending",
+        "Accepted": "Accepted",
+        "Revoked": "Revoked",
+        "Expired": "Expired"
+      },
+      "expires": "expires {when}",
+      "joined": "joined {when}",
+      "sendAgain": "Send again",
+      "withdraw": "Withdraw"
+    },
+    "guests": {
+      "sending": "Sending…",
+      "send": "Send the invite",
+      "inviteTitle": "Invite someone",
+      "inviteLead": "They get a link that works once and expires in a week. There is no other way in.",
+      "email": "Email",
+      "name": "Name (optional)",
+      "emailed": "Sent · {email} has been emailed a link",
+      "created": "Invite created for {email}",
+      "inviteNote": "works once, expires in 7 days",
+      "holdOn": "Hold on",
+      "good": "Good",
+      "working": "Working…",
+      "revokeName": "Revoke {name}'s access",
+      "restoreName": "Restore {name}'s access",
+      "suspended": "Suspended",
+      "revokeAccess": "Revoke access?",
+      "suspendedHelp": "{name} cannot sign in. Restoring lets them back in with the password or passkey they already had — nothing was deleted.",
+      "revokeHelp": "Signs {name} out everywhere and refuses any new sign-in. Their tickets, comments and history stay exactly as they are, and you can restore access at any time. Recorded in the audit log.",
+      "minting": "Minting…",
+      "resetPassword": "Reset password",
+      "forgotten": "Forgotten password?",
+      "resetHelp": "Mints a single-use link that lets {name} pick a new password, valid {minutes} minutes. It does not sign anyone in, it signs {name} out everywhere, and it is recorded in the audit log.",
+      "resetSent": "Sent to {email}. The link is inside the message and nowhere else — not even here.",
+      "resetNote": "works once, expires in {minutes} minutes",
+      "handOver": "Hand this over — {note}",
+      "handOverLink": "Sign-in link to pass on",
+      "copied": "Copied",
+      "copy": "Copy",
+      "handOverHelp": "Nobody was emailed — there is no mail server configured. Send this to them however you normally would."
+    },
+    "audit": {
+      "kicker": "Admin · the record",
+      "title": "Audit log",
+      "lead": "Every action that changes who can get in, or what happens to someone’s model. Nothing here is ever edited or removed.",
+      "refusalsToday": "{count, plural, one {# refusal in the last day} other {# refusals in the last day}}",
+      "worthALook": "— worth a look if that is more than you expect.",
+      "lens": {
+        "all": "Everything",
+        "access": "Who got in",
+        "uploads": "Models"
+      },
+      "column": {
+        "when": "When",
+        "action": "Action",
+        "who": "Who",
+        "what": "What",
+        "from": "From"
+      },
+      "empty": "Nothing recorded yet.",
+      "detail": {
+        "reason": "reason: {value}",
+        "title": "title: {value}",
+        "filename": "filename: {value}",
+        "format": "format: {value}",
+        "dims": "dims: {value}",
+        "role": "role: {value}"
+      },
+      "showing": "Showing the most recent {count}.",
+      "showingOfMore": "Showing the most recent {count} of more."
+    },
+    "dashboard": {
+      "unit": {
+        "minutes": "{n} min",
+        "hours": "{n} h",
+        "days": "{n} d"
+      },
+      "status": {
+        "Requested": "Requested",
+        "Accepted": "Accepted",
+        "Printing": "Printing",
+        "Delivery": "Delivery",
+        "Done": "Done",
+        "Declined": "Declined"
+      },
+      "size": {
+        "under1": "under 1 MB",
+        "1to10": "1 – 10 MB",
+        "10to50": "10 – 50 MB",
+        "over50": "over 50 MB"
+      },
+      "refusals": {
+        "kicker": "Last {days} days",
+        "title": "Anything being refused",
+        "one": "refusal",
+        "many": "refusals",
+        "none": "Nothing was turned away. That is the expected reading — this panel is here for the week it is not.",
+        "someone": "someone"
+      },
+      "stages": {
+        "kicker": "On the board now",
+        "title": "Where the work is sitting",
+        "longest": "Longest",
+        "usually": "Usually",
+        "usuallyHelp": "<em>Usually</em> is the median this stage has taken, measured off the trail. A queue that is deep but quick is not the same problem as one that is shallow and slow."
+      },
+      "mix": {
+        "kicker": "{count, plural, one {# request in all} other {# requests in all}}",
+        "title": "What gets asked for",
+        "empty": "Nothing uploaded yet.",
+        "material": "Material",
+        "colour": "Colour",
+        "size": "File size · largest {largest}"
+      }
+    },
+    "settings": {
+      "kicker": "Settings",
+      "title": "House rules",
+      "lead": "The few things about this instance you can change without touching the server. A save is in effect from the next request — no restart. Anything set in the environment wins, and is shown here locked with the variable that sets it.",
+      "setBy": "set by <code>{env}</code>",
+      "importSources": "Import from a link",
+      "importSourcesHelp": "Lets a request start from a model’s page instead of an upload. The server then fetches the file itself, so it needs outbound HTTPS to that site.",
+      "off": "Off",
+      "senderName": "Sender name",
+      "senderNameHelp": "The name invitations and reset links arrive from. The address stays in <code>MAIL_FROM</code>.",
+      "noName": "No name — just the address",
+      "goesOutAs": "Mail goes out as <b>{sender}</b>",
+      "noTransportYet": " — once there is a transport; there is none yet.",
+      "save": "Save",
+      "reauth": "Asks for your password or passkey again if you signed in more than five minutes ago.",
+      "allFromEnv": "Everything here is set by the environment.",
+      "env": {
+        "title": "Set in the environment",
+        "lead": "Read-only. These are decided where the app is started, in <code>.env.docker</code>, and change with a restart.",
+        "signIn": "Sign-in",
+        "signInHow": "Username and password · passkeys · API bearer tokens",
+        "breach": "Breach check",
+        "breachOff": "Off — passwords are not checked against known breaches",
+        "breachOn": "On — passwords in a known breach are refused",
+        "passkeyName": "Passkey name",
+        "passkeyNameWhy": "Stays in the environment: the passkey library reads it once, when the app starts, and a passkey keeps the name it was made with.",
+        "mail": "Mail",
+        "mailKind": {
+          "resend": "Configured — Resend",
+          "smtp": "Configured — SMTP",
+          "none": "Not configured — invitation and reset links are shown to you to hand over"
+        },
+        "clientAddress": "Client address",
+        "proxy": {
+          "cloudflare": "From CF-Connecting-IP (Cloudflare)",
+          "forwarded": "From the left-most X-Forwarded-For",
+          "none": "Not trusted — the audit trail records no address"
+        },
+        "source": "Source",
+        "running": "Running",
+        "notSet": "Not set"
+      }
+    },
+    "ticket": {
+      "declined": "Declined — nothing further",
+      "accept": "Accept it",
+      "moveTo": "Move to {status}",
+      "changeFlag": "Change the flag",
+      "flag": "Flag the model",
+      "flagReason": "What is wrong with the model",
+      "flagPlaceholder": "thin walls in two spots",
+      "flagIt": "Flag it",
+      "clearFlag": "Clear the flag",
+      "decline": "Decline",
+      "declineConfirm": "Decline this one? It cannot be undone.",
+      "declineYes": "Yes, decline"
+    }
+  },
+  "account": {
+    "kickerOwner": "Behind the counter",
+    "kickerMember": "At the counter",
+    "roleOwner": "Owns the printer, sees every ticket",
+    "roleMember": "Invited by {owner} · sees only their own tickets",
+    "cards": {
+      "printedForGroup": "Printed for the group",
+      "waitingOnYou": "Waiting on you",
+      "geometry": "Geometry off the plate",
+      "beersOwedYou": "Beers owed to you",
+      "requestsMade": "Requests made",
+      "readyToCollect": "Ready to collect",
+      "inYourHands": "In your hands",
+      "beersOwedTo": "Beers owed to {owner}",
+      "usualMaterial": "Your usual material"
+    },
+    "listOwner": "Everything the group has sent you",
+    "listMember": "Your orders",
+    "emptyOwner": "Nobody has sent you anything yet.",
+    "emptyMember": "No orders yet.",
+    "needsALook": "needs a look",
+    "declinedToo": "Declined orders are listed here too — the rail only carries what is still moving.",
+    "holdOn": "Hold on"
+  },
+  "notifications": {
+    "story": {
+      "moved": "{name} moved “{title}” to {status}.",
+      "declined": "{name} declined “{title}”.",
+      "flagged": "{name} flagged “{title}”: {reason}",
+      "flagCleared": "{name} cleared the flag on “{title}”.",
+      "requeued": "{name} re-queued “{title}”.",
+      "uploaded": "{name} uploaded “{title}”.",
+      "imported": "{name} imported “{title}”."
+    },
+    "feature": {
+      "filed": "{name} filed a request — “{title}”.",
+      "moved": "{name} moved “{title}” to {status, select, InProgress {In progress} other {{status}}}.",
+      "declined": "{name} declined “{title}”."
+    },
+    "withdrew": "{name} withdrew {ref} — “{title}”.",
+    "priority": "{name} set “{title}” to {priority} priority.",
+    "commented": "{name} commented on “{title}”."
   }
 }

@@ -32,3 +32,7 @@ export const CLIENT_GROUPS = [
   "auth.welcome.prompt",
   "problems.auth.betterAuth",
 ] as const;
+// Not here, on purpose: the owner's catalogue editors (admin.catalogEdit) and
+// guest-list controls (admin.guests). Their server pages say those words and
+// hand them down as props, so no client's page carries them — verify:auth
+// checks a client's page source for them.

@@ -61,7 +61,13 @@ class Browser {
     return r;
   }
   /** Replay one server-action form (its hidden inputs + overrides). */
-  async submit(url: string, html: string, formIndex: number, values: Record<string, string>) {
+  async submit(
+    url: string,
+    html: string,
+    formIndex: number,
+    values: Record<string, string>,
+    headers: Record<string, string> = {},
+  ) {
     const forms = html.match(/<form\b[\s\S]*?<\/form>/g) ?? [];
     const form = forms[formIndex];
     if (!form) throw new Error(`no form #${formIndex} on ${url}`);
@@ -73,7 +79,7 @@ class Browser {
       if (n) body.append(unescapeHtml(n), unescapeHtml(v));
     }
     for (const [k, v] of Object.entries(values)) body.set(k, v);
-    return this.raw(url, { method: "POST", body });
+    return this.raw(url, { method: "POST", body, headers });
   }
 }
 
@@ -227,6 +233,36 @@ async function main() {
   await db.benefit.deleteMany({ where: { label: "A beer" } }); // remove it from the list entirely
   check("a story keeps its tip string after the benefit is gone",
         (await db.story.findUnique({ where: { id: past.id } }))?.tip === "A beer");
+
+  // ------------------------------------------------------------------
+  section("the benefits screen speaks the reader's language");
+  // The toast and the refusal travel in the query string as sentences, made
+  // in the language of the request that posted the form; the refusal is the
+  // service's own (`BenefitProblem`), said from its key.
+  const said = (r: Response, kind: "toast" | "error") =>
+    new URLSearchParams((r.headers.get("location") ?? "").split("?")[1] ?? "").get(kind) ?? "";
+  const FR = { "accept-language": "fr-FR,fr;q=0.9" };
+  const NB = " ";
+  page = await (await ruben.go(`${APP}/admin/benefits`)).text();
+  const addForm = () => findForm(page, ['name="label"', 'Add']);
+  const addedEn = await ruben.submit(`${APP}/admin/benefits`, page, addForm(), { label: "A croissant" });
+  check("an English toast is the sentence it always was", said(addedEn, "toast") === "Added “A croissant”",
+        said(addedEn, "toast"));
+  const takenEn = await ruben.submit(`${APP}/admin/benefits`, page, addForm(), { label: "A croissant" });
+  check("and so is an English refusal", said(takenEn, "error") === "“A croissant” is already on the list.",
+        said(takenEn, "error"));
+
+  page = await (await ruben.go(`${APP}/admin/benefits`, { headers: FR })).text();
+  check("the French page is French", page.includes("Ce qui vous revient") && page.includes("Ajouter un pourboire"));
+  const addFormFr = findForm(page, ['name="label"', 'Ajouter']);
+  const addedFr = await ruben.submit(`${APP}/admin/benefits`, page, addFormFr, { label: "Un croissant" }, FR);
+  check("a French owner's toast is French",
+        said(addedFr, "toast") === `Sur la liste${NB}: «${NB}Un croissant${NB}»`, said(addedFr, "toast"));
+  const takenFr = await ruben.submit(`${APP}/admin/benefits`, page, addFormFr, { label: "Un croissant" }, FR);
+  check("and so is the service's refusal",
+        said(takenFr, "error") === `«${NB}Un croissant${NB}» est déjà sur la liste.`, said(takenFr, "error"));
+  const emptyFr = await ruben.submit(`${APP}/admin/benefits`, page, addFormFr, { label: "   " }, FR);
+  check("a refusal from the schema too", said(emptyFr, "error") === "Donnez un nom au pourboire.", said(emptyFr, "error"));
 
   // ------------------------------------------------------------------
   section("teardown — restore the default benefits");

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { say } from "@/i18n/spoken";
 import { requireAdmin } from "@/lib/authz";
 import { requireFreshAuth } from "@/lib/reauth";
 import { SettingsProblem, saveSettings } from "@/lib/settings-admin";
@@ -37,7 +38,7 @@ export async function saveSetupStepAction(formData: FormData): Promise<void> {
     const changed = await saveSettings(admin, formData);
     to(nextStep(step) ?? step, { saved: changed.length > 0 ? "1" : "0" });
   } catch (error) {
-    if (error instanceof SettingsProblem) to(step, { error: error.message });
+    if (error instanceof SettingsProblem) to(step, { error: await say(error) });
     throw error;
   }
 }

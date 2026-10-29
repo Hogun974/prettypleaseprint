@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Invite } from "@prisma/client";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/authz";
@@ -32,7 +33,11 @@ const CHIP: Record<State, string> = {
   Expired: "bg-sun text-ink",
 };
 
-function relative(date: Date): string {
+/**
+ * Its own units rather than `relativeTime`'s — no weeks, so an invitation
+ * reads "expires in 7 days" — in the reader's language.
+ */
+function relative(date: Date, locale: string, justNow: string): string {
   const diff = date.getTime() - Date.now();
   const abs = Math.abs(diff);
   const day = 86_400_000;
@@ -43,15 +48,57 @@ function relative(date: Date): string {
     [3_600_000, "hour"],
     [60_000, "minute"],
   ];
-  const fmt = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const fmt = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
   for (const [ms, unit] of units) {
     if (abs >= ms) return fmt.format(Math.round(diff / ms), unit);
   }
-  return "just now";
+  return justNow;
 }
 
 export default async function InvitesPage() {
-  const admin = await requireAdmin();
+  const [admin, t, locale, time, g] = await Promise.all([
+    requireAdmin(),
+    getTranslations("admin.invites"),
+    getLocale(),
+    getTranslations("time"),
+    getTranslations("admin.guests"),
+  ]);
+  // The client controls' words, said here and handed down as props: owner-only
+  // words stay out of the catalogue every page carries (client-groups.ts).
+  const handover = (note: string) => ({
+    title: g("handOver", { note }),
+    link: g("handOverLink"),
+    copy: g("copy"),
+    copied: g("copied"),
+    help: g("handOverHelp"),
+  });
+  const inviteLabels = {
+    title: g("inviteTitle"),
+    lead: g("inviteLead"),
+    email: g("email"),
+    name: g("name"),
+    send: g("send"),
+    sending: g("sending"),
+    holdOn: g("holdOn"),
+    handover: handover(g("inviteNote")),
+  };
+  const resetLabels = (name: string) => ({
+    summary: g("forgotten"),
+    help: g("resetHelp", { name, minutes: RESET_TTL_MINUTES }),
+    submit: g("resetPassword"),
+    working: g("minting"),
+    good: g("good"),
+    holdOn: g("holdOn"),
+    handover: handover(g("resetNote", { minutes: RESET_TTL_MINUTES })),
+  });
+  const accessLabels = (name: string, suspended: boolean) => ({
+    summary: suspended ? g("suspended") : g("revokeAccess"),
+    help: suspended ? g("suspendedHelp", { name }) : g("revokeHelp", { name }),
+    submit: suspended ? g("restoreName", { name }) : g("revokeName", { name }),
+    working: g("working"),
+    holdOn: g("holdOn"),
+  });
+  const ago = (date: Date) => relative(date, locale, time("justNow"));
 
   const [invites, memberList] = await Promise.all([
     db.invite.findMany({
@@ -74,23 +121,20 @@ export default async function InvitesPage() {
       <AppHeader user={admin} active="/admin/invites" />
 
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Admin · who gets a table</Kicker>
+        <Kicker>{t("kicker")}</Kicker>
         <h1 className="m-0 mb-[13.2px] text-[46px] leading-[0.98] text-ink">
-          The guest list
+          {t("title")}
         </h1>
         <p className="m-0 mb-[26.4px] max-w-[620px] text-[16.5px] leading-[1.5] text-ink-2 text-pretty">
-          {members} {members === 1 ? "person" : "people"} can send you models, and{" "}
-          {open.length} {open.length === 1 ? "invite is" : "invites are"} still
-          outstanding. Links expire after {INVITE_TTL_DAYS} days and work exactly
-          once.
+          {t("lead", { members, open: open.length, days: INVITE_TTL_DAYS })}
         </p>
 
-        <InviteForm />
+        <InviteForm labels={inviteLabels} />
 
         {memberList.length > 0 && (
           <>
             <h2 className="mb-[13.2px] mt-[35.2px] font-display text-[26px] text-ink">
-              Who is in
+              {t("whoIsIn")}
             </h2>
             <div className="overflow-hidden rounded-panel border-[3px] border-ink bg-porcelain shadow-stamp">
               {memberList.map((m, i) => (
@@ -111,7 +155,7 @@ export default async function InvitesPage() {
                       {m.name}
                       {m.banned && (
                         <span className="ml-[8px] rounded-chip border-2 border-ink bg-cream-3 px-[8px] py-[1px] font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink-2">
-                          Suspended
+                          {t("suspended")}
                         </span>
                       )}
                     </p>
@@ -124,17 +168,13 @@ export default async function InvitesPage() {
                       href={`/admin/prints?who=${encodeURIComponent(m.id)}`}
                       className="stamp rounded-chip border-[3px] border-ink bg-porcelain px-[13.2px] py-[6px] text-[13px] font-bold text-ink hover:bg-sun"
                     >
-                      Their prints
+                      {t("theirPrints")}
                     </Link>
-                    <ResetPassword
-                      userId={m.id}
-                      name={m.name.split(" ")[0] ?? m.name}
-                      expiresInMinutes={RESET_TTL_MINUTES}
-                    />
+                    <ResetPassword userId={m.id} labels={resetLabels(m.name.split(" ")[0] ?? m.name)} />
                     <MemberAccess
                       userId={m.id}
-                      name={m.name.split(" ")[0] ?? m.name}
                       suspended={m.banned === true}
+                      labels={accessLabels(m.name.split(" ")[0] ?? m.name, m.banned === true)}
                     />
                   </div>
                 </div>
@@ -144,13 +184,13 @@ export default async function InvitesPage() {
         )}
 
         <h2 className="mb-[13.2px] mt-[35.2px] font-display text-[26px] text-ink">
-          Invitations
+          {t("invitations")}
         </h2>
 
         <div className="rounded-panel border-[3px] border-ink bg-porcelain px-[22px] pb-[22px] pt-[8.8px] shadow-stamp">
           {invites.length === 0 && (
             <p className="py-[17.6px] font-mono text-[12px] uppercase text-ink-3">
-              Nobody yet. The office is very quiet.
+              {t("none")}
             </p>
           )}
 
@@ -165,21 +205,21 @@ export default async function InvitesPage() {
                   <div className="font-mono text-[15px] font-bold text-ink">{invite.email}</div>
                   <div className="mt-[3px] text-[13px] text-ink-3">
                     {invite.name ? `${invite.name} · ` : ""}
-                    invited by {invite.invitedBy.name} · {relative(invite.createdAt)}
+                    {t("invitedBy", { name: invite.invitedBy.name, when: ago(invite.createdAt) })}
                   </div>
                 </div>
 
                 <span
                   className={`rounded-chip border-2 border-ink px-[11px] py-[3px] font-mono text-[11.5px] font-bold uppercase tracking-[0.06em] ${CHIP[state]}`}
                 >
-                  {state}
+                  {t(`state.${state}`)}
                 </span>
 
                 <div className="w-[150px] font-mono text-[11.5px] uppercase text-ink-3">
                   {state === "Pending"
-                    ? `expires ${relative(invite.expiresAt)}`
+                    ? t("expires", { when: ago(invite.expiresAt) })
                     : state === "Accepted"
-                      ? `joined ${relative(invite.acceptedAt!)}`
+                      ? t("joined", { when: ago(invite.acceptedAt!) })
                       : ""}
                 </div>
 
@@ -191,7 +231,7 @@ export default async function InvitesPage() {
                         type="submit"
                         className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-aqua px-[15px] py-[6px] font-mono text-[11.5px] font-bold uppercase text-ink hover:bg-sun"
                       >
-                        Send again
+                        {t("sendAgain")}
                       </button>
                     </form>
                     {/* Carries the same keyline as its neighbour. It used to be
@@ -206,7 +246,7 @@ export default async function InvitesPage() {
                         type="submit"
                         className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-wash px-[15px] py-[6px] font-mono text-[11.5px] font-bold uppercase text-cherry-dk hover:bg-cherry hover:text-cream"
                       >
-                        Withdraw
+                        {t("withdraw")}
                       </button>
                     </form>
                   </div>

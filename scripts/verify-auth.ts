@@ -19,6 +19,7 @@ import { db } from "../src/lib/db";
 import { createInvite, mailConfigured } from "../src/lib/invites";
 import { issuePasswordSetupUrl } from "../src/lib/password-reset";
 import { TEST_PASSWORD, ensureCredentials, signInWithPassword } from "./_accounts";
+import { ownerOnlyWords } from "./_lang";
 
 const APP = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
@@ -277,6 +278,14 @@ async function main() {
         !home.includes("Admin view") &&
         !home.includes("Guest list") &&
         !home.includes("/admin/audit"));
+  // Nor the words of the owner's own controls, in either language, anywhere
+  // in the source — the RSC payload included. Their pages hand them down as
+  // props instead of sending them in every page's catalogue.
+  const OWNER_ONLY = ownerOnlyWords();
+  const homeFr = await (await ayla.go(`${APP}/`, { headers: { "accept-language": "fr" } })).text();
+  const leaked = [home, homeFr].flatMap((html) => OWNER_ONLY.filter((w) => unescapeHtml(html).includes(w)));
+  check(`nor any of the owner's control words (${OWNER_ONLY.length}), in English or French`,
+        OWNER_ONLY.length > 20 && leaked.length === 0, leaked.join(" | "));
 
   const account = await db.user.findUnique({ where: { email: AYLA } });
   check("the account is stamped from the invite, not the request",
@@ -780,6 +789,18 @@ async function main() {
         ownerFrench.slice(0, 300));
   check("with none of the English navigation left in it",
         !["The pass", "The rail", "The books", "Guest list"].some((s) => ownerFrench.includes(s)));
+
+  // The other side of section 3's "none of the owner's control words": the
+  // owner's own guest list does carry them, in each language — so that check
+  // was looking for words that exist.
+  const ownerWords = ownerOnlyWords();
+  for (const lang of [undefined, "fr"]) {
+    const guests = unescapeHtml(await (await ownerIn.go(`${APP}/admin/invites`, {
+      headers: lang ? { "accept-language": lang } : {},
+    })).text());
+    check(`the owner's guest list carries its control words (${lang ?? "en"})`,
+          ownerWords.filter((w) => guests.includes(w)).length >= 3);
+  }
 
   // ------------------------------------------------------------------------
   section("16. the entry screens speak the reader's language");

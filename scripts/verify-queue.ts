@@ -14,6 +14,7 @@ import { db } from "../src/lib/db";
 import { clientIpFrom, ipSource } from "../src/lib/client-ip";
 import { BOARD, nextStatus, storyRef as storyRefOf } from "../src/lib/scope";
 import { ensureCredentials, signInWithPassword, usernameFor } from "./_accounts";
+import { firstDifference, foundIn, htmlLang, sayNotification, visibleText } from "./_lang";
 
 const APP = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
@@ -62,7 +63,13 @@ class Browser {
     return r;
   }
   /** Replays a server-action form the way a JS-less browser does. */
-  async submit(url: string, html: string, formIndex: number, values: Record<string, string>) {
+  async submit(
+    url: string,
+    html: string,
+    formIndex: number,
+    values: Record<string, string>,
+    headers: Record<string, string> = {},
+  ) {
     const forms = html.match(/<form\b[\s\S]*?<\/form>/g) ?? [];
     const form = forms[formIndex];
     if (!form) throw new Error(`no form #${formIndex} on ${url}`);
@@ -74,7 +81,7 @@ class Browser {
       if (n) body.append(unescapeHtml(n), unescapeHtml(v));
     }
     for (const [k, v] of Object.entries(values)) body.set(k, v);
-    return this.raw(url, { method: "POST", body });
+    return this.raw(url, { method: "POST", body, headers });
   }
 }
 /**
@@ -779,6 +786,127 @@ async function main() {
   section("the uploader sees what happened");
   const feed = await (await client.go(`${APP}/board`)).text();
   check("their Activity count is not zero", /Activity[\s\S]{0,200}[1-9]/.test(feed));
+
+  // ------------------------------------------------------------------
+  section("the back office and the Activity panel speak the reader's language");
+  // English is what every check above reads, so it is pinned first: the same
+  // text with no Accept-Language as with an English one, and the words it
+  // had before translation. Then French, with none of those words left.
+  // A fresh sign-in, because the guest list's forms ask for a recent one.
+  const owner = await signIn(admin);
+  const pageIn = async (b: Browser, path: string, lang?: string) =>
+    (await b.go(`${APP}${path}`, { headers: lang ? { "accept-language": lang } : {} })).text();
+
+  const SCREENS: Array<{ who: Browser; path: string; english: string[]; french: string[] }> = [
+    { who: owner, path: "/admin/invites",
+      english: ["Admin · who gets a table", "The guest list", "Invite someone", "Send the invite", "Who is in",
+                "Their prints", "Forgotten password?", "Revoke access?"],
+      french: ["Admin · qui a sa table", "La liste des invités", "Inviter quelqu’un", "Envoyer l’invitation",
+               "Qui est entré", "Ses impressions", "Mot de passe oublié", "Couper l’accès"] },
+    { who: owner, path: `/admin/prints?who=${ayla.id}`,
+      english: ["Admin · who sent what", "Prints by person", "Pick one person or several"],
+      french: ["Admin · qui a envoyé quoi", "Impressions par personne", "Choisissez une ou plusieurs personnes"] },
+    { who: owner, path: "/admin/audit",
+      english: ["Admin · the record", "Audit log", "Anything being refused", "Where the work is sitting",
+                "What gets asked for", "Everything", "Who got in", "Showing the most recent"],
+      french: ["Admin · le registre", "Ce qui est refusé", "Où le travail attend", "Ce qui est demandé",
+               "Tout", "Qui est entré", "plus récents"] },
+    { who: owner, path: "/admin/catalog",
+      english: ["Admin · what is on the shelf", "Materials & colours", "Add a material", "Add a colour", "Swatch"],
+      french: ["Admin · ce qu’il y a en réserve", "Matières et couleurs", "Ajouter une matière",
+               "Ajouter une couleur", "Pastille"] },
+    { who: owner, path: "/admin/benefits",
+      english: ["What’s in it for you", "Add a benefit", "The tips people can offer"],
+      french: ["Ce qui vous revient", "Ajouter un pourboire", "Les pourboires qu’on peut vous proposer"] },
+    { who: owner, path: "/admin/settings",
+      english: ["House rules", "Import from a link", "Sender name", "Set in the environment", "Breach check"],
+      french: ["Le règlement de la maison", "Importer depuis un lien", "Nom de l’expéditeur",
+               "Fixé par l’environnement", "Fuites connues"] },
+    { who: owner, path: "/me",
+      english: ["Behind the counter", "Printed for the group", "Everything the group has sent you",
+                "Declined orders are listed here too"],
+      french: ["Derrière le comptoir", "Imprimé pour la salle", "Tout ce que la salle vous a envoyé"] },
+    { who: client, path: "/me",
+      english: ["At the counter", "Requests made", "Your orders", "Your usual material"],
+      french: ["Au comptoir", "Commandes passées", "Vos commandes", "Votre matière habituelle"] },
+  ];
+  for (const { who, path, english, french } of SCREENS) {
+    const plain = visibleText(await pageIn(who, path));
+    const missing = english.filter((s) => !plain.includes(s));
+    check(`${path}: English by default, word for word`, missing.length === 0, `missing: ${missing.join(" | ")}`);
+    const asked = visibleText(await pageIn(who, path, "en-GB,en;q=0.9"));
+    check(`${path}: an English browser gets exactly the same text`, asked === plain, firstDifference(plain, asked));
+    const frHtml = await pageIn(who, path, "fr-FR,fr;q=0.9");
+    const frText = visibleText(frHtml);
+    const absent = french.filter((s) => !frText.includes(s));
+    check(`${path}: French to a French reader`, htmlLang(frHtml) === "fr" && absent.length === 0,
+          `lang=${htmlLang(frHtml)} missing: ${absent.join(" | ")}`);
+    const left = foundIn(frText, english);
+    check(`${path}: with none of that English left`, left.length === 0, left.join(" | "));
+  }
+
+  // A refusal from a guest-list control, said in the reader's language. The
+  // owner's own revoke control, aimed at the owner, is refused before
+  // anything changes (asserted above); here only its words are.
+  let guestPage = await pageIn(owner, "/admin/invites");
+  const ownRevoke = formIndexContaining(guestPage, 'name="revoke"');
+  const refusedEn = visibleText(await (await owner.submit(`${APP}/admin/invites`, guestPage, ownRevoke,
+    { userId: admin.id, revoke: "true" })).text());
+  check("a guest-list refusal reads in English by default",
+        refusedEn.includes("The printer owner cannot be suspended — that would lock the app."), refusedEn.slice(0, 200));
+  guestPage = await pageIn(owner, "/admin/invites", "fr");
+  const refusedFr = visibleText(await (await owner.submit(`${APP}/admin/invites`, guestPage,
+    formIndexContaining(guestPage, 'name="revoke"'), { userId: admin.id, revoke: "true" }, { "accept-language": "fr" })).text());
+  check("and in French to a French reader",
+        refusedFr.includes("ne peut pas être suspendue") && !refusedFr.includes("cannot be suspended"),
+        refusedFr.slice(0, 200));
+  check("the owner is still not suspended", (await db.user.findUnique({ where: { id: admin.id } }))?.banned !== true);
+
+  // Notifications: a sentence made now is stored with its key, and the panel
+  // says it in the reader's language; the API keeps the English.
+  const hallway = await makeStory(ayla.id, "Shelf bracket for the hallway");
+  const queueNow = await pageIn(owner, "/queue");
+  const acceptHallway = (queueNow.match(/<form\b[\s\S]*?<\/form>/g) ?? [])
+    .findIndex((f) => f.includes(`value="${hallway.id}"`) && f.includes("Accept it"));
+  await owner.submit(`${APP}/queue`, queueNow, acceptHallway, {});
+  const told = await db.notification.findFirst({ where: { recipientId: ayla.id, storyId: hallway.id } });
+  check("accepting a ticket stores the sentence's key beside its English",
+        told?.messageKey === "notifications.story.moved" && !!told.text.includes("moved “Shelf bracket for the hallway” to Accepted"),
+        JSON.stringify(told));
+  const saidFr = told ? sayNotification("fr", told) : "";
+  const boardEn = await pageIn(client, "/board");
+  const boardFr = await pageIn(client, "/board", "fr");
+  check("the Activity panel says it in English by default, as stored", !!told && boardEn.includes(told.text));
+  check("and in French to a French reader",
+        !!told && saidFr.includes("a accepté") && boardFr.includes(saidFr) && !boardFr.includes(told.text),
+        saidFr);
+
+  const old = await db.notification.create({
+    data: { recipientId: ayla.id, text: "Ruben moved “A ticket from before keys” to Printing." },
+  });
+  check("a notification from before keys shows its stored English, even to a French reader",
+        (await pageIn(client, "/board", "fr")).includes(old.text));
+
+  const api = await (await client.go(`${APP}/api/notifications`, { headers: { "accept-language": "fr" } }))
+    .json() as { notifications: Array<Record<string, unknown>> };
+  const apiRow = api.notifications.find((n) => n.id === told?.id);
+  check("the JSON API still answers with the English text, and only the fields it had",
+        apiRow?.text === told?.text && !("messageKey" in (apiRow ?? {})) && !("messageValues" in (apiRow ?? {})),
+        JSON.stringify(apiRow));
+
+  // Every keyed notification this suite made, whichever caller made it, says
+  // in English exactly the sentence it stored — the catalogue's English is
+  // held to the code's — and something else in French.
+  const keyed = await db.notification.findMany({ where: { messageKey: { not: null } } });
+  const drifted = keyed.filter((n) => sayNotification("en", n) !== n.text);
+  check(`every keyed notification (${keyed.length}) says its stored English word for word`,
+        keyed.length > 0 && drifted.length === 0,
+        drifted.map((n) => `${n.messageKey}: "${sayNotification("en", n)}" vs "${n.text}"`).join(" | "));
+  const untranslated = keyed.filter((n) => sayNotification("fr", n) === n.text);
+  check("and is translated for a French reader", untranslated.length === 0,
+        untranslated.map((n) => n.messageKey).join(", "));
+  check("this suite made more than one kind",
+        new Set(keyed.map((n) => n.messageKey)).size > 3, [...new Set(keyed.map((n) => n.messageKey))].join(", "));
 
   console.info(
     `\n${passed} checks passed, ${failures.length} failed` +

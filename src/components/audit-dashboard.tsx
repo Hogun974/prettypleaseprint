@@ -1,4 +1,6 @@
-import { relativeTime } from "@/lib/catalog";
+import { getTranslations } from "next-intl/server";
+
+import { getRelativeTime } from "@/i18n/server";
 import { formatBytes } from "@/lib/models";
 import type { Mix, Refusals, Stage } from "@/lib/dashboard";
 
@@ -16,13 +18,24 @@ import type { Mix, Refusals, Stage } from "@/lib/dashboard";
  * `script-src 'self'` refuses, and would be a lot of machinery for four bars.
  */
 
-/** Hours, said the way a person would say them. */
-function duration(hours: number | null): string {
+/** Hours, said the way a person would say them, in the reader's units. */
+function duration(hours: number | null, unit: (key: "minutes" | "hours" | "days", n: number) => string): string {
   if (hours === null) return "—";
-  if (hours < 1) return `${Math.round(hours * 60)} min`;
-  if (hours < 48) return `${Math.round(hours)} h`;
-  return `${Math.round(hours / 24)} d`;
+  if (hours < 1) return unit("minutes", Math.round(hours * 60));
+  if (hours < 48) return unit("hours", Math.round(hours));
+  return unit("days", Math.round(hours / 24));
 }
+
+/**
+ * The size buckets `mix()` counts in, by their label there, to the key of
+ * the same words here. A bucket this does not know keeps its label.
+ */
+const SIZE_KEYS: Record<string, "under1" | "1to10" | "10to50" | "over50"> = {
+  "under 1 MB": "under1",
+  "1 – 10 MB": "1to10",
+  "10 – 50 MB": "10to50",
+  "over 50 MB": "over50",
+};
 
 function Panel({
   kicker,
@@ -92,7 +105,7 @@ function Empty({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function AuditDashboard({
+export async function AuditDashboard({
   refusals,
   stages,
   mix,
@@ -101,6 +114,10 @@ export function AuditDashboard({
   stages: Stage[];
   mix: Mix;
 }) {
+  const [t, ago] = await Promise.all([getTranslations("admin.dashboard"), getRelativeTime()]);
+  const unit = (key: "minutes" | "hours" | "days", n: number) => t(`unit.${key}`, { n });
+  const status = (s: string) => (t.has(`status.${s}` as never) ? t(`status.${s}` as never) : s);
+  const size = (label: string) => (SIZE_KEYS[label] ? t(`size.${SIZE_KEYS[label]}`) : label);
   const busiestDay = Math.max(1, ...refusals.perDay.map((d) => d.count));
   const mostWaiting = Math.max(1, ...stages.map((s) => s.waiting));
   const topMaterial = Math.max(1, ...mix.materials.map((m) => m.count));
@@ -110,7 +127,7 @@ export function AuditDashboard({
   return (
     <div className="mb-[26.4px] grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-[17.6px]">
       {/* ---------------- 1. refusals ---------------- */}
-      <Panel kicker={`Last ${refusals.days} days`} title="Anything being refused">
+      <Panel kicker={t("refusals.kicker", { days: refusals.days })} title={t("refusals.title")}>
         <div className="flex items-baseline gap-[8px]">
           <span
             className={`font-display text-[38px] leading-[0.9] ${
@@ -120,7 +137,8 @@ export function AuditDashboard({
             {refusals.total}
           </span>
           <span className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
-            refusal{refusals.total === 1 ? "" : "s"}
+            {/* The number stands apart, larger, so only the word is said. */}
+            {t(refusals.total === 1 ? "refusals.one" : "refusals.many")}
           </span>
         </div>
 
@@ -144,8 +162,7 @@ export function AuditDashboard({
 
         {refusals.total === 0 ? (
           <p className="m-0 mt-[11px] text-[13.5px] leading-[1.45] text-ink-2">
-            Nothing was turned away. That is the expected reading — this panel
-            is here for the week it is not.
+            {t("refusals.none")}
           </p>
         ) : (
           <>
@@ -162,8 +179,8 @@ export function AuditDashboard({
             <ul className="m-0 mt-[13.2px] list-none border-t-2 border-dashed border-rule p-0 pt-[8px]">
               {refusals.recent.map((r, i) => (
                 <li key={i} className="py-[3px] font-mono text-[11px] leading-[1.4] text-ink-3">
-                  <span className="text-ink-2">{relativeTime(r.at)}</span>{" "}
-                  {r.actorEmail ?? "someone"} · {r.subject ?? "—"}
+                  <span className="text-ink-2">{ago(r.at)}</span>{" "}
+                  {r.actorEmail ?? t("refusals.someone")} · {r.subject ?? "—"}
                   {r.reason ? ` · ${r.reason}` : ""}
                 </li>
               ))}
@@ -173,12 +190,12 @@ export function AuditDashboard({
       </Panel>
 
       {/* ---------------- 2. where work sits ---------------- */}
-      <Panel kicker="On the board now" title="Where the work is sitting">
+      <Panel kicker={t("stages.kicker")} title={t("stages.title")}>
         <div className="flex flex-col gap-[9px]">
           {stages.map((s) => (
             <Bar
               key={s.status}
-              label={s.status}
+              label={status(s.status)}
               value={`${s.waiting}`}
               share={s.waiting / mostWaiting}
               fill={s.waiting === 0 ? "bg-chrome" : "bg-aqua"}
@@ -189,7 +206,7 @@ export function AuditDashboard({
         <table className="mt-[13.2px] w-full border-collapse border-t-2 border-dashed border-rule">
           <thead>
             <tr>
-              {["", "Longest", "Usually"].map((h) => (
+              {["", t("stages.longest"), t("stages.usually")].map((h) => (
                 <th
                   key={h}
                   className="pt-[8px] text-left font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-ink-3"
@@ -202,32 +219,30 @@ export function AuditDashboard({
           <tbody>
             {stages.map((s) => (
               <tr key={s.status}>
-                <td className="py-[2px] font-mono text-[11.5px] text-ink-2">{s.status}</td>
+                <td className="py-[2px] font-mono text-[11.5px] text-ink-2">{status(s.status)}</td>
                 <td className="py-[2px] font-mono text-[11.5px] tabular-nums text-ink">
-                  {duration(s.longestHours)}
+                  {duration(s.longestHours, unit)}
                 </td>
                 <td className="py-[2px] font-mono text-[11.5px] tabular-nums text-ink-3">
-                  {duration(s.medianHours)}
+                  {duration(s.medianHours, unit)}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="m-0 mt-[8px] text-[12px] leading-[1.45] text-ink-3">
-          <em>Usually</em> is the median this stage has taken, measured off the
-          trail. A queue that is deep but quick is not the same problem as one
-          that is shallow and slow.
+          {t.rich("stages.usuallyHelp", { em: (chunks) => <em>{chunks}</em> })}
         </p>
       </Panel>
 
       {/* ---------------- 3. what gets asked for ---------------- */}
-      <Panel kicker={`${mix.total} request${mix.total === 1 ? "" : "s"} in all`} title="What gets asked for">
+      <Panel kicker={t("mix.kicker", { count: mix.total })} title={t("mix.title")}>
         {mix.total === 0 ? (
-          <Empty>Nothing uploaded yet.</Empty>
+          <Empty>{t("mix.empty")}</Empty>
         ) : (
           <>
             <p className="m-0 mb-[6px] font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3">
-              Material
+              {t("mix.material")}
             </p>
             <div className="flex flex-col gap-[7px]">
               {mix.materials.map((m) => (
@@ -237,7 +252,7 @@ export function AuditDashboard({
             </div>
 
             <p className="m-0 mb-[6px] mt-[13.2px] font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3">
-              Colour
+              {t("mix.colour")}
             </p>
             <div className="flex flex-col gap-[7px]">
               {mix.colors.slice(0, 5).map((c) => (
@@ -247,11 +262,11 @@ export function AuditDashboard({
             </div>
 
             <p className="m-0 mb-[6px] mt-[13.2px] font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3">
-              File size · largest {formatBytes(mix.largestBytes)}
+              {t("mix.size", { largest: formatBytes(mix.largestBytes) })}
             </p>
             <div className="flex flex-col gap-[7px]">
               {mix.sizes.map((s) => (
-                <Bar key={s.label} label={s.label} value={`${s.count}`}
+                <Bar key={s.label} label={size(s.label)} value={`${s.count}`}
                      share={s.count / topSize} fill="bg-chrome-dk" />
               ))}
             </div>

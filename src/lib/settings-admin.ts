@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { record } from "@/lib/audit";
 import type { Actor } from "@/lib/scope";
+import type { Spoken } from "@/i18n/spoken";
 import { SETTINGS, parseSettingsForm, type SettingKey } from "@/lib/settings";
 
 /**
@@ -18,8 +19,15 @@ import { SETTINGS, parseSettingsForm, type SettingKey } from "@/lib/settings";
  * `parseSettingsForm`, once.
  */
 
+/**
+ * `message` is English; `spoken`, when there is one, is the key of the same
+ * sentence, for the page to say in the reader's language (src/i18n/spoken.ts).
+ */
 export class SettingsProblem extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly spoken?: Spoken,
+  ) {
     super(message);
     this.name = "SettingsProblem";
   }
@@ -27,7 +35,9 @@ export class SettingsProblem extends Error {
 
 function assertAdmin(actor: Actor) {
   if (actor.role !== "admin") {
-    throw new SettingsProblem("Only the printer owner changes the settings.");
+    throw new SettingsProblem("Only the printer owner changes the settings.", {
+      key: "problems.settings.ownerOnly",
+    });
   }
 }
 
@@ -50,7 +60,7 @@ export async function saveSettings(actor: Actor, form: FormData): Promise<Settin
   assertAdmin(actor);
 
   const parsed = parseSettingsForm(form, process.env);
-  if ("problem" in parsed) throw new SettingsProblem(parsed.problem);
+  if ("problem" in parsed) throw new SettingsProblem(parsed.problem, parsed.spoken);
 
   const detail: Partial<Record<SettingKey, Change>> = await db.$transaction(async (tx) => {
     await tx.$executeRaw`INSERT INTO "instanceSettings" ("id", "updatedAt") VALUES (1, now()) ON CONFLICT ("id") DO NOTHING`;

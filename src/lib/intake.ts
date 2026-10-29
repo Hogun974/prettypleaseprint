@@ -162,6 +162,10 @@ export async function openRequest(
       text: origin
         ? `${actor.name} imported “${title}”.`
         : `${actor.name} uploaded “${title}”.`,
+      message: {
+        key: origin ? "notifications.story.imported" : "notifications.story.uploaded",
+        values: { name: actor.name, title },
+      },
     });
   }
 

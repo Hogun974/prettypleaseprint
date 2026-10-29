@@ -420,7 +420,14 @@ model Notification {
   /// the Activity feed routes to /story or /frr on whichever is set.
   featureId   Int?
   feature     FeatureRequest? @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  /// The sentence in English, as it was said when the notification was made.
+  /// What the JSON API returns, and what a row with no key shows everyone.
   text        String
+  /// The same sentence as a key in messages/*.json and its values (names,
+  /// titles, a status), so the Activity panel says it in the reader's language.
+  /// Null on rows written before these existed: those show `text`.
+  messageKey    String?
+  messageValues Json?
   read        Boolean  @default(false)
   createdAt   DateTime @default(now())
 

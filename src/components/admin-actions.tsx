@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { advanceStory, clearFlag, declineStory, flagStory } from "@/app/actions/stories";
 import { nextStatus } from "@/lib/scope";
 import type { StoryStatus } from "@prisma/client";
@@ -10,8 +12,11 @@ import type { StoryStatus } from "@prisma/client";
  * consequential actions — decline and flag — sit behind a `<details>`
  * disclosure rather than firing on a single click: decline is terminal, and a
  * flag without a reason is useless, so both need a second beat anyway.
+ *
+ * A server component, so it reads the request's language itself; the next
+ * status is named in it too ("Move to Printing").
  */
-export function AdminActions({
+export async function AdminActions({
   storyId,
   status,
   flagged,
@@ -27,6 +32,7 @@ export function AdminActions({
   from: string;
   compact?: boolean;
 }) {
+  const t = await getTranslations("admin.ticket");
   const next = nextStatus(status);
   const isNew = status === "Requested";
   const declined = status === "Declined";
@@ -34,7 +40,7 @@ export function AdminActions({
   if (declined) {
     return (
       <p className="m-0 font-mono text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-        Declined — nothing further
+        {t("declined")}
       </p>
     );
   }
@@ -50,7 +56,7 @@ export function AdminActions({
               type="submit"
               className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[18px] py-[8px] text-[14px] font-bold text-cream hover:bg-cherry"
             >
-              {isNew ? "Accept it" : `Move to ${next}`}
+              {isNew ? t("accept") : t("moveTo", { status: next })}
             </button>
           </form>
         )}
@@ -58,7 +64,7 @@ export function AdminActions({
         {/* A reason is required, so this cannot be a one-click button. */}
         <details className="group">
           <summary className="stamp inline-block cursor-pointer list-none rounded-chip border-[3px] border-ink bg-porcelain px-[15px] py-[8px] text-[14px] font-bold text-ink hover:bg-sun">
-            {flagged ? "Change the flag" : "Flag the model"}
+            {flagged ? t("changeFlag") : t("flag")}
           </summary>
           <form
             action={flagStory}
@@ -67,7 +73,7 @@ export function AdminActions({
             <input type="hidden" name="id" value={storyId} />
             <input type="hidden" name="from" value={from} />
             <label htmlFor={`reason-${storyId}`} className="sr-only">
-              What is wrong with the model
+              {t("flagReason")}
             </label>
             <input
               id={`reason-${storyId}`}
@@ -75,14 +81,14 @@ export function AdminActions({
               required
               maxLength={200}
               defaultValue={flagReason ?? ""}
-              placeholder="thin walls in two spots"
+              placeholder={t("flagPlaceholder")}
               className="min-w-[180px] flex-1 rounded-[8px] border-[3px] border-ink bg-porcelain px-[11px] py-[7px] text-[14px] text-ink placeholder:text-ink-3"
             />
             <button
               type="submit"
               className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-sun px-[15px] py-[7px] text-[13.5px] font-bold text-ink"
             >
-              Flag it
+              {t("flagIt")}
             </button>
           </form>
         </details>
@@ -95,7 +101,7 @@ export function AdminActions({
               type="submit"
               className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-mint px-[15px] py-[8px] text-[14px] font-bold text-ink hover:bg-mint-wash"
             >
-              Clear the flag
+              {t("clearFlag")}
             </button>
           </form>
         )}
@@ -104,7 +110,7 @@ export function AdminActions({
         {isNew && (
           <details>
             <summary className="inline-block cursor-pointer list-none rounded-chip border-[3px] border-transparent px-[15px] py-[8px] text-[14px] font-bold text-ink-2 hover:border-ink hover:bg-cherry-wash">
-              Decline
+              {t("decline")}
             </summary>
             <form
               action={declineStory}
@@ -113,13 +119,13 @@ export function AdminActions({
               <input type="hidden" name="id" value={storyId} />
             <input type="hidden" name="from" value={from} />
               <span className="text-[14px] text-ink">
-                Decline this one? It cannot be undone.
+                {t("declineConfirm")}
               </span>
               <button
                 type="submit"
                 className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[15px] py-[7px] text-[13.5px] font-bold text-cream"
               >
-                Yes, decline
+                {t("declineYes")}
               </button>
             </form>
           </details>
