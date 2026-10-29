@@ -912,8 +912,10 @@ async function main() {
   section("the print-request track speaks the reader's language");
   // English first, because every other check in every suite reads it: the
   // same words whatever a browser that is not asking for French sends. Then
-  // French, page by page, with none of those English words left in it.
-  const en = (b: Browser, path: string, lang?: string) =>
+  // French, page by page, with none of those English words left in it. The
+  // owner's pages are read with the session the section above signed in:
+  // the one from the start of the suite no longer has one by now.
+  const en =(b: Browser, path: string, lang?: string) =>
     b.go(`${APP}${path}`, { headers: lang ? { "accept-language": lang } : {} }).then((r) => r.text());
 
   const tReq = await makeStory(ayla.id, "Hook, in two languages", "Requested");
@@ -967,14 +969,14 @@ async function main() {
       french: ["On remet ça ?", `Même fichier que ${storyRefOf(tDone.id)} — rien à renvoyer`],
     },
     {
-      name: "the owner's queue", who: ruben, path: "/queue",
+      name: "the owner's queue", who: owner, path: "/queue",
       english: ["Printer view · the machine by the window", "Waiting on you", "Rest of the queue",
                 "offers A beer", "waiting for a yes.", "Accept it", "Flag the model", "Yes, decline"],
       french: ["Côté imprimante · la machine près de la fenêtre", "À vous de dire oui", "Le reste de la file",
                "pourboire : A beer", "un oui.", "Accepter", "Signaler un souci", "Oui, refuser"],
     },
     {
-      name: "the owner's view of a ticket", who: ruben, path: `/story/${tPrinting.id}`,
+      name: "the owner's view of a ticket", who: owner, path: `/story/${tPrinting.id}`,
       english: ["Move it along", "Move to Delivery", "Printing", "Flag the model"],
       french: ["Le faire avancer", "Prêt à remettre", "En impression", "Signaler un souci"],
     },
