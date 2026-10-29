@@ -29,6 +29,11 @@ export type InviteFormState = {
   /** The address that was invited. */
   sent?: string;
   /**
+   * What happened, said on the server in the reader's language: the client
+   * components carry no owner-only words of their own (client-groups.ts).
+   */
+  notice?: string;
+  /**
    * Present only when there was nowhere to mail the link, so the admin has to
    * hand it over. Deliberately not returned when mail worked — see
    * CreatedInvite in src/lib/invites.ts.
@@ -83,7 +88,12 @@ export async function sendInviteAction(
       },
     });
     revalidatePath("/admin/invites");
-    return { sent: invite.email, handoverUrl };
+    const g = await getTranslations("admin.guests");
+    return {
+      sent: invite.email,
+      handoverUrl,
+      notice: g(handoverUrl ? "created" : "emailed", { email: invite.email }),
+    };
   } catch (e) {
     if (e instanceof InviteError) return { error: await say(e) };
     if (isUniqueViolation(e)) {
@@ -190,7 +200,10 @@ export async function resetPasswordAction(
   revalidatePath("/admin/invites");
   // Same rule as invitations: when the link was delivered it stays inside the
   // message, so not even the admin who triggered it can replay it.
-  return delivered ? { sent: target.email } : { sent: target.email, handoverUrl: url };
+  const g = await getTranslations("admin.guests");
+  return delivered
+    ? { sent: target.email, notice: g("resetSent", { email: target.email }) }
+    : { sent: target.email, handoverUrl: url };
 }
 
 /**

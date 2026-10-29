@@ -55,7 +55,7 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<{ toast?: string; error?: string }>;
 }) {
-  const [admin, params, materials, t, notice] = await Promise.all([
+  const [admin, params, materials, t, notice, e] = await Promise.all([
     requireAdmin(),
     searchParams,
     db.catalogMaterial.findMany({
@@ -64,7 +64,19 @@ export default async function CatalogPage({
     }),
     getTranslations("admin.catalog"),
     getTranslations("setup.notice"),
+    getTranslations("admin.catalogEdit"),
   ]);
+  // The client editors' words, said here and handed down as props: owner-only
+  // words stay out of the catalogue every page carries (client-groups.ts).
+  const swatch = {
+    swatch: e("swatch"), solid: e("solid"), gradient: e("gradient"), whatever: e("whatever"),
+    from: e("from"), to: e("to"), colour: e("colour"),
+  };
+  const addColorLabels = {
+    ...swatch,
+    addColour: e("addColour"), placeholder: e("addColourPlaceholder"),
+    secondColour: e("secondColour"), rainbow: e("rainbow"), add: e("add"),
+  };
 
   return (
     <>
@@ -111,7 +123,10 @@ export default async function CatalogPage({
                     {material.active ? t("turnOff") : t("turnOn")}
                   </button>
                 </form>
-                <RemoveMaterialButton id={material.id} name={material.name} />
+                <RemoveMaterialButton
+                  id={material.id}
+                  labels={{ confirm: e("removeMaterialConfirm", { name: material.name }), button: e("remove") }}
+                />
               </div>
 
               <div className="space-y-[8.8px]">
@@ -123,7 +138,15 @@ export default async function CatalogPage({
                       hex={color.hex}
                       colorStyle={color.style}
                       colorMode={color.mode}
-                      materialName={material.name}
+                      labels={{
+                        ...swatch,
+                        edit: e("editColor", { name: color.name, material: material.name }),
+                        colourName: e("colourName"),
+                        colourValue: e("colourValueFor", { name: color.name }),
+                        secondColour: e("secondColourFor", { name: color.name }),
+                        rainbow: e("rainbowShort"),
+                        save: e("save"),
+                      }}
                     />
                     <OrderButtons
                       id={color.id}
@@ -138,13 +161,20 @@ export default async function CatalogPage({
                         {color.active ? t("on") : t("off")}
                       </button>
                     </form>
-                    <RemoveColorButton id={color.id} name={color.name} materialName={material.name} />
+                    <RemoveColorButton
+                      id={color.id}
+                      labels={{
+                        confirm: e("removeColorConfirm", { name: color.name, material: material.name }),
+                        label: e("removeColorLabel", { name: color.name, material: material.name }),
+                        button: e("delete"),
+                      }}
+                    />
                   </div>
                 ))}
                 {material.colors.length === 0 && <p className="font-mono text-[11.5px] uppercase text-ink-3">{t("noColours")}</p>}
               </div>
 
-              <AddColorForm materialId={material.id} />
+              <AddColorForm materialId={material.id} labels={addColorLabels} />
             </section>
           ))}
         </div>

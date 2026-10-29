@@ -1,12 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
 
 import { ColorSwatch } from "@/components/color-swatch";
 import { Button, Input, Label } from "@/components/ui";
 import type { ColorMode } from "@/lib/catalog";
 import { editColorAction } from "./actions";
+
+/**
+ * The swatch editor's words, said by the catalogue page (admin.catalogEdit)
+ * and handed down: owner-only words stay out of the catalogue every page
+ * carries (src/i18n/client-groups.ts).
+ */
+export type SwatchLabels = {
+  swatch: string;
+  solid: string;
+  gradient: string;
+  whatever: string;
+  from: string;
+  to: string;
+  colour: string;
+};
+
+export type EditColorLabels = SwatchLabels & {
+  edit: string;
+  colourName: string;
+  colourValue: string;
+  secondColour: string;
+  rainbow: string;
+  save: string;
+};
 
 export function EditColorInline({
   id,
@@ -14,16 +37,15 @@ export function EditColorInline({
   hex,
   colorStyle,
   colorMode,
-  materialName,
+  labels: t,
 }: {
   id: string;
   name: string;
   hex: string;
   colorStyle: string;
   colorMode: ColorMode;
-  materialName: string;
+  labels: EditColorLabels;
 }) {
-  const t = useTranslations("admin.catalogEdit");
   const matches = colorStyle.match(/#[0-9a-f]{6}/gi) ?? [];
   const [mode, setMode] = useState<ColorMode>(colorMode);
 
@@ -31,7 +53,7 @@ export function EditColorInline({
     <details className="group min-w-[220px] flex-1">
       <summary
         className="flex cursor-pointer list-none items-center gap-[11px] rounded-card text-left hover:bg-aqua-wash focus-visible:bg-aqua-wash [&::-webkit-details-marker]:hidden"
-        aria-label={t("editColor", { name, material: materialName })}
+        aria-label={t.edit}
       >
         <ColorSwatch mode={colorMode} style={colorStyle} className="h-[34px] w-[34px] flex-none rounded-full border-[3px] border-ink" />
         <span className="min-w-0 flex-1">
@@ -44,11 +66,11 @@ export function EditColorInline({
         <input type="hidden" name="id" value={id} />
         <div className="flex flex-wrap items-end gap-[7px]">
           <div className="min-w-[150px] flex-1">
-            <Label htmlFor={`edit-color-${id}`}>{t("colourName")}</Label>
+            <Label htmlFor={`edit-color-${id}`}>{t.colourName}</Label>
             <Input id={`edit-color-${id}`} name="name" defaultValue={name} required maxLength={40} />
           </div>
           <div className="w-[115px]">
-            <Label htmlFor={`edit-mode-${id}`}>{t("swatch")}</Label>
+            <Label htmlFor={`edit-mode-${id}`}>{t.swatch}</Label>
             <select
               id={`edit-mode-${id}`}
               name="mode"
@@ -56,27 +78,27 @@ export function EditColorInline({
               onChange={(event) => setMode(event.target.value as ColorMode)}
               className="h-[49px] w-full rounded-card border-[3px] border-ink bg-porcelain px-[7px] font-mono text-[11px] font-bold uppercase text-ink"
             >
-              <option value="solid">{t("solid")}</option>
-              <option value="gradient">{t("gradient")}</option>
-              <option value="whatever">{t("whatever")}</option>
+              <option value="solid">{t.solid}</option>
+              <option value="gradient">{t.gradient}</option>
+              <option value="whatever">{t.whatever}</option>
             </select>
           </div>
           {mode !== "whatever" && (
             <>
               <label className="block text-center font-mono text-[9.5px] font-bold uppercase text-ink-3">
-                {mode === "gradient" ? t("from") : t("colour")}
-                <input aria-label={t("colourValueFor", { name })} name="hex" type="color" defaultValue={matches[0] ?? hex} className="mt-[3px] block h-[45px] w-[50px] cursor-pointer rounded-card border-[3px] border-ink bg-porcelain p-[3px]" />
+                {mode === "gradient" ? t.from : t.colour}
+                <input aria-label={t.colourValue} name="hex" type="color" defaultValue={matches[0] ?? hex} className="mt-[3px] block h-[45px] w-[50px] cursor-pointer rounded-card border-[3px] border-ink bg-porcelain p-[3px]" />
               </label>
               {mode === "gradient" && (
                 <label className="block text-center font-mono text-[9.5px] font-bold uppercase text-ink-3">
-                  {t("to")}
-                  <input aria-label={t("secondColourFor", { name })} name="hexTo" type="color" defaultValue={matches[1] ?? hex} className="mt-[3px] block h-[45px] w-[50px] cursor-pointer rounded-card border-[3px] border-ink bg-porcelain p-[3px]" />
+                  {t.to}
+                  <input aria-label={t.secondColour} name="hexTo" type="color" defaultValue={matches[1] ?? hex} className="mt-[3px] block h-[45px] w-[50px] cursor-pointer rounded-card border-[3px] border-ink bg-porcelain p-[3px]" />
                 </label>
               )}
             </>
           )}
-          {mode === "whatever" && <span className="rounded-chip border-2 border-ink bg-aqua-wash px-[9px] py-[6px] font-mono text-[9.5px] font-bold uppercase">{t("rainbowShort")}</span>}
-          <Button type="submit" variant="ghost" className="px-[10px] py-[7px]">{t("save")}</Button>
+          {mode === "whatever" && <span className="rounded-chip border-2 border-ink bg-aqua-wash px-[9px] py-[6px] font-mono text-[9.5px] font-bold uppercase">{t.rainbow}</span>}
+          <Button type="submit" variant="ghost" className="px-[10px] py-[7px]">{t.save}</Button>
         </div>
       </form>
     </details>

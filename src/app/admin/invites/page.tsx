@@ -56,12 +56,48 @@ function relative(date: Date, locale: string, justNow: string): string {
 }
 
 export default async function InvitesPage() {
-  const [admin, t, locale, time] = await Promise.all([
+  const [admin, t, locale, time, g] = await Promise.all([
     requireAdmin(),
     getTranslations("admin.invites"),
     getLocale(),
     getTranslations("time"),
+    getTranslations("admin.guests"),
   ]);
+  // The client controls' words, said here and handed down as props: owner-only
+  // words stay out of the catalogue every page carries (client-groups.ts).
+  const handover = (note: string) => ({
+    title: g("handOver", { note }),
+    link: g("handOverLink"),
+    copy: g("copy"),
+    copied: g("copied"),
+    help: g("handOverHelp"),
+  });
+  const inviteLabels = {
+    title: g("inviteTitle"),
+    lead: g("inviteLead"),
+    email: g("email"),
+    name: g("name"),
+    send: g("send"),
+    sending: g("sending"),
+    holdOn: g("holdOn"),
+    handover: handover(g("inviteNote")),
+  };
+  const resetLabels = (name: string) => ({
+    summary: g("forgotten"),
+    help: g("resetHelp", { name, minutes: RESET_TTL_MINUTES }),
+    submit: g("resetPassword"),
+    working: g("minting"),
+    good: g("good"),
+    holdOn: g("holdOn"),
+    handover: handover(g("resetNote", { minutes: RESET_TTL_MINUTES })),
+  });
+  const accessLabels = (name: string, suspended: boolean) => ({
+    summary: suspended ? g("suspended") : g("revokeAccess"),
+    help: suspended ? g("suspendedHelp", { name }) : g("revokeHelp", { name }),
+    submit: suspended ? g("restoreName", { name }) : g("revokeName", { name }),
+    working: g("working"),
+    holdOn: g("holdOn"),
+  });
   const ago = (date: Date) => relative(date, locale, time("justNow"));
 
   const [invites, memberList] = await Promise.all([
@@ -93,7 +129,7 @@ export default async function InvitesPage() {
           {t("lead", { members, open: open.length, days: INVITE_TTL_DAYS })}
         </p>
 
-        <InviteForm />
+        <InviteForm labels={inviteLabels} />
 
         {memberList.length > 0 && (
           <>
@@ -134,15 +170,11 @@ export default async function InvitesPage() {
                     >
                       {t("theirPrints")}
                     </Link>
-                    <ResetPassword
-                      userId={m.id}
-                      name={m.name.split(" ")[0] ?? m.name}
-                      expiresInMinutes={RESET_TTL_MINUTES}
-                    />
+                    <ResetPassword userId={m.id} labels={resetLabels(m.name.split(" ")[0] ?? m.name)} />
                     <MemberAccess
                       userId={m.id}
-                      name={m.name.split(" ")[0] ?? m.name}
                       suspended={m.banned === true}
+                      labels={accessLabels(m.name.split(" ")[0] ?? m.name, m.banned === true)}
                     />
                   </div>
                 </div>

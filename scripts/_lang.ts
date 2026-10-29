@@ -42,6 +42,26 @@ export function firstDifference(a: string, b: string): string {
 export const foundIn = (text: string, strings: string[]) => strings.filter((s) => text.includes(s));
 
 /**
+ * The owner-only words of the catalogue editors and the guest-list controls
+ * (admin.catalogEdit, admin.guests), in both languages: each string's longest
+ * run of plain text between placeholders, where it is long enough to mean
+ * something on its own. Their pages hand them down as props, so a client's
+ * page must carry none of them (src/i18n/client-groups.ts).
+ */
+export function ownerOnlyWords(): string[] {
+  const out = new Set<string>();
+  for (const messages of [en, fr]) {
+    for (const group of [messages.admin.catalogEdit, messages.admin.guests]) {
+      for (const value of Object.values(group)) {
+        const longest = value.split(/\{[^}]*\}/).map((s) => s.trim()).sort((a, b) => b.length - a.length)[0] ?? "";
+        if (longest.length >= 12) out.add(longest);
+      }
+    }
+  }
+  return [...out];
+}
+
+/**
  * A notification row said the way the Activity panel says it
  * (`getNotificationText` in src/lib/notifications.ts): from its key in this
  * language, or its stored English when it has no key.

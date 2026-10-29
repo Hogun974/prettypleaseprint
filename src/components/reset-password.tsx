@@ -2,14 +2,27 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { useTranslations } from "next-intl";
 
 import { resetPasswordAction, type InviteFormState } from "@/app/admin/invites/actions";
-import { HandoverLink } from "@/components/handover-link";
+import { HandoverLink, type HandoverLabels } from "@/components/handover-link";
 import { Notice } from "@/components/ui";
 
-function Submit() {
-  const t = useTranslations("admin.guests");
+/**
+ * Its words come from the server page that draws it (admin.guests), as
+ * props: owner-only words stay out of the client catalogue that every page
+ * carries (src/i18n/client-groups.ts).
+ */
+export type ResetPasswordLabels = {
+  summary: string;
+  help: string;
+  submit: string;
+  working: string;
+  good: string;
+  holdOn: string;
+  handover: HandoverLabels;
+};
+
+function Submit({ labels }: { labels: ResetPasswordLabels }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -17,7 +30,7 @@ function Submit() {
       disabled={pending}
       className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-porcelain px-[15px] py-[6px] font-mono text-[11.5px] font-bold uppercase text-ink hover:bg-sun disabled:opacity-50"
     >
-      {pending ? t("minting") : t("resetPassword")}
+      {pending ? labels.working : labels.submit}
     </button>
   );
 }
@@ -34,14 +47,11 @@ function Submit() {
  */
 export function ResetPassword({
   userId,
-  name,
-  expiresInMinutes,
+  labels,
 }: {
   userId: string;
-  name: string;
-  expiresInMinutes: number;
+  labels: ResetPasswordLabels;
 }) {
-  const t = useTranslations("admin.guests");
   const [state, formAction] = useActionState<InviteFormState, FormData>(
     resetPasswordAction,
     {},
@@ -54,32 +64,32 @@ export function ResetPassword({
           row of red buttons would shout about the wrong thing. The weight sits
           on the confirm inside, where it belongs. */}
       <summary className="stamp inline-block cursor-pointer list-none rounded-chip border-[3px] border-ink bg-porcelain px-[15px] py-[8px] text-[14px] font-bold text-ink hover:bg-sun">
-        {t("forgotten")}
+        {labels.summary}
       </summary>
       <form action={formAction} className="mt-[8px] max-w-[560px]">
         <input type="hidden" name="userId" value={userId} />
         <div className="rounded-card border-[3px] border-ink bg-cream-2 p-[11px]">
           <p className="m-0 mb-[8px] text-[13.5px] leading-[1.45] text-ink-2">
-            {t("resetHelp", { name, minutes: expiresInMinutes })}
+            {labels.help}
           </p>
-          <Submit />
+          <Submit labels={labels} />
         </div>
         {state.sent && !state.handoverUrl && (
           <div className="mt-[8px]">
-            <Notice tone="good" label={t("good")}>
-              {t("resetSent", { email: state.sent })}
+            <Notice tone="good" label={labels.good}>
+              {state.notice}
             </Notice>
           </div>
         )}
         {state.handoverUrl && (
           <HandoverLink
             url={state.handoverUrl}
-            note={t("resetNote", { minutes: expiresInMinutes })}
+            labels={labels.handover}
           />
         )}
         {state.error && (
           <div className="mt-[8px]">
-            <Notice tone="warn" label={t("holdOn")}>{state.error}</Notice>
+            <Notice tone="warn" label={labels.holdOn}>{state.error}</Notice>
           </div>
         )}
       </form>
