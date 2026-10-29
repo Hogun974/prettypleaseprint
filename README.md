@@ -13,8 +13,8 @@
 > at `fcadf1c` (6 October 2026). What changed and when is in the git history and
 > under *Unreleased* in the [CHANGELOG](CHANGELOG.md): the slicer helper's
 > profiles and Windows installer, instance settings, per-person preferences,
-> translation (French), the "after hours" and "glass" themes, and a first-run
-> setup. The "glass" theme exists only in this fork. It is distributed under the
+> translation (the whole app in French), the "after hours" and "glass" themes,
+> a first-run setup, and a catalogue that can follow a spool inventory. The "glass" theme exists only in this fork. It is distributed under the
 > same licence, [AGPL-3.0-or-later](LICENSE).
 
 **Invite-only 3D print requests for a small office.** One person owns the

@@ -7,6 +7,21 @@ Notable changes. Every entry names a released version; deployments pin
 
 ### Added
 
+- **The whole app in French** (fork). Every screen a person sees, the toasts
+  and refusals of the server actions, the Activity panel's notifications
+  (stored with the key of their sentence from now on) and Better Auth's
+  messages. The JSON API, e-mails and logs stay English; a refusal the API
+  sends carries `errorKey` and `errorValues` beside its English `error`. See
+  [docs/i18n.md](docs/i18n.md).
+
+- **The catalogue can follow a spool inventory** (fork). Off by default:
+  with `CATALOG_SYNC_TOKEN_HASH` set, a script next to the inventory (such as
+  Spoolman) posts what there are spools of to `POST /api/catalog/sync`, and
+  the catalogue is brought to match — added or switched on, switched off,
+  never deleted, each change audited as the owner. An empty inventory is
+  refused. See [docs/catalog-sync.md](docs/catalog-sync.md);
+  `npm run verify:catalog-sync`.
+
 - **A request can start from a Printables link instead of an upload** (#91).
   Where the printer owner switches it on, the request form offers *or paste a
   Printables link* under the dropzone. Paste the address of a model's page and
