@@ -53,8 +53,8 @@ Notable changes. Every entry names a released version; deployments pin
   component changed its classes. `npm run check:contrast` (now in CI) reads the
   palettes from the CSS and measures every pair in every theme against WCAG
   AA; after hours clears it on all of them, the tightest at 4.53:1. It also
-  reports six pairs the diner has below AA — `ink-3` on cream and porcelain,
-  dark ink on cherry chips — which a theme cannot fix without changing the
+  reports seven pairs the diner has below AA — `ink-3` on cream and porcelain,
+  dark ink on cherry chips, the focus ring on the header's band — which a theme cannot fix without changing the
   default. `SHOT_THEME=after-hours npm run shots` draws the screenshots in a
   theme, the shots now cover the owner's back-office pages too, and each run
   measures what every page renders into `contrast.json`. See

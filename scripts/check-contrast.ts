@@ -99,7 +99,7 @@ for (const [, fill, kind] of globals.matchAll(/@utility bg-([\w-]+)\s*\{\s*@appl
   scope.set(fill!, kind as "sign" | "counter");
 }
 /** Fills that are neither, on purpose — globals.css says why for each. */
-const NEITHER = new Set(["ink", "transparent"]);
+const NEITHER = new Set(["ink", "board", "transparent"]);
 const signs = [...scope].filter(([, k]) => k === "sign").map(([f]) => f);
 const counter = [...scope].filter(([, k]) => k === "counter").map(([f]) => f);
 
@@ -180,7 +180,7 @@ for (const t of COUNTER_INKS) for (const f of counter) add(t, f, 4.5, `${ANY} co
 for (const t of ["ink", "ink-2", "ink-3"]) for (const f of signs) add(t, f, 4.5, `${ANY} sign`);
 add("sign-ink", "sun", 4.5, "::selection (globals.css)");
 // Written on an ancestor, so no single class string pairs them.
-add("cream", "ink", 4.5, "components/app-header.tsx: the bar's links and wordmark");
+add("board-ink", "board", 4.5, "components/app-header.tsx: the band's links and wordmark");
 add("ink-3", "porcelain", 4.5, "most cards: the typed meta line");
 add("ink-3", "cream", 4.5, "components/source-link.tsx: the footer, on the page");
 add("cherry", "cream", 4.5, "hover:text-cherry on links (user-menu, invite, set-password)");
@@ -239,6 +239,24 @@ for (const f of signs) {
     label: `${f} sign's edge on the page`, where: "its fill or its keyline, against cream", written: true, need: 3,
     ratios: ids.map((id) => Math.max(ratio(get(id, f), get(id, "cream")), ratio(get(id, "sign-ink"), get(id, "cream")))),
   });
+}
+
+// The header's band, components/app-header.tsx. What sits on it: the active
+// pill (sun) and the avatar (aqua), signs with a sign's keyline; the Activity
+// button and a hovered link, counter (cream, cream-2) with the counter's
+// keyline; the wordmark's disc (cherry); the focus ring. The text inside each
+// is a pair above already (ink on sun, ink on cream, ink on cream-2).
+const BAND = "components/app-header.tsx, on the band";
+const onBand: Array<[string, (id: string) => number]> = [
+  ["sun pill's edge", (id) => Math.max(ratio(get(id, "sun"), get(id, "board")), ratio(get(id, "sign-ink"), get(id, "board")))],
+  ["aqua avatar's edge", (id) => Math.max(ratio(get(id, "aqua"), get(id, "board")), ratio(get(id, "sign-ink"), get(id, "board")))],
+  ["cherry disc's edge", (id) => Math.max(ratio(get(id, "cherry"), get(id, "board")), ratio(get(id, "sign-ink"), get(id, "board")))],
+  ["Activity button's edge (cream, keyline ink)", (id) => Math.max(ratio(get(id, "cream"), get(id, "board")), ratio(get(id, "ink"), get(id, "board")))],
+  ["hovered link's edge (cream-2, keyline ink)", (id) => Math.max(ratio(get(id, "cream-2"), get(id, "board")), ratio(get(id, "ink"), get(id, "board")))],
+  ["focus ring (cherry-dk)", (id) => ratio(get(id, "cherry-dk"), get(id, "board"))],
+];
+for (const [what, measure] of onBand) {
+  rows.push({ label: `${what} on board`, where: BAND, written: true, need: 3, ratios: ids.map(measure) });
 }
 
 const worst = (r: Row) => Math.min(...r.ratios.slice(1).map((x) => x / r.need), Infinity);

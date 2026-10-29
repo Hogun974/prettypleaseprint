@@ -26,6 +26,9 @@
  *     is now the dark of the counter, so the cherry button reads dark on
  *     light red — bright fill, dark ink, the rule at night.
  *   - The washes are the same hues, dark. They are counter, and carry its ink.
+ *   - The header's band (--color-board) stays dark, as by day: the menu board
+ *     over the counter, not a light bar. The sun pill on it is a sign and
+ *     carries a sign's ink like any other.
  *   - The viewer's lamps do not change. They are light, not paint: the model
  *     is the colour of the filament whatever the room is.
  *
@@ -95,5 +98,11 @@
 
     /* The "?" on a "whatever" swatch stays light on any colour. */
     --color-swatch-mark: #fff6e9;
+
+    /* --- the menu board stays dark: darker than the walnut, as by day it is
+           darker than the cream, so the band still reads as a band. Its
+           links in the counter's light ink --- */
+    --color-board: #0e0b08;
+    --color-board-ink: #f4e8d6;
   }
 }

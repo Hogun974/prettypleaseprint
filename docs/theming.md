@@ -54,9 +54,8 @@ components do not change:
 Each swap is declared on the fill's utility (`@utility bg-sun { @apply on-sign; }`,
 at the end of `globals.css`), so variants come with it: `hover:bg-sun` swaps
 the ink exactly while the yellow is there. In the diner every swap puts back
-the value it replaces. `bg-ink` is neither: it is the header's bar, dark by day
-and lit at night, and what it carries is `text-cream`, which turns over with
-it.
+the value it replaces. Two fills are neither: `bg-ink`, which only draws lines
+now and is a keyline like any other, and `bg-board`, the header's band (below).
 
 The other tokens a dark counter needed, each the diner's value by default so
 the diner renders as it did:
@@ -67,6 +66,11 @@ the diner renders as it did:
 | `--color-counter-ink`, `-2`, `-3` | the counter's inks, captured at the root | a sign has redeclared `ink` by the time a card inside it looks |
 | `--color-stamp` | the hard offset shadow | Tailwind writes the shadow into each utility, where `ink` would be a sign's |
 | `--color-swatch-mark` | the `?` on a "whatever" swatch | it was `text-cream`, and cream is the counter |
+| `--color-board`, `--color-board-ink` | the header's band, dark in every theme, and its links and wordmark | they were `bg-ink` and `text-cream`, which turn over with the counter and would light the band up |
+
+On the band, the usual rule holds: the active pill is a sun sign and carries a
+sign's ink, the Activity button and a hovered link are counter and carry the
+counter's.
 
 The 3D viewer draws the model's edges in `--color-sign-ink`: the model is lit
 by the same lamps (`--color-scene-*`, light rather than paint) in every theme,
@@ -98,7 +102,7 @@ draws the pages in a theme nobody can choose yet, test-only.
 
 ### The table
 
-From `npm run check:contrast` (109 pairs in all; `-- --all` prints them).
+From `npm run check:contrast` (115 pairs in all; `-- --all` prints them).
 "Any" rows are pairs no class string writes but inherited ink could produce;
 they hold after hours to AA and are not counted against the diner. Ratios to
 4.5:1 unless marked; ✗ is below AA.
@@ -123,18 +127,23 @@ they hold after hours to AA and are not counted against the diner. Ratios to
 | keyline (`ink`) on `cream-3`, 3:1 | `border-ink` | 12.51 | 11.86 |
 | focus ring (`cherry-dk`) on `cream-3`, 3:1 | `:focus-visible` | 4.69 | 5.63 |
 | `sun` sign's edge on the page, 3:1 | its fill or its keyline | 16.00 | 9.99 |
+| `board-ink` on `board` | the header band's links and wordmark | 16.00 | 16.22 |
+| active pill (`sun`) on `board`, 3:1 | the current page in the header | 9.20 | 10.54 |
+| wordmark disc (`cherry`) on `board`, 3:1 | the header | 3.91 | 6.37 |
+| focus ring (`cherry-dk`) on `board`, 3:1 | a focused link in the header | **2.67 ✗** | 7.71 |
 
 `npm run shots` agrees: in the after-hours screenshots, the 33 distinct pairs
 the sixteen pages render all clear AA, the lowest `ink-3` on porcelain at
 5.40:1; in the diner's, four are below it — the same four as the bold rows
 that are rendered on those pages.
 
-**The diner's own six** (bold above) predate this work and are reported, not
+**The diner's own seven** (bold above) predate this work and are reported, not
 fixed: fixing them means changing how the default looks, which a theme must
 not do. They are worth their own change: `ink-3` at `#6f6155` would clear
 4.5:1 on every ground it is written on today (cream-2 is the tightest, at
 4.90), and dark ink on cherry wants a slightly lighter cherry, as after hours
-does.
+does. The focus ring on the header's band is the dark red on the dark band;
+the ring wants a token of its own for the band.
 
 ## Adding a theme
 

@@ -68,15 +68,18 @@ export async function AppHeader({
 
   return (
     <header data-authenticated="true" className="sticky top-0 z-40">
-      <div className="layers border-b-[3px] border-ink bg-ink">
+      {/* The menu board: a dark band in every theme. Its own token rather
+          than bg-ink, because ink is the counter's ink and turns light when
+          the counter goes dark; the band does not. */}
+      <div className="layers border-b-[3px] border-ink bg-board">
         {/* Keep identity and account controls on a stable top row. Navigation
             has its own wrapping row, so adding destinations cannot push the
             activity or profile menus away from the wordmark. */}
         <div className="mx-auto max-w-[1180px] px-[16px] py-[11px] sm:px-[26.4px] sm:py-[13.2px]">
           <div className="flex items-center gap-[16px] lg:gap-[22px]">
             <Link href={user.role === "admin" ? "/queue" : "/board"} aria-label="Pretty Please Print, home">
-              {/* On the dark bar the script reads cream, not cherry. */}
-              <span className="[&_span]:text-cream">
+              {/* On the dark band the script reads in the band's ink, not cherry. */}
+              <span className="[&_span]:text-board-ink">
                 <Brand size={34} />
               </span>
             </Link>
@@ -108,7 +111,7 @@ export async function AppHeader({
                   className={`rounded-chip border-2 px-[13px] py-[8px] font-mono text-[12.5px] font-bold uppercase tracking-[0.08em] transition-colors sm:px-[15px] sm:py-[7px] ${
                     current
                       ? "border-ink bg-sun text-ink"
-                      : "border-transparent text-cream hover:border-ink hover:bg-cream-2 hover:text-ink"
+                      : "border-transparent text-board-ink hover:border-ink hover:bg-cream-2 hover:text-ink"
                   }`}
                 >
                   {item.label}

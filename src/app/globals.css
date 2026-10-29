@@ -145,6 +145,18 @@
   /* The offset block under a stamp, settled at the root for the reason given
      at --shadow-stamp. The counter's ink by default. */
   --color-stamp: var(--color-ink);
+
+  /*
+   * The menu board — the dark band the header sits on — and what is written
+   * on it. By day they are ink and cream, and the header used to say so; but
+   * ink and cream are the counter's, and a theme that darkens the counter
+   * turns them over, which would light the band up. The band stays dark in
+   * every theme, so it has tokens of its own. On it, as anywhere: a sun pill
+   * is a sign and carries a sign's ink, a cream button is counter and
+   * carries the counter's.
+   */
+  --color-board: var(--color-ink);
+  --color-board-ink: var(--color-cream);
 }
 
 @layer base {
@@ -382,9 +394,10 @@
    A fill this list does not name keeps whatever ink it sits in: name it here
    (`npm run check:contrast` refuses a fill class it cannot place). So does a
    fill drawn with an opacity modifier (`bg-sun/50`), which is a different
-   utility; none is used. And `bg-ink` is neither: it is the dark bar of the
-   header by day and the lit one at night, and carries `text-cream`, which
-   turns over with it.
+   utility; none is used. Two fills are neither, on purpose: `bg-ink`, which
+   draws lines (the "or" rule on the sign-in card) and is a keyline in
+   whatever ink the counter has; and `bg-board`, the header's band, which
+   carries its own `text-board-ink` and holds both kinds of fill.
    --------------------------------------------------------------------------- */
 
 @utility on-sign {
