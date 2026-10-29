@@ -5,8 +5,9 @@ for some of them. There are two: **the diner**, the default, and **diner after
 hours** — the same diner at night, a dark counter with the neon still lit.
 Each person picks one on their own page, `/me` — or *follow the system*,
 which is the diner by day and after hours in dark mode — and the printer owner
-sets the one everybody else gets at `/admin/settings`. This page is how they
-work and how to add one.
+sets the one everybody else gets at `/admin/settings`. This fork adds a third,
+**[glass](#glass-fork-only)**, liquid glass over a bright, colourful room,
+which upstream would not take. This page is how they work and how to add one.
 
 ## What a theme is
 
@@ -108,10 +109,11 @@ draws every page in one theme whatever the accounts chose, test-only.
 
 ### The table
 
-From `npm run check:contrast` (115 pairs in all; `-- --all` prints them).
-"Any" rows are pairs no class string writes but inherited ink could produce;
-they hold after hours to AA and are not counted against the diner. Ratios to
-4.5:1 unless marked; ✗ is below AA.
+From `npm run check:contrast` (124 pairs in all; `-- --all` prints them;
+glass's column is [in its section](#glass-fork-only)). "Any" rows are pairs
+no class string writes but inherited ink could produce; they hold after hours
+to AA and are not counted against the diner. Ratios to 4.5:1 unless marked;
+✗ is below AA.
 
 | pair | where | diner | after hours |
 | --- | --- | --- | --- |
@@ -124,7 +126,7 @@ they hold after hours to AA and are not counted against the diner. Ratios to
 | `ink-3` on `cream-2` | meta lines on counter panels, the rail's note | **3.39 ✗** | 5.95 |
 | `cream` on `cherry` | `hover:bg-cherry hover:text-cream` on Remove / Delete | **4.09 ✗** | 6.04 |
 | `cherry` on `cream` | `hover:text-cherry` on links | **4.09 ✗** | 6.04 |
-| `ink-3` on `cream` | the footer, notes under a form | **3.86 ✗** | 6.44 |
+| `ink-3` on the page (cream) | the footer, notes under a form | **3.86 ✗** | 6.44 |
 | `cherry-dk` on `cherry-wash` | Remove, Revoke, Withdraw | 5.14 | 6.07 |
 | `cream` on `cherry-dk` | every primary button | 5.99 | 7.30 |
 | `sun-dk` on `sun-wash` | "on the bed", member access | 4.91 | 7.63 |
@@ -150,6 +152,139 @@ not do. They are worth their own change: `ink-3` at `#6f6155` would clear
 4.90), and dark ink on cherry wants a slightly lighter cherry, as after hours
 does. The focus ring on the header's band is the dark red on the dark band;
 the ring wants a token of its own for the band.
+
+## Glass (fork only)
+
+**Never proposed upstream.** The upstream design refuses blur on purpose — "a
+blurred shadow reads as glass or paper; an offset block reads as a die-cut
+enamel sign" — so this theme lives only in this fork. It is chosen outright
+or not at all: `auto` stays the diner by day and after hours by night.
+
+Liquid glass, in the spirit of Apple's iOS 26: see-through panels over a
+bright, colourful room, blurred and saturated, with lit rims and glossy
+bubbles. The app's faces and accent families stay; the diner's trim — the
+checkerboard, the chrome strip, the ribbed layer lines, the ticket punches,
+the hard stamps — recedes. [`themes/glass.css`](../src/app/themes/glass.css)
+says why each token moves; the choices that are not tokens:
+
+- **The room** is the root's background: a cool pale ground
+  (`--color-backdrop`), four large glows in luminous accents
+  (`--color-glow-1` … `-4`: aqua, sun, a cherry pink, mint) that overlap,
+  and a white wash over them (`--color-wash`). The wash is the legibility
+  scrim for what is written straight on the page — headings, notes, the
+  footer — and the glass takes the colour back by saturating what it blurs.
+  It scrolls with the page rather than being fixed: a fixed background is
+  repainted on every scroll, under glass that is blurring it.
+- **Glass.** A counter fill (porcelain, the creams, the washes) and the
+  header's band are painted at an alpha. Tailwind's `bg-*` utilities read
+  `--background-color-<name>` before `--color-<name>`, and `globals.css`
+  sets each to `var(--color-fill-<name>, var(--color-<name>))`: glass gives
+  `--color-fill-*`, the colour itself stays opaque for `text-cream`, the 3D
+  viewer and the fallback below, and every other theme paints exactly what
+  it did. The two reds have the same hook, so glass can light the fill
+  behind white text and keep the text red deep.
+- **One blur per surface, the outermost.** Glass that is not inside other
+  glass blurs and saturates the room behind it (`blur(22px) saturate(1.7)`);
+  a card, a chip or an input inside a panel is tinted glass over the panel's
+  already blurred ground, with no blur of its own — a blur inside a blur
+  would see only its parent and cost a layer for nothing. Pills (buttons and
+  chips) do not blur either: there are dozens, and over the room's soft glows
+  their blur would show nothing. The sticky header is one layer, on its
+  `::before`, so its menus can blur the page rather than only the header.
+  `npm run shots` logs the count: 1 to 11 a page, typically 3 to 6 (the
+  header plus the page's top-level panels and cards); the story page, with
+  its viewer, form and field, has 10.
+- **Light.** Every piece of glass has a specular rim — a bright inset line
+  along the top, a fainter one down the left, a thin luminous border — and a
+  soft depth shadow; radii grow to 20 and 28 px. Form fields keep a dark
+  keyline, 2 px: a field has to be found at 3:1 (WCAG 1.4.11) on a ground
+  that is now see-through. The Activity button in the header keeps a
+  softened one too, as the clear band would swallow a white rim.
+- **Bubbles.** Signs (the bright fills, and the reds) stay opaque and get a
+  gloss along the top, a lit rim and a soft shadow; their keyline is softened
+  to 70% of the ink they carry. Buttons swell (`scale(1.04)`) under the
+  pointer and give (`0.96`) under a press — a transform, so nothing around
+  them moves, and none under `prefers-reduced-motion`.
+- **The colour rule, with dark signs.** Bright fills — sun, aqua, mint,
+  chrome — carry dark ink. On a light counter, cherry is read as text (a
+  hovered link) and carries text as a fill (the Delivery chip, a hovered
+  button); no single red is dark enough for the first and light enough for
+  dark ink. Glass makes cherry deep as text, lights it as a fill, and lets the
+  fill carry light ink (`--color-dark-sign-ink`), as cherry-dk always has;
+  sun-dk, aqua-dk and mint-dk do the same.
+- **What floats has a veil** (`--color-veil`, white at 70%) under its glass:
+  the header, its menus and the toast can have anything under them, a black
+  model included, and the veil is what keeps them legible there.
+- **The 3D viewer** reads opaque tokens, as before: its bed is the glass
+  cream-2, an opaque screen inside a glass panel. Making it see-through
+  would mean a transparent WebGL canvas, a change to the component for every
+  theme.
+
+### Accessibility
+
+- `prefers-reduced-transparency: reduce` and `prefers-contrast: more` set
+  every translucent `--color-fill-*` and the veil to `initial`, so each fill
+  takes its opaque fallback, and remove every backdrop filter. The room stays
+  with reduced transparency (text on it is held to AA anyway) and goes with
+  more contrast, which also takes `ink-2` and `ink-3` most of the way to
+  `ink`.
+- `check:contrast` measures glass at its worst:
+  - **The room**, for text straight on the page: every glow absent or at full
+    alpha, in every combination, under the wash, reduced to the darkest and
+    lightest in each channel — a bound no mixture of them crosses.
+  - **Outermost glass**: the fill over the room blurred and saturated. Each
+    channel of `saturate()` is linear in the colours it is given, and a blur
+    only mixes them, so the bounds of the room's saturated corners hold for
+    every blur of it. Saturation is taken as browsers apply it, on sRGB
+    values. Also the fill over the room unblurred (a pill), over its veil on
+    pure black and white (it may float), under its veil (a menu's veil is
+    its background image), and opaque.
+  - **Glass inside glass**: the fill over the darkest any outermost glass can
+    be. The check fails a theme where a fill is darker than that in any
+    channel, since then deeper nesting could be darker still.
+  - **Signs**: their fill and the gloss over it; their edge, fill or softened
+    keyline over the fill, at 3:1 on the room and on the header.
+- `npm run shots` measures the rendered page the same way, with `SHOT_MEDIA`
+  to emulate the settings and `SHOT_OVERLAYS` to add an open menu over a
+  scrolled page and a toast:
+
+  ```bash
+  SHOT_THEME=glass SHOT_OVERLAYS=1 npm run shots
+  SHOT_THEME=glass SHOT_MEDIA=prefers-reduced-transparency=reduce npm run shots
+  SHOT_THEME=glass SHOT_MEDIA=prefers-contrast=more npm run shots
+  ```
+
+### Glass's numbers
+
+Glass clears AA on all 124 pairs, each at its worst ground. The room is
+between `#87b88b` and `#fef7fd`, channel by channel; blurred and saturated
+behind glass, no darker than `#54b159`. The tightest, and some landmarks:
+
+| pair | where | glass | diner |
+| --- | --- | --- | --- |
+| `cherry` on the page | any text on the page (hover links outside a panel) | 4.51 | 4.09 |
+| `ink-3` on the page | the footer, notes under a form | 4.74 | 3.86 |
+| `sun-dk` on the page | any text on the page | 4.76 | 5.27 |
+| cherry sign's edge on the page, 3:1 | the Delivery chip | 3.22 | 16.00 |
+| sun pill's edge on the band, 3:1 | the current page in the header | 3.87 | 9.20 |
+| `ink-3` on `cherry` (a dark sign's light ink, under gloss) | any sign | 5.12 | 1.06 |
+| `ink-3` on `cream-2` | meta lines on glass panels | 5.69 | 3.39 |
+| `ink` on `cherry` | Delivery / Shipped / High chips | 5.66 | 3.91 |
+| `ink-3` on `porcelain` | the typed meta line, placeholders | 6.34 | 4.13 |
+| `cream` on `cherry-dk` | every primary button | 6.46 | 5.99 |
+| `sign-ink` on the toast | over black and white | 8.01 | 9.20 |
+| `board-ink` on `board` | the header band, over black and white | 8.36 | 16.00 |
+
+Where real Liquid-Glass transparency could not clear AA, a tint does the
+work rather than the bar dropping: the wash over the room, for text written
+straight on it; the veil under what floats; and the deep reds, which are text
+on glass, lit only as fills behind white.
+
+`npm run shots` agrees on the rendered pages, with the overlays: 67 distinct
+pairs over eighteen screenshots, none below AA, the lowest `ink-3` on the
+room's floor at 4.74:1 (the sign-in page's footer link). With reduced
+transparency 36 pairs and with more contrast 36, none below AA and no blurred
+layer on any page.
 
 ## Adding a theme
 

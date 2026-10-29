@@ -218,6 +218,34 @@ Notable changes. Every entry names a released version; deployments pin
   database. `npm run verify:setup` is the fourteenth suite (CI and
   `scripts/full-test.sh`).
 
+- **A third theme, "glass" — fork only** (never proposed upstream, whose
+  design refuses blur). Chosen on `/me` or as the house default at
+  `/admin/settings`; `auto` never picks it.
+  Liquid glass in the spirit of iOS 26: see-through panels, cards and the
+  header over a bright room of overlapping accent glows, blurred and
+  saturated, with lit rims, soft depth and generous radii; signs become
+  glossy bubbles that swell under the pointer and give under a press
+  (transform only, none with reduced motion). The faces and accent families
+  stay; the diner's checkerboard, chrome strip, layer lines and ticket
+  punches recede. The counter's fills and the reds take a fill colour of
+  their own through a new `--background-color-*` hook in `globals.css` — the
+  colour of the same name stays opaque for text and the 3D viewer, and every
+  other theme paints exactly what it did. One blur per surface, the
+  outermost only: 1 to 11 blurred layers a page, typically 3 to 6. Cherry and
+  the `-dk` shades are deep as text and carry light ink as fills; the bright
+  fills keep dark ink. `prefers-reduced-transparency: reduce` and
+  `prefers-contrast: more` draw everything opaque, unblurred.
+
+  `check:contrast` now measures a translucent fill at its worst: over every
+  combination of the room's glows, over that room blurred and saturated as
+  the glass does it, nested in the darkest glass, over its veil on pure black
+  and white when it floats, and opaque; a sign under its gloss, and its
+  softened edge. Glass clears AA on every pair, the tightest cherry text on
+  the page at 4.51. `SHOT_MEDIA` emulates other media features and
+  `SHOT_OVERLAYS` adds an open menu and a toast to `npm run shots`, which
+  measures glass the same way and counts the blurred layers per page. See
+  [Glass](docs/theming.md#glass-fork-only).
+
 ### Changed
 
 - **Every colour the app draws with is a theme variable** (#105, step one; no

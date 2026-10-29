@@ -63,11 +63,34 @@ if (SCHEME !== undefined && SCHEME !== "light" && SCHEME !== "dark") {
   throw new Error(`SHOT_SCHEME=${SCHEME}: light or dark.`);
 }
 
+/**
+ * Any other media features to emulate, as `name=value,…` — the settings a
+ * theme has to honour that the system, not the app, decides:
+ *
+ *   SHOT_THEME=glass SHOT_MEDIA=prefers-reduced-transparency=reduce npm run shots
+ *   SHOT_THEME=glass SHOT_MEDIA=prefers-contrast=more npm run shots
+ *
+ * Sent to Chrome directly: puppeteer's emulateMediaFeatures accepts only the
+ * colour scheme, reduced motion and the colour gamut.
+ */
+const MEDIA = (process.env.SHOT_MEDIA ?? "").split(",").filter(Boolean).map((pair) => {
+  const [name, value] = pair.split("=");
+  if (!name || !value || !/^[a-z-]+$/.test(name)) throw new Error(`SHOT_MEDIA: "${pair}" is not name=value.`);
+  return { name, value };
+});
+
+/** SHOT_OVERLAYS=1 adds an open menu and a toast (see main). */
+const OVERLAYS = process.env.SHOT_OVERLAYS === "1";
+
 /** Set up a page the way every screenshot expects it. */
 async function prepare(page: Page): Promise<void> {
   await page.setExtraHTTPHeaders({ "accept-language": LANG });
   await page.setViewport({ width: 1280, height: 980, deviceScaleFactor: 1 });
-  if (SCHEME) await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: SCHEME }]);
+  const features = [...(SCHEME ? [{ name: "prefers-color-scheme", value: SCHEME }] : []), ...MEDIA];
+  if (features.length) {
+    const cdp = await page.createCDPSession();
+    await cdp.send("Emulation.setEmulatedMedia", { features });
+  }
   if (THEME) {
     // A string, not a function: tsx rewrites named functions with a helper
     // the page does not have. The observer catches <html> as the parser
@@ -90,6 +113,25 @@ async function prepare(page: Page): Promise<void> {
  * reading of the class names cannot know. Text on a background image (the
  * "whatever" swatch's rainbow) is left out: it has no single colour to be
  * measured against. AA is 4.5:1, or 3:1 for large text (24px, or 18.66px bold).
+ *
+ * Glass (a fork-only theme) has grounds with no single colour, and each is
+ * measured at its worst, as `check:contrast` does:
+ *
+ *   - a chain of translucent fills that reaches the room — the root's
+ *     backdrop, its --color-glow-* layers and its --color-wash — is laid
+ *     over the room's per-channel bounds: every glow absent or full, in
+ *     every combination, as check:contrast has them;
+ *   - one that reaches glass in the page — an element with a backdrop
+ *     filter, not in anything fixed or sticky — is laid over those bounds
+ *     saturated as the glass saturates what it blurs (--glass-saturate);
+ *   - one that reaches something floating — a backdrop filter on or inside
+ *     something fixed or sticky, or a ::before with one (the header) — is
+ *     laid over that layer's tint over pure black and over pure white,
+ *     because the page scrolls anything under it;
+ *   - a flat `linear-gradient(c, c)` background image (a menu's veil) is a
+ *     layer of colour c over the element's own.
+ *
+ * The pair recorded is the worst of those, with the ground it was measured on.
  */
 const MEASURE = `(() => {
   const rgb = (s) => {
@@ -108,16 +150,72 @@ const MEASURE = `(() => {
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   };
   const hex = (c) => "#" + c.slice(0, 3).map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
-  const ground = (el) => {
+  const BLACK = [0, 0, 0, 1], WHITE = [255, 255, 255, 1];
+  // The room, if the root draws one: the per-channel bounds of its corners
+  // (every glow absent or full, the wash over them), as check:contrast has
+  // them; and what glass in the page shows of it, blurred and saturated.
+  const box = (cs) => [0, 1, 2].reduce((b, i) => {
+    b[0][i] = Math.min(...cs.map((c) => c[i])); b[1][i] = Math.max(...cs.map((c) => c[i])); return b;
+  }, [[0, 0, 0, 1], [0, 0, 0, 1]]);
+  const saturate = ([r, g, b], s) => [
+    (0.213 + 0.787 * s) * r + (0.715 - 0.715 * s) * g + (0.072 - 0.072 * s) * b,
+    (0.213 - 0.213 * s) * r + (0.715 + 0.285 * s) * g + (0.072 - 0.072 * s) * b,
+    (0.213 - 0.213 * s) * r + (0.715 - 0.715 * s) * g + (0.072 + 0.928 * s) * b,
+  ].map((v) => Math.min(255, Math.max(0, v))).concat(1);
+  const [room, behind] = (() => {
+    const root = getComputedStyle(document.documentElement);
+    if (root.backgroundImage === "none") return [null, null];
+    const probe = document.createElement("i");
+    document.body.append(probe);
+    const colour = (name) => {
+      const v = root.getPropertyValue(name).trim();
+      if (!v) return null;
+      probe.style.color = v;
+      return rgb(getComputedStyle(probe).color);
+    };
+    const glows = [];
+    for (let i = 1; colour("--color-glow-" + i); i++) glows.unshift(colour("--color-glow-" + i));
+    const wash = colour("--color-wash");
+    probe.remove();
+    const corners = [];
+    for (let mask = 0; mask < 1 << glows.length; mask++) {
+      const lit = glows.reduce((u, g, i) => (mask & (1 << i) ? over(g, u) : u), rgb(root.backgroundColor));
+      corners.push(wash ? over(wash, lit) : lit);
+    }
+    const s = Number(root.getPropertyValue("--glass-saturate")) || 1;
+    return [box(corners), box(corners.map((c) => saturate(c, s)))];
+  })();
+  // Floating: fixed, or inside something sticky (the header) or fixed.
+  const floats = (n) => {
+    for (let m = n; m; m = m.parentElement) if (/^(fixed|sticky)$/.test(getComputedStyle(m).position)) return true;
+    return false;
+  };
+  const flat = (image) => {
+    const m = /^linear-gradient\\((rgba?\\([^)]*\\)|color\\([^)]*\\)), (rgba?\\([^)]*\\)|color\\([^)]*\\))\\)$/.exec(image);
+    return m && m[1] === m[2] ? rgb(m[1]) : null;
+  };
+  const grounds = (el) => {
     const layers = [];
+    const under = (bottoms) => bottoms.map((b) => layers.reduceRight((u, top) => over(top, u), b));
     for (let n = el; n; n = n.parentElement) {
       const cs = getComputedStyle(n);
+      const veil = flat(cs.backgroundImage);
+      if (veil && veil[3] > 0) layers.push(veil);
       const c = rgb(cs.backgroundColor);
+      if (room && n === document.documentElement) return under(room);
       if (c && c[3] > 0) layers.push(c);
-      if (c && c[3] >= 1) break;
-      if (cs.backgroundImage !== "none") return null;
+      if (c && c[3] >= 1) return under([WHITE]);
+      const before = getComputedStyle(n, "::before");
+      if (before.backdropFilter !== "none") {
+        const tint = rgb(before.backgroundColor);
+        if (tint && tint[3] > 0) layers.push(tint);
+      }
+      if (cs.backdropFilter !== "none" || before.backdropFilter !== "none") {
+        return under(floats(n) || !behind ? [BLACK, WHITE] : behind);
+      }
+      if (cs.backgroundImage !== "none" && !veil && !(room && n === document.body)) return null;
     }
-    return layers.reduceRight((under, top) => over(top, under), [255, 255, 255, 1]);
+    return under([WHITE]);
   };
   const pairs = {};
   for (const el of document.querySelectorAll("body *")) {
@@ -126,11 +224,15 @@ const MEASURE = `(() => {
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
     if (r.width <= 1 || r.height <= 1 || cs.visibility === "hidden") continue;
-    const bg = ground(el);
-    if (!bg) continue;
-    const fg = over(rgb(cs.color), bg);
-    const [hi, lo] = [lum(fg), lum(bg)].sort((a, b) => b - a);
-    const ratio = Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
+    const all = grounds(el);
+    if (!all) continue;
+    let fg, bg, ratio = Infinity;
+    for (const g of all) {
+      const f = over(rgb(cs.color), g);
+      const [hi, lo] = [lum(f), lum(g)].sort((a, b) => b - a);
+      const r = Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
+      if (r < ratio) [fg, bg, ratio] = [f, g, r];
+    }
     const size = parseFloat(cs.fontSize);
     const need = size >= 24 || (size >= 18.66 && Number(cs.fontWeight) >= 700) ? 3 : 4.5;
     const key = hex(fg) + " on " + hex(bg) + " @" + need;
@@ -150,8 +252,12 @@ async function shoot(page: Page, name: string, fullPage: boolean): Promise<void>
   const pairs = (await page.evaluate(MEASURE)) as Pair[];
   measured[name] = pairs;
   const below = pairs.filter((p) => p.ratio < p.need);
+  // Blur is the expensive part of glass: how many layers this page asks for.
+  const blurred = (await page.evaluate(`[...document.querySelectorAll("*")].filter((e) =>
+    getComputedStyle(e).backdropFilter !== "none" || getComputedStyle(e, "::before").backdropFilter !== "none").length`)) as number;
   console.info(
     `${name}: ${pairs.length} pairs, ${below.length} below AA` +
+      (blurred ? `, ${blurred} blurred layer${blurred === 1 ? "" : "s"}` : "") +
       below.map((p) => `\n  ${p.ratio}:1 (needs ${p.need}) ${p.fg} on ${p.bg} ×${p.count} — ${p.sample}`).join(""),
   );
 }
@@ -379,6 +485,23 @@ async function main() {
     await adminPage.goto(url, { waitUntil: "networkidle2" });
     await shoot(adminPage, name, true);
   }
+
+  // What floats over the page, which full-page shots never show: the
+  // activity menu open over a queue scrolled under the header, and a toast.
+  // Opt-in, so the usual set of screenshots stays the same set.
+  if (OVERLAYS) {
+    await adminPage.goto(`${APP}/queue`, { waitUntil: "networkidle2" });
+    await adminPage.evaluate("window.scrollTo(0, 260)");
+    await adminPage.click('header [aria-haspopup="true"]');
+    await adminPage.waitForSelector("header .rounded-panel");
+    await new Promise((r) => setTimeout(r, 400)); // past its 180 ms fade in
+    await shoot(adminPage, "overlay-menu", false);
+    await page.goto(`${APP}/story/${printing!.id}?toast=${encodeURIComponent("Saved · priority is High")}`, { waitUntil: "networkidle2" });
+    await page.evaluate("window.scrollTo(0, 120)");
+    await page.waitForSelector(".ppp-toast");
+    await new Promise((r) => setTimeout(r, 400)); // past its 220 ms rise
+    await shoot(page, "overlay-toast", false);
+  }
   await adminCtx.close();
 
   // Narrow, because the rail has to collapse without a media query.
@@ -388,7 +511,7 @@ async function main() {
 
   await browser.close();
   writeFileSync(`${OUT}/contrast.json`, JSON.stringify({ theme: THEME ?? "(server's)", scheme: SCHEME ?? "light", pages: measured }, null, 2));
-  console.info(`wrote ${pages.length + adminPages.length + 2} screenshots to ${OUT}/`);
+  console.info(`wrote ${pages.length + adminPages.length + 2 + (OVERLAYS ? 2 : 0)} screenshots to ${OUT}/`);
 }
 
 main()
