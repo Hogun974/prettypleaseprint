@@ -19,6 +19,7 @@ import {
   nextFeatureStatus,
 } from "../src/lib/scope";
 import { ensureCredentials, signInWithPassword, usernameFor } from "./_accounts";
+import { sayNotification } from "./_lang";
 
 const APP = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
@@ -472,6 +473,30 @@ async function main() {
     check(`the board draws the ${label} rail`, board.includes(label));
   }
   check("Done is not a rail (it is under Closed)", board.includes("Closed"));
+
+  // ------------------------------------------------------------------
+  section("each notification keeps the key of its sentence");
+  // The Activity panel says a notification from its key, in the reader's
+  // language (src/lib/notifications.ts). Every one this suite made — filed,
+  // moved through every step, declined, withdrawn, reprioritised, commented
+  // on — must say in English exactly the sentence it stored, and something
+  // else in French.
+  const keyed = await db.notification.findMany({ where: { messageKey: { not: null } } });
+  const unkeyed = await db.notification.count({ where: { messageKey: null } });
+  check("every notification made here has a key", keyed.length > 0 && unkeyed === 0,
+        `${keyed.length} keyed, ${unkeyed} without`);
+  const drifted = keyed.filter((n) => sayNotification("en", n) !== n.text);
+  check("each says its stored English word for word", drifted.length === 0,
+        drifted.map((n) => `${n.messageKey}: "${sayNotification("en", n)}" vs "${n.text}"`).join(" | "));
+  const untranslated = keyed.filter((n) => sayNotification("fr", n) === n.text);
+  check("and is translated for a French reader", untranslated.length === 0,
+        untranslated.map((n) => n.messageKey).join(", "));
+  const inProgress = keyed.find((n) => n.messageKey === "notifications.feature.moved" &&
+    (n.messageValues as { status?: string } | null)?.status === "InProgress");
+  check("a feature moved to In progress reads that way, and “en cours” in French",
+        !!inProgress && inProgress.text.endsWith("to In progress.") &&
+          sayNotification("fr", inProgress).includes("en cours"),
+        inProgress ? sayNotification("fr", inProgress) : "no InProgress move was notified");
 
   console.info(
     `\n${passed} checks passed, ${failures.length} failed` +

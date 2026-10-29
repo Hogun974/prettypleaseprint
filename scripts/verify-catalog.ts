@@ -64,7 +64,13 @@ class Browser {
     }
     return response;
   }
-  async submit(url: string, html: string, formIndex: number, values: Record<string, string>) {
+  async submit(
+    url: string,
+    html: string,
+    formIndex: number,
+    values: Record<string, string>,
+    headers: Record<string, string> = {},
+  ) {
     const forms = html.match(/<form\b[\s\S]*?<\/form>/g) ?? [];
     const form = forms[formIndex];
     if (!form) throw new Error(`no form #${formIndex} on ${url}`);
@@ -76,7 +82,7 @@ class Browser {
       if (name) body.append(unescapeHtml(name), unescapeHtml(value));
     }
     for (const [key, value] of Object.entries(values)) body.set(key, value);
-    return this.raw(url, { method: "POST", body });
+    return this.raw(url, { method: "POST", body, headers });
   }
 }
 
@@ -296,6 +302,29 @@ async function main() {
     await db.auditEvent.count({ where: { action: "catalog.material_availability_changed", subject: "ASA" } }) === 1);
   const empty = await (await client.go(`${APP}/upload`)).text();
   check("the upload page explains that nothing is available", empty.includes("has not listed any available material"));
+
+  section("the catalogue's messages speak the reader's language");
+  // The toast and the refusal travel in the query string as sentences, made
+  // in the language of the request that posted the form.
+  const said = (response: Response, kind: "toast" | "error") =>
+    new URLSearchParams((response.headers.get("location") ?? "").split("?")[1] ?? "").get(kind) ?? "";
+  const FR = { "accept-language": "fr-FR,fr;q=0.9" };
+  page = await (await owner.go(`${APP}/admin/catalog`)).text();
+  const addedEn = await owner.submit(`${APP}/admin/catalog`, page, findForm(page, ['placeholder="ASA"']), { name: "PEEK" });
+  check("an English toast is the sentence it always was",
+    said(addedEn, "toast") === "PEEK added. Give it at least one colour to offer it.", said(addedEn, "toast"));
+  const takenEn = await owner.submit(`${APP}/admin/catalog`, page, findForm(page, ['placeholder="ASA"']), { name: "PEEK" });
+  check("and so is an English refusal", said(takenEn, "error") === "PEEK is already in the catalog.", said(takenEn, "error"));
+
+  page = await (await owner.go(`${APP}/admin/catalog`, { headers: FR })).text();
+  const addedFr = await owner.submit(`${APP}/admin/catalog`, page, findForm(page, ['placeholder="ASA"']), { name: "Nylon" }, FR);
+  check("a French owner's toast is French",
+    said(addedFr, "toast") === "Matière Nylon ajoutée. Donnez-lui au moins une couleur pour la proposer.", said(addedFr, "toast"));
+  const takenFr = await owner.submit(`${APP}/admin/catalog`, page, findForm(page, ['placeholder="ASA"']), { name: "Nylon" }, FR);
+  check("and so is a refusal", said(takenFr, "error") === "Nylon est déjà au catalogue.", said(takenFr, "error"));
+  const frPage = await (await owner.go(`${APP}/admin/catalog`, { headers: FR })).text();
+  check("the French page draws the client-side editors in French too",
+    frPage.includes("Ajouter une couleur") && frPage.includes(">Supprimer<") && !frPage.includes("Add a colour"));
 
   section("teardown — restore the default catalogue");
   await db.story.deleteMany();
