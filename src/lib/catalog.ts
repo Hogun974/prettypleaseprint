@@ -46,49 +46,76 @@ export const DEFAULT_STORY_PRIORITY: StoryPriorityName = "medium";
 /** Loudest first: the order the owner's queue reads in. */
 export const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
-export const QuantitySchema = z.coerce
-  .number()
-  .int("Whole prints only.")
-  .min(1, "At least one.")
+/**
+ * What the wish schemas say when they refuse, named.
+ *
+ * The sentences are what the API answers with, in English. Each one's name is
+ * also its key under `problems.wish` in the catalogue, so a page can say the
+ * same refusal in the reader's language: `wishSpoken` in src/lib/stories.ts
+ * looks a zod message up here and finds the key — by the constant, not by
+ * matching words that could drift apart.
+ */
+export const WISH_MESSAGES = {
+  wholePrints: "Whole prints only.",
+  atLeastOne: "At least one.",
   // Validated server-side, so the message cannot name the admin (this module
   // is shared with the client bundle). The upload form says who to ask.
-  .max(24, "More than 24 is a production run — ask the printer owner first.");
+  productionRun: "More than 24 is a production run — ask the printer owner first.",
+  titleTooLong: "Keep the title under 120 characters.",
+  pickMaterial: "Pick a material.",
+  pickColour: "Pick a colour.",
+  notAPriority: "That is not a priority.",
+  pickTip: "Pick what's in it for them.",
+  tipTooLong: "That tip is oddly long.",
+  noteTooLong: "That note is very long.",
+  settingsTooLong: "Those print settings are very long.",
+} as const;
+
+export const QuantitySchema = z.coerce
+  .number()
+  .int(WISH_MESSAGES.wholePrints)
+  .min(1, WISH_MESSAGES.atLeastOne)
+  .max(24, WISH_MESSAGES.productionRun);
 
 export const WishSchema = z.object({
   title: z
     .string()
     .trim()
-    .max(120, "Keep the title under 120 characters.")
+    .max(120, WISH_MESSAGES.titleTooLong)
     .optional()
     .default(""),
   // Availability and the material/colour relationship are checked against
   // the database in the upload route. These bounds keep hostile form values
   // small before that query runs.
-  material: z.string().trim().min(1, "Pick a material.").max(40),
-  colorName: z.string().trim().min(1, "Pick a colour.").max(40),
+  material: z.string().trim().min(1, WISH_MESSAGES.pickMaterial).max(40),
+  colorName: z.string().trim().min(1, WISH_MESSAGES.pickColour).max(40),
   quantity: QuantitySchema,
   // Optional on the wire, so a client written before priority existed still
   // files a request — it comes out `medium`, which is what it would have meant.
-  priority: z.enum(STORY_PRIORITIES, "That is not a priority.").optional().default(DEFAULT_STORY_PRIORITY),
+  priority: z.enum(STORY_PRIORITIES, WISH_MESSAGES.notAPriority).optional().default(DEFAULT_STORY_PRIORITY),
   // The tip is no longer a compile-time enum — it is an owner-managed list.
   // This module is shared with the client bundle and cannot read the database,
   // so it only checks the shape; the upload route validates the value against
   // the current *active* benefits (see src/app/api/upload/route.ts).
-  tip: z.string().trim().min(1, "Pick what's in it for them.").max(80, "That tip is oddly long."),
-  note: z.string().trim().max(2000, "That note is very long.").optional().default(""),
+  tip: z.string().trim().min(1, WISH_MESSAGES.pickTip).max(80, WISH_MESSAGES.tipTooLong),
+  note: z.string().trim().max(2000, WISH_MESSAGES.noteTooLong).optional().default(""),
   // Optional free-text print settings (FRR-103 option A). Shown to the owner so
   // slicer specifics live on the ticket rather than in a chat thread.
   printSettings: z
     .string()
     .trim()
-    .max(2000, "Those print settings are very long.")
+    .max(2000, WISH_MESSAGES.settingsTooLong)
     .optional()
     .default(""),
 });
 
 export type Wish = z.infer<typeof WishSchema>;
 
-/** "4 prints" / "1 print" */
+/**
+ * "4 prints" / "1 print" — in English, for the API and for anything that is
+ * not a page. A page says it in the reader's language with `getTicketWords`
+ * (src/i18n/tickets.ts), which reads `common.quantity`.
+ */
 export const quantityText = (n: number) => `${n} ${n === 1 ? "print" : "prints"}`;
 
 /**

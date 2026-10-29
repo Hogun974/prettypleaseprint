@@ -320,6 +320,17 @@ async function main() {
   const anonUpload = await upload(anon, "sneaky.stl", binaryStl(10, 10, 10));
   check("an unauthenticated upload is refused", anonUpload.status === 401, `got ${anonUpload.status}`);
 
+  // The API answers in English, and gives the form the key to say it in its
+  // reader's language — beside the sentence, never instead of it.
+  const emptyAgain = (await (await upload(aylaB, "empty-again.stl", new Uint8Array(0))).json()) as Record<string, unknown>;
+  check("a refused file is explained in English, with the key the form says it with",
+        emptyAgain.error === "That file is empty." && emptyAgain.errorKey === "problems.upload.rejected.empty",
+        JSON.stringify(emptyAgain));
+  const anonBody = (await anonUpload.json().catch(() => ({}))) as Record<string, unknown>;
+  check("and so is a refusal the route makes itself",
+        anonBody.error === "Sign in first." && anonBody.errorKey === "problems.upload.signIn",
+        JSON.stringify(anonBody));
+
   section("the board is scoped");
 
   const aylaBoard = await (await aylaB.go(`${APP}/board`)).text();
@@ -593,6 +604,19 @@ async function main() {
   check("somebody else's ticket cannot be re-queued", notYours.status === 404, `status ${notYours.status}`);
   const ownerTry = await requeue(rubenB, psStory!.id, { quantity: 2 });
   check("not even by the owner, who can see it", ownerTry.status === 403, `status ${ownerTry.status}`);
+
+  const said = async (r: Response) => (await r.json().catch(() => ({}))) as Record<string, unknown>;
+  const offShelfBody = await said(offShelf);
+  check("a re-queue refusal keeps its English sentence, and carries its key and values",
+        offShelfBody.error === "PETG in Unobtainium is not on the shelf any more — pick from what is." &&
+          offShelfBody.errorKey === "problems.requeue.offShelf" &&
+          JSON.stringify(offShelfBody.errorValues) === JSON.stringify({ material: "PETG", colour: "Unobtainium" }),
+        JSON.stringify(offShelfBody));
+  const tooManyBody = await said(tooMany);
+  check("a wish the schema refuses carries the schema's key",
+        tooManyBody.error === "More than 24 is a production run — ask the printer owner first." &&
+          tooManyBody.errorKey === "problems.wish.productionRun",
+        JSON.stringify(tooManyBody));
 
   const noPS = await upload(aylaB, "plain.stl", binaryStl(15, 15, 15), { title: "No settings here" });
   check("an upload with no print settings still works", noPS.status < 300, `status ${noPS.status}`);

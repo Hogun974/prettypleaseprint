@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/authz";
 import { storyRef, type Actor } from "@/lib/scope";
 import { StoryProblem, type CommentRow, type StoryRow } from "@/lib/stories";
 import { trustedSourceLink } from "@/lib/import-source";
+import type { Spoken } from "@/i18n/spoken";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -47,9 +48,23 @@ const appOrigin = () => {
   }
 };
 
-/** The error envelope the upload route has always used. One shape, everywhere. */
-export const fail = (status: number, error: string) =>
-  NextResponse.json({ error }, { status });
+/**
+ * The error envelope the upload route has always used. One shape, everywhere.
+ *
+ * `error` is the sentence, in English — the API's language (docs/i18n.md).
+ * When the refusal has a key in the catalogue, `errorKey` and `errorValues`
+ * come with it, so a page that called the API (the upload form, "Print
+ * again") can say the same sentence in its reader's language. Added beside
+ * `error`, never instead of it: a caller that knows nothing of them reads
+ * exactly what it always did.
+ */
+export const fail = (status: number, error: string, spoken?: Spoken) =>
+  NextResponse.json(
+    spoken
+      ? { error, errorKey: spoken.key, ...(spoken.values ? { errorValues: spoken.values } : {}) }
+      : { error },
+    { status },
+  );
 
 export const ok = <T>(data: T, status = 200) => NextResponse.json(data, { status });
 
@@ -107,7 +122,7 @@ export function withActor<P = Record<string, string>>(
     }
 
     const actor = await currentUser();
-    if (!actor) return fail(401, "Sign in first.");
+    if (!actor) return fail(401, "Sign in first.", { key: "problems.api.signIn" });
 
     if (options.admin && actor.role !== "admin") {
       return fail(403, "Only the printer owner can do that.");
@@ -119,9 +134,9 @@ export function withActor<P = Record<string, string>>(
       const params = ((await context?.params) ?? {}) as P;
       return await handler(request, actor, params);
     } catch (error) {
-      if (error instanceof StoryProblem) return fail(error.status, error.message);
+      if (error instanceof StoryProblem) return fail(error.status, error.message, error.spoken);
       console.error(`[api] ${request.method} ${new URL(request.url).pathname}`, error);
-      return fail(500, "Something went wrong at our end.");
+      return fail(500, "Something went wrong at our end.", { key: "problems.api.ourEnd" });
     }
   };
 }

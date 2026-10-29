@@ -7,10 +7,11 @@ import { record } from "@/lib/audit";
 import { WishSchema, type Wish } from "@/lib/catalog";
 import { availableSelection } from "@/lib/catalog-data";
 import { activeBenefitLabels } from "@/lib/benefits";
-import { REJECTION_COPY, extensionOf, inspectModel, safeFilename } from "@/lib/models";
+import { REJECTION_COPY, extensionOf, inspectModel, rejectionSpoken, safeFilename } from "@/lib/models";
 import { MIME_FOR, ensureStorageRoot, putModel, storageKeyFor } from "@/lib/storage";
-import { StoryProblem } from "@/lib/stories";
+import { StoryProblem, wishSpoken } from "@/lib/stories";
 import type { ImportSource } from "@/lib/import-source";
+import type { Spoken } from "@/i18n/spoken";
 
 /**
  * Opening a request from a model's bytes — the part an upload and an import
@@ -29,7 +30,11 @@ import type { ImportSource } from "@/lib/import-source";
  * that was not stored.
  */
 
-const problem = (status: number, message: string) => new StoryProblem(status, message);
+const problem = (status: number, message: string, spoken?: Spoken) =>
+  new StoryProblem(status, message, spoken);
+
+/** A key under `problems.upload`, which the upload form says in the reader's language. */
+const refusal = (name: string): Spoken => ({ key: `problems.upload.${name}` });
 
 export type CheckedWish = {
   wish: Wish;
@@ -46,13 +51,14 @@ export type CheckedWish = {
 export async function checkWish(raw: Record<string, unknown>): Promise<CheckedWish> {
   const parsed = WishSchema.safeParse(raw);
   if (!parsed.success) {
-    throw problem(400, parsed.error.issues[0]?.message ?? "Check the form.");
+    const said = parsed.error.issues[0]?.message;
+    throw problem(400, said ?? "Check the form.", said ? wishSpoken(said) : refusal("checkForm"));
   }
   const wish = parsed.data;
 
   const selection = await availableSelection(wish.material, wish.colorName);
   if (!selection) {
-    throw problem(400, "That material and colour combination is no longer available.");
+    throw problem(400, "That material and colour combination is no longer available.", refusal("combinationGone"));
   }
 
   // The tip is owner-managed data, so the list — not a compile-time enum — is
@@ -62,7 +68,7 @@ export async function checkWish(raw: Record<string, unknown>): Promise<CheckedWi
   // requests out.
   const allowedTips = await activeBenefitLabels();
   if (allowedTips.length > 0 && !allowedTips.includes(wish.tip)) {
-    throw problem(400, "That is not a benefit on offer — pick one from the list.");
+    throw problem(400, "That is not a benefit on offer — pick one from the list.", refusal("tipNotOnOffer"));
   }
 
   return { wish, selection };
@@ -105,7 +111,7 @@ export async function openRequest(
         ...(origin ? { source: origin.source, sourceUrl: origin.url } : {}),
       },
     });
-    throw problem(422, REJECTION_COPY[inspection.reason]);
+    throw problem(422, REJECTION_COPY[inspection.reason], rejectionSpoken(inspection.reason));
   }
 
   const extension = extensionOf(filename);
@@ -118,7 +124,7 @@ export async function openRequest(
   } catch (error) {
     storageReady = null; // let the next attempt retry creating the directory
     console.error("[intake] storage write failed", error);
-    throw problem(502, "The file could not be stored. Try again in a moment.");
+    throw problem(502, "The file could not be stored. Try again in a moment.", refusal("notStored"));
   }
 
   const title = wish.title || filename.replace(/\.(stl|3mf)$/i, "");
@@ -150,7 +156,7 @@ export async function openRequest(
     });
   } catch (error) {
     console.error("[intake] story insert failed", error);
-    throw problem(500, "The request could not be saved. Try again.");
+    throw problem(500, "The request could not be saved. Try again.", refusal("notSaved"));
   }
 
   // "every upload notifies the admin"

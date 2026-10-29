@@ -61,6 +61,19 @@ const ERROR = {
       description: "One sentence, written for a person to read.",
       examples: ["Sign in first."],
     },
+    errorKey: {
+      type: "string",
+      description:
+        "Where the refusal has one: the key of the same sentence in the app's message catalogue, " +
+        "which the app's own pages use to say it in their reader's language. `error` is always the " +
+        "English sentence; a client that shows `error` needs nothing else.",
+      examples: ["problems.api.signIn"],
+    },
+    errorValues: {
+      type: "object",
+      description: "The values the sentence under `errorKey` is filled in with, when it takes any.",
+      additionalProperties: { type: ["string", "number"] },
+    },
   },
 } as const;
 

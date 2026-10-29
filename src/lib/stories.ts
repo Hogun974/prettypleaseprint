@@ -18,8 +18,9 @@ import {
 import { copyModel, deleteModel, storageKeyFor } from "@/lib/storage";
 import { extensionOf } from "@/lib/models";
 import { availableSelection } from "@/lib/catalog-data";
-import { STORY_PRIORITIES, WishSchema } from "@/lib/catalog";
+import { STORY_PRIORITIES, WISH_MESSAGES, WishSchema } from "@/lib/catalog";
 import { activeBenefitLabels } from "@/lib/benefits";
+import type { Spoken } from "@/i18n/spoken";
 
 /**
  * Everything that can happen to a ticket, in one place.
@@ -51,22 +52,67 @@ import { activeBenefitLabels } from "@/lib/benefits";
  * API says 403 where a page says 404.
  */
 
-/** A refusal with both a status code and something a person can read. */
+/**
+ * A refusal with both a status code and something a person can read.
+ *
+ * `message` is the English sentence, and it is what the API answers with.
+ * `spoken` is the key of the same sentence in the catalogue, so a page can say
+ * it in the reader's language (`say` in src/i18n/spoken.ts). Optional: a
+ * refusal without one is shown in English, as every refusal used to be.
+ */
 export class StoryProblem extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly spoken?: Spoken,
   ) {
     super(message);
     this.name = "StoryProblem";
   }
 }
 
-const problem = (status: number, message: string) => new StoryProblem(status, message);
+const problem = (status: number, message: string, spoken?: Spoken) =>
+  new StoryProblem(status, message, spoken);
 
-/** `assertTransition` speaks `AuthzError`; the layers above speak status codes. */
-function asProblem(error: unknown): never {
-  if (error instanceof AuthzError) throw problem(403, error.message);
+/** A key under `problems.story`. */
+const refusal = (name: string, values?: Spoken["values"]): Spoken => ({
+  key: `problems.story.${name}`,
+  values,
+});
+
+/** A key under `problems.requeue` — the refusals the "Print again" form shows. */
+const requeueRefusal = (name: string, values?: Spoken["values"]): Spoken => ({
+  key: `problems.requeue.${name}`,
+  values,
+});
+
+/**
+ * The key of a wish refusal from the schema, when the schema's message is one
+ * of `WISH_MESSAGES` — every one it writes itself. zod's own sentences (a
+ * material name over 40 characters, a quantity that is not a number) have
+ * none, and stay English.
+ */
+export function wishSpoken(message: string | undefined): Spoken | undefined {
+  const name = Object.entries(WISH_MESSAGES).find(([, sentence]) => sentence === message)?.[0];
+  return name ? { key: `problems.wish.${name}` } : undefined;
+}
+
+/**
+ * `assertTransition` speaks `AuthzError`; the layers above speak status codes.
+ *
+ * Its sentences live in src/lib/scope.ts, which is pure and shared, so the key
+ * is worked out here from the same three cases, in the same order.
+ */
+function asProblem(error: unknown, from: StoryStatus, to: StoryStatus): never {
+  if (error instanceof AuthzError) {
+    const spoken =
+      error.message === "Only the printer owner moves a story along."
+        ? refusal("ownerOnlyMoves")
+        : to === "Declined"
+          ? refusal("cannotDecline", { status: from })
+          : refusal("notAStep", { from, to });
+    throw problem(403, error.message, spoken);
+  }
   throw error;
 }
 
@@ -82,22 +128,36 @@ export const IdSchema = z.coerce.number().int().positive();
 export const StatusSchema = z.enum([...FLOW, "Declined"] as [string, ...string[]])
   .transform((s) => s as StoryStatus);
 
+/** The flag's and the comment's refusals, named — as `WISH_MESSAGES` are. */
+const SAID = {
+  reasonTooShort: "Say what is wrong with it — that is the whole point of a flag.",
+  reasonTooLong: "Keep the reason short.",
+  saySomething: "Say something first.",
+  commentTooLong: "That is longer than a comment wants to be.",
+} as const;
+
+/** The key of one of `SAID`'s sentences, or none. */
+function saidSpoken(message: string | undefined): Spoken | undefined {
+  const name = Object.entries(SAID).find(([, sentence]) => sentence === message)?.[0];
+  return name ? refusal(name) : undefined;
+}
+
 export const ReasonSchema = z
   .string()
   .trim()
-  .min(3, "Say what is wrong with it — that is the whole point of a flag.")
-  .max(200, "Keep the reason short.");
+  .min(3, SAID.reasonTooShort)
+  .max(200, SAID.reasonTooLong);
 
 export const BodySchema = z
   .string()
   .trim()
-  .min(1, "Say something first.")
-  .max(2000, "That is longer than a comment wants to be.");
+  .min(1, SAID.saySomething)
+  .max(2000, SAID.commentTooLong);
 
 /** Parse a path segment or form field into a story id, or refuse it. */
 export function storyIdOr400(raw: unknown): number {
   const parsed = IdSchema.safeParse(raw);
-  if (!parsed.success) throw problem(400, "That is not a ticket.");
+  if (!parsed.success) throw problem(400, "That is not a ticket.", refusal("notATicket"));
   return parsed.data;
 }
 
@@ -291,7 +351,7 @@ export async function listStories(actor: Actor, query: StoryQuery = {}) {
  */
 export async function listPeopleWithPrints(actor: Actor) {
   if (actor.role !== "admin") {
-    throw problem(403, "Only the printer owner sees who has uploaded what.");
+    throw problem(403, "Only the printer owner sees who has uploaded what.", refusal("ownerOnlySeesPeople"));
   }
   const people = await db.user.findMany({
     orderBy: { name: "asc" },
@@ -327,7 +387,7 @@ export function findStory(actor: Actor, id: number): Promise<StoryRow | null> {
 /** As `findStory`, but refuses instead of returning null. */
 export async function getStory(actor: Actor, id: number): Promise<StoryRow> {
   const story = await findStory(actor, id);
-  if (!story) throw problem(404, "That ticket no longer exists.");
+  if (!story) throw problem(404, "That ticket no longer exists.", refusal("gone"));
   return story;
 }
 
@@ -340,13 +400,13 @@ export async function getStory(actor: Actor, id: number): Promise<StoryRow> {
  */
 async function loadForAdmin(actor: Actor, id: number) {
   if (actor.role !== "admin") {
-    throw problem(403, "Only the printer owner moves a story along.");
+    throw problem(403, "Only the printer owner moves a story along.", refusal("ownerOnlyMoves"));
   }
   const story = await db.story.findUnique({
     where: { id },
     include: { uploader: { select: { id: true, name: true } } },
   });
-  if (!story) throw problem(404, "That ticket no longer exists.");
+  if (!story) throw problem(404, "That ticket no longer exists.", refusal("gone"));
   return story;
 }
 
@@ -363,12 +423,14 @@ export async function advanceStory(actor: Actor, id: number) {
   const story = await loadForAdmin(actor, id);
 
   const next = nextStatus(story.status);
-  if (!next) throw problem(409, `${story.status} is the end of the line.`);
+  if (!next) {
+    throw problem(409, `${story.status} is the end of the line.`, refusal("endOfLine", { status: story.status }));
+  }
 
   try {
     assertTransition(actor, story.status, next);
   } catch (e) {
-    asProblem(e);
+    asProblem(e, story.status, next);
   }
 
   await db.story.update({ where: { id: story.id }, data: { status: next } });
@@ -410,7 +472,7 @@ export async function declineStory(actor: Actor, id: number) {
   try {
     assertTransition(actor, story.status, "Declined");
   } catch (e) {
-    asProblem(e);
+    asProblem(e, story.status, "Declined");
   }
 
   await db.story.update({ where: { id: story.id }, data: { status: "Declined" } });
@@ -452,7 +514,8 @@ export async function flagStory(actor: Actor, id: number, rawReason: unknown) {
 
   const parsed = ReasonSchema.safeParse(typeof rawReason === "string" ? rawReason : "");
   if (!parsed.success) {
-    throw problem(400, parsed.error.issues[0]?.message ?? "Give a reason.");
+    const said = parsed.error.issues[0]?.message;
+    throw problem(400, said ?? "Give a reason.", said ? saidSpoken(said) : refusal("giveReason"));
   }
   const reason = parsed.data;
 
@@ -496,7 +559,7 @@ export async function flagStory(actor: Actor, id: number, rawReason: unknown) {
  */
 export async function clearFlag(actor: Actor, id: number) {
   const story = await loadForAdmin(actor, id);
-  if (!story.flagged) throw problem(409, "That ticket is not flagged.");
+  if (!story.flagged) throw problem(409, "That ticket is not flagged.", refusal("notFlagged"));
 
   await db.story.update({
     where: { id: story.id },
@@ -556,12 +619,12 @@ export async function withdrawStory(actor: Actor, id: number) {
       uploaderId: true, uploader: { select: { name: true } },
     },
   });
-  if (!story) throw problem(404, "That ticket no longer exists.");
+  if (!story) throw problem(404, "That ticket no longer exists.", refusal("gone"));
 
   // An admin can see every story; being able to see one is not being allowed
   // to withdraw it. Only the person who asked for it may take it back.
   if (story.uploaderId !== actor.id) {
-    throw problem(403, "Only the person who asked for it can withdraw it.");
+    throw problem(403, "Only the person who asked for it can withdraw it.", refusal("withdrawNotYours"));
   }
 
   if (
@@ -569,10 +632,12 @@ export async function withdrawStory(actor: Actor, id: number) {
     story.status !== "Accepted" &&
     story.status !== "Declined"
   ) {
+    const owner = await printerName();
     throw problem(
       409,
       `${storyRef(story.id)} is already ${story.status.toLowerCase()} — ` +
-        `ask ${await printerName()} instead.`,
+        `ask ${owner} instead.`,
+      refusal("alreadyStarted", { ref: storyRef(story.id), status: story.status.toLowerCase(), owner }),
     );
   }
 
@@ -647,9 +712,9 @@ export async function requeueStory(
       mimeType: true, storageKey: true, dims: true, sourceUrl: true, uploaderId: true,
     },
   });
-  if (!src) throw problem(404, "That ticket no longer exists.");
+  if (!src) throw problem(404, "That ticket no longer exists.", requeueRefusal("gone"));
   if (src.uploaderId !== actor.id) {
-    throw problem(403, "Only the person who asked for it can print it again.");
+    throw problem(403, "Only the person who asked for it can print it again.", requeueRefusal("notYours"));
   }
 
   // The second go is rarely the first one repeated: the test print came out
@@ -671,7 +736,8 @@ export async function requeueStory(
     printSettings: pick("printSettings"),
   });
   if (!parsed.success) {
-    throw problem(400, parsed.error.issues[0]?.message ?? "Check the form.");
+    const said = parsed.error.issues[0]?.message;
+    throw problem(400, said ?? "Check the form.", said ? wishSpoken(said) : requeueRefusal("checkForm"));
   }
   const wish = parsed.data;
 
@@ -686,6 +752,7 @@ export async function requeueStory(
       409,
       `${wish.material} in ${wish.colorName} is not on the shelf any more — ` +
         `pick from what is.`,
+      requeueRefusal("offShelf", { material: wish.material, colour: wish.colorName }),
     );
   }
 
@@ -693,7 +760,11 @@ export async function requeueStory(
   // same escape the upload has: no active benefits at all refuses nobody.
   const allowedTips = await activeBenefitLabels();
   if (allowedTips.length > 0 && !allowedTips.includes(wish.tip)) {
-    throw problem(409, `“${wish.tip}” is not a benefit on offer any more — pick one from the list.`);
+    throw problem(
+      409,
+      `“${wish.tip}” is not a benefit on offer any more — pick one from the list.`,
+      requeueRefusal("tipGone", { tip: wish.tip }),
+    );
   }
 
   // Copy the object first, so a failure here opens no ticket that points at
@@ -703,7 +774,7 @@ export async function requeueStory(
     await copyModel(src.storageKey, destKey);
   } catch (error) {
     console.error(`[requeue] ${storyRef(src.id)}: object copy failed`, error);
-    throw problem(502, "The file could not be copied. Try again in a moment.");
+    throw problem(502, "The file could not be copied. Try again in a moment.", requeueRefusal("copyFailed"));
   }
 
   const created = await db.story.create({
@@ -787,20 +858,28 @@ export async function requeueStory(
 export async function changeStoryPriority(actor: Actor, id: number, rawPriority: unknown) {
   const priority = typeof rawPriority === "string" ? rawPriority : "";
   if (!(STORY_PRIORITIES as readonly string[]).includes(priority)) {
-    throw problem(400, "That is not a priority.");
+    throw problem(400, "That is not a priority.", refusal("notAPriority"));
   }
 
   const story = await db.story.findFirst({
     where: { AND: [{ id }, storyScope(actor)] },
     select: { id: true, title: true, status: true, priority: true, uploaderId: true },
   });
-  if (!story) throw problem(404, "That ticket no longer exists.");
+  if (!story) throw problem(404, "That ticket no longer exists.", refusal("gone"));
 
   if (actor.role !== "admin" && story.uploaderId !== actor.id) {
-    throw problem(403, "Only the person who asked for it, or the printer owner, can reprioritise it.");
+    throw problem(
+      403,
+      "Only the person who asked for it, or the printer owner, can reprioritise it.",
+      refusal("reprioritiseNotYours"),
+    );
   }
   if (story.status === "Done" || story.status === "Declined") {
-    throw problem(409, `${storyRef(story.id)} is ${story.status.toLowerCase()} — there is nothing left to prioritise.`);
+    throw problem(
+      409,
+      `${storyRef(story.id)} is ${story.status.toLowerCase()} — there is nothing left to prioritise.`,
+      refusal("nothingToPrioritise", { ref: storyRef(story.id), status: story.status.toLowerCase() }),
+    );
   }
 
   const result = {
@@ -881,7 +960,8 @@ export async function listComments(actor: Actor, id: number): Promise<CommentRow
 export async function addComment(actor: Actor, id: number, rawBody: unknown) {
   const parsed = BodySchema.safeParse(typeof rawBody === "string" ? rawBody : "");
   if (!parsed.success) {
-    throw problem(400, parsed.error.issues[0]?.message ?? "Check that again.");
+    const said = parsed.error.issues[0]?.message;
+    throw problem(400, said ?? "Check that again.", said ? saidSpoken(said) : refusal("checkAgain"));
   }
   const body = parsed.data;
 
@@ -889,7 +969,7 @@ export async function addComment(actor: Actor, id: number, rawBody: unknown) {
     where: { AND: [{ id }, storyScope(actor)] },
     select: { id: true, title: true, uploaderId: true },
   });
-  if (!story) throw problem(404, "That ticket no longer exists.");
+  if (!story) throw problem(404, "That ticket no longer exists.", refusal("gone"));
 
   const comment = await db.comment.create({
     data: { storyId: story.id, authorId: actor.id, body },

@@ -11,6 +11,7 @@
  * into the browser bundle.
  */
 import { unzipSync } from "fflate";
+import type { Spoken } from "@/i18n/spoken";
 
 import {
   ACCEPTED_EXTENSIONS,
@@ -43,6 +44,17 @@ export const REJECTION_COPY: Record<Rejection, string> = {
   corrupt: "That file is damaged — it could not be read all the way through.",
   no_geometry: "There is no geometry in that file.",
 };
+
+/**
+ * The key of each refusal above under `problems.upload.rejected`, so the
+ * upload form can say it in the reader's language. The limit travels as a
+ * number of megabytes, which the catalogue formats in that language's units.
+ */
+export function rejectionSpoken(reason: Rejection): Spoken {
+  return reason === "too_large"
+    ? { key: "problems.upload.rejected.too_large", values: { limitMb: MAX_UPLOAD_BYTES / (1024 * 1024) } }
+    : { key: `problems.upload.rejected.${reason}` };
+}
 
 export type Measured = {
   format: ModelFormat;

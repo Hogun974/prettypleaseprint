@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { fail } from "@/lib/api";
 import { currentUser } from "@/lib/authz";
 import type { Actor } from "@/lib/scope";
 import { checkWish, openRequest } from "@/lib/intake";
-import { MAX_BYTES, REJECTION_COPY } from "@/lib/models";
+import { MAX_BYTES, REJECTION_COPY, rejectionSpoken } from "@/lib/models";
 import { StoryProblem } from "@/lib/stories";
 import { MAX_REQUEST_BYTES } from "@/lib/upload-limits";
 import { BUSY_COPY, acquireSlot, releaseSlot } from "@/lib/upload-slots";
@@ -26,12 +27,17 @@ export const runtime = "nodejs";
  *  the slot gate below for what keeps that buffering bounded. */
 export const dynamic = "force-dynamic";
 
-const bad = (status: number, error: string) =>
-  NextResponse.json({ error }, { status });
+/**
+ * A refusal: the English sentence, and the key the upload form says it with
+ * in its reader's language (`fail` in src/lib/api.ts has the envelope).
+ */
+const bad = (status: number, error: string, name: string) =>
+  fail(status, error, { key: `problems.upload.${name}` });
+const tooLarge = () => fail(413, REJECTION_COPY.too_large, rejectionSpoken("too_large"));
 
 export async function POST(request: Request) {
   const user = await currentUser();
-  if (!user) return bad(401, "Sign in first.");
+  if (!user) return bad(401, "Sign in first.", "signIn");
 
   // Cheap rejection before reading a single byte of the body. The allowance
   // over the file cap is multipart's own overhead, and it matches the
@@ -39,18 +45,18 @@ export async function POST(request: Request) {
   // answered "too large" rather than truncated into a parse failure.
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (declared > MAX_REQUEST_BYTES) {
-    return bad(413, REJECTION_COPY.too_large);
+    return tooLarge();
   }
 
   // Taken *before* the body is read, because reading it is the expensive part.
   // See `src/lib/upload-slots.ts` for what the gate is protecting.
-  if (!(await acquireSlot())) return bad(503, BUSY_COPY);
+  if (!(await acquireSlot())) return bad(503, BUSY_COPY, "busy");
   try {
     return await handleUpload(request, user);
   } catch (error) {
-    if (error instanceof StoryProblem) return bad(error.status, error.message);
+    if (error instanceof StoryProblem) return fail(error.status, error.message, error.spoken);
     console.error("[upload] unexpected failure", error);
-    return bad(500, "The request could not be saved. Try again.");
+    return bad(500, "The request could not be saved. Try again.", "notSaved");
   } finally {
     releaseSlot();
   }
@@ -61,12 +67,12 @@ async function handleUpload(request: Request, user: Actor) {
   try {
     form = await request.formData();
   } catch {
-    return bad(400, "That upload did not arrive intact. Try again.");
+    return bad(400, "That upload did not arrive intact. Try again.", "notIntact");
   }
 
   const file = form.get("file");
-  if (!(file instanceof File)) return bad(400, "No file was attached.");
-  if (file.size > MAX_BYTES) return bad(413, REJECTION_COPY.too_large);
+  if (!(file instanceof File)) return bad(400, "No file was attached.", "noFile");
+  if (file.size > MAX_BYTES) return tooLarge();
 
   const checked = await checkWish({
     title: form.get("title") ?? "",
