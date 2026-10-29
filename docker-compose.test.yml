@@ -18,6 +18,12 @@ services:
       # than at the real Printables — see scripts/stubs/printables-stub.mjs.
       IMPORT_SOURCES: printables
       IMPORT_PRINTABLES_BASE: http://printables-stub:4010
+      # The address alone, so the sender's name is left to /admin/settings.
+      # IMPORT_SOURCES above is a setting the environment pins and this is one
+      # it does not; verify:settings needs one of each, and reads the saved
+      # name back off a message in Mailpit. With nothing saved, mail goes out
+      # from this address as written — exactly what the app did before.
+      MAIL_FROM: printer@example.org
   db:
     ports:
       - "5432:5432"

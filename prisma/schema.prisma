@@ -506,3 +506,26 @@ model Benefit {
   @@index([active, sortOrder])
   @@map("benefit")
 }
+
+/// Instance-wide settings the printer owner changes at `/admin/settings`
+/// instead of in `.env.docker` with a restart.
+///
+/// One row, id 1, or none at all — the CHECK in its migration makes a second
+/// row impossible, and a missing row reads as every setting at its default,
+/// which is how the app behaved before this table existed. Every column is
+/// nullable and null means "not set here": whatever the environment says, or
+/// failing that, the default.
+///
+/// What each column may hold and which variable overrides it are not here but
+/// in `src/lib/settings.ts`, keyed by these column names; the compiler refuses
+/// a column without an entry there. A new setting is one of each.
+model InstanceSettings {
+  id            Int      @id @default(1)
+  /// Comma-separated source names, in `IMPORT_SOURCES`'s own format.
+  importSources String?
+  /// The display name on outgoing mail. The address stays in `MAIL_FROM`.
+  mailFromName  String?
+  updatedAt     DateTime @updatedAt
+
+  @@map("instanceSettings")
+}

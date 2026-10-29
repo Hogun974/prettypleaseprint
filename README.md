@@ -169,7 +169,10 @@ reverse proxy, see **[docs/deployment.md](docs/deployment.md)**.
 ## Configuration
 
 Everything is environment variables, read from `.env.docker`. The full file
-with commentary is [`.env.docker.example`](.env.docker.example).
+with commentary is [`.env.docker.example`](.env.docker.example). Two things —
+whether importing is on and the sender name on mail — can instead be set by the
+printer owner at `/admin/settings`; a variable that sets them still wins. See
+[Settings that live in the app](docs/deployment.md#settings-that-live-in-the-app).
 
 | Variable | Required | What it does |
 | --- | --- | --- |
@@ -177,15 +180,15 @@ with commentary is [`.env.docker.example`](.env.docker.example).
 | `DB_PASSWORD` | **yes** | Postgres password. Baked into the data directory on first start — see [Restore](#restore). |
 | `APP_URL` | **yes** | The origin the browser sees, including scheme. Cookies, invitation links and the WebAuthn relying party derive from it. Must be `https://` in production. |
 | `PASSKEY_RP_ID` | **yes** | Registrable domain, no scheme or port. **Permanent** — changing it kills every enrolled passkey. |
-| `PASSKEY_RP_NAME` | | Shown in the browser's passkey prompt. |
+| `PASSKEY_RP_NAME` | | Shown in the browser's passkey prompt. Environment only — read once at start. |
 | `ADMIN_EMAIL` / `ADMIN_NAME` | **yes** | The single admin, created on first start. |
 | `DATA_ROOT` | | Where the database and uploads live on disk. Default `./data`. |
 | `SMTP_URL` | | SMTP transport. **Leave unset and the app still works** — links are shown to the admin to hand over. |
 | `RESEND_API_KEY` | | Alternative to `SMTP_URL`; takes precedence. |
-| `MAIL_FROM` | | Envelope sender. |
+| `MAIL_FROM` | | Envelope sender. The address always comes from here; leave the name off (`printer@example.org`) to choose it at `/admin/settings`, or write `Name <address>` to pin it. |
 | `TRUST_PROXY_HEADERS` | | Which header carries the client address: `false` (trust nothing, the default), `true` (left-most `X-Forwarded-For`), or `cloudflare` (`CF-Connecting-IP`). See [the reasoning](docs/deployment.md#why-trust_proxy_headers-is-a-separate-switch). |
 | `HIBP_DISABLED` | | `true` disables the breach check. Only for a host with no outbound internet — it fails closed, so without it nobody could register. |
-| `IMPORT_SOURCES` | | `printables` lets a request start from a Printables link instead of an upload. **Off when unset.** Needs outbound HTTPS, and a misspelt value stops the app. See [Importing from a link](docs/deployment.md#importing-from-a-link). |
+| `IMPORT_SOURCES` | | `printables` lets a request start from a Printables link instead of an upload. **Off when unset**, unless switched on at `/admin/settings`; set here, it wins. Needs outbound HTTPS, and a misspelt value stops the app. See [Importing from a link](docs/deployment.md#importing-from-a-link). |
 | `SOURCE_URL` | | Where this instance's source lives, shown in the footer. **Change it if you modify the code** — see [Licence](#licence). Defaults to the upstream repository. |
 | `PPP_REGISTRY` / `PPP_TAG` | | Which published image to run. Pin `PPP_TAG` to a release (`v0.3.0`) or a commit SHA; either is also how you roll back. |
 | `CF_TUNNEL_TOKEN` | | Connector token for `docker-compose.tunnel.yml`, from Cloudflare Zero Trust. A credential: anything holding it can serve the hostnames routed to that tunnel. See [Deploying behind a Cloudflare Tunnel](docs/deployment.md#deploying-behind-a-cloudflare-tunnel). |
@@ -426,7 +429,7 @@ has no outbound internet, set `HIBP_DISABLED=true` — and only then.
 | **[Development](docs/development.md)** | stack, local setup, the verification suites, the full local run, CI, cutting a release |
 | **[Security audit](docs/security-audit.md)** | the OWASP Top 10 assessment, findings, and residual risk accepted |
 | **[Security policy](SECURITY.md)** | how to report a vulnerability |
-| **[Contributing](CONTRIBUTING.md)** | the eleven suites are the contract; what a good change looks like |
+| **[Contributing](CONTRIBUTING.md)** | the twelve suites are the contract; what a good change looks like |
 | **[Changelog](CHANGELOG.md)** | what changed in each release |
 
 ## Security
@@ -457,9 +460,9 @@ something, see [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-Issues and pull requests are welcome. The eleven verification suites in
+Issues and pull requests are welcome. The twelve verification suites in
 `scripts/` are the contract — `verify:models`, `verify:auth`, `verify:upload`,
-`verify:import`, `verify:queue`, `verify:frr`, `verify:benefits`, `verify:catalog`, `verify:api`,
+`verify:import`, `verify:queue`, `verify:frr`, `verify:benefits`, `verify:catalog`, `verify:settings`, `verify:api`,
 `verify:passkey` and `probe:security`. All but `verify:models` run in CI against the built
 container image rather than a dev server. If a change makes one fail, that is the
 change talking.

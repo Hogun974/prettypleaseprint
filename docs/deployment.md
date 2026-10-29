@@ -361,6 +361,41 @@ The seed is an upsert, so it is safe on every start and keeps the admin's name
 in step with the environment — but it will refuse to create a *second* admin,
 and so will the database, and it never resets a password that already exists.
 
+### Settings that live in the app
+
+A few things do not need to be environment variables, and the printer owner can
+change them at `/admin/settings`, in effect from the next request with no
+restart:
+
+| Setting | Overridden by | Default |
+| --- | --- | --- |
+| Import from a link | `IMPORT_SOURCES` | off |
+| Sender name on outgoing mail | a name in `MAIL_FROM` (`Name <address>`) | `MAIL_FROM` as written, or `Pretty Please Print` when it is unset |
+
+**The environment wins.** If the variable says something about a setting, that
+is what the app uses, and the page shows the field locked with the variable
+that sets it. So nothing changes for a deployment that is already configured in
+`.env.docker`: the page is a second door, not a second opinion. A variable set
+to nothing (`IMPORT_SOURCES=`) says nothing. For the sender, the *address*
+always stays in `MAIL_FROM`; write `MAIL_FROM="printer@example.org"` without a
+name if you want to choose the name on the page.
+
+Saving asks for your password or passkey again if you signed in more than five
+minutes ago, as inviting someone does, and every change is in the audit trail
+as `settings.changed` with the old and the new value.
+
+The settings are one row in the `instanceSettings` table, so there is nothing
+new to back up beyond the database. A missing row means every setting is at its
+default, and the migration that adds the table inserts none.
+
+`PASSKEY_RP_NAME` stays in the environment. The passkey library copies it when
+the app starts, so it cannot change per request without patching the library's
+responses, and an authenticator keeps the name a passkey was made with anyway.
+The page lists it, read-only, with the rest of what is decided where the app is
+started: which sign-in methods are on, whether mail is configured, whether
+proxy headers are trusted, the source link and the running tag. It never shows
+a secret or a connection string.
+
 ### There is no object store
 
 Model files are files, in `$DATA_ROOT/uploads`. The compose files define no
@@ -486,7 +521,9 @@ irreversible; this is.
 
 ### Importing from a link
 
-Off by default. Add this to `.env.docker` and restart the app:
+Off by default. Switch it on at `/admin/settings`, or pin it in
+`.env.docker` and restart the app; the environment wins, and the page then
+shows it locked:
 
 ```sh
 IMPORT_SOURCES="printables"
@@ -514,7 +551,9 @@ Four things to know before switching it on:
 - **It is not bound by your proxy's upload limit.** The file comes *in* from
   Printables rather than up through Cloudflare or Nginx, so the 100 MB edge cap
   described below does not apply; the app's own 250 MB limit does.
-- **A misspelt value stops the app, on purpose.** `IMPORT_SOURCES="printable"`
+- **A misspelt value stops the app, on purpose.** The settings page refuses an
+  unknown name by name when you save it. In the environment,
+  `IMPORT_SOURCES="printable"`
   makes sign-in and the API answer 500 with a log line naming the variable,
   rather than quietly meaning "off". `/api/health` only checks the database and keeps
   answering 200, so the deploy wizard will not roll this back for you — sign

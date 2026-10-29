@@ -337,6 +337,9 @@ async function main() {
     ["catalog", `${APP}/admin/catalog`],
     ["benefits", `${APP}/admin/benefits`],
     ["audit", `${APP}/admin/audit`],
+    // On the test stack this shows both states a field can be in: import
+    // pinned by IMPORT_SOURCES, the sender name left to the owner.
+    ["settings", `${APP}/admin/settings`],
     ["frr", `${APP}/frr`],
   ];
   for (const [name, url] of adminPages) {

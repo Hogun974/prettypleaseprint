@@ -51,8 +51,26 @@ const isLoopback = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(
 // Not an authentication setting, and here anyway: this is the module every
 // request loads, which is what makes it where configuration is refused. A
 // misspelt IMPORT_SOURCES throws by name on the first request instead of
-// quietly meaning "off" — see `enabledSources`.
+// quietly meaning "off" — see `enabledSources`. The same list saved at
+// /admin/settings is refused by the same parser when it is saved, and again
+// whenever it is read.
 if (!isBuildPhase) enabledSources();
+
+/**
+ * The name a browser shows when it offers to save a passkey.
+ *
+ * Environment only, unlike the settings at /admin/settings, and not for want
+ * of trying: the passkey plugin copies its options into a closure when it is
+ * constructed (`const opts = { ...options }` in @better-auth/passkey 1.7.7),
+ * so a getter here is read once at boot and never again. The only per-request
+ * route left would be rewriting the plugin's response body in an `after`
+ * hook, which is a patch on somebody else's protocol for a cosmetic string.
+ * It is also cosmetic in a way that does not reward changing it: an
+ * authenticator stores the name when the passkey is made, so a new name only
+ * reaches passkeys registered afterwards. The settings page shows it, read-only,
+ * and says this.
+ */
+export const PASSKEY_RP_NAME = process.env.PASSKEY_RP_NAME ?? "Pretty Please Print";
 
 if (isProd && !isBuildPhase) {
   if (!process.env.BETTER_AUTH_SECRET) {
@@ -392,7 +410,7 @@ export const auth = betterAuth({
 
     passkey({
       rpID: process.env.PASSKEY_RP_ID ?? "localhost",
-      rpName: process.env.PASSKEY_RP_NAME ?? "Pretty Please Print",
+      rpName: PASSKEY_RP_NAME,
       origin: baseURL,
       authenticatorSelection: {
         // Discoverable credentials let someone sign in without typing a

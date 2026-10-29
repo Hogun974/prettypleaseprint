@@ -431,6 +431,16 @@ side:
   beside each colleague's name is a view into other people's work. The
   selection is a query string of ids, each person a link that toggles itself,
   so there is no form control and nothing to hydrate.
+- **Instance settings** (`/admin/settings`) are one row in `InstanceSettings`,
+  for the few things that need not be environment variables: whether import
+  is on, and the sender name on mail. `src/lib/settings.ts` holds a registry
+  typed off that row (a setting is one entry there and one nullable column,
+  and the compiler refuses either without the other) and the one zod schema
+  built from it. The environment always wins over a saved value and the page
+  shows the field locked; null means "not set here", so a missing row is
+  exactly the old behaviour. Read on every use, never cached, so a save is in
+  effect from the next request. `PASSKEY_RP_NAME` stayed in the environment
+  because the passkey plugin copies its options at construction.
 - **An optional free-text print-settings field** rides along on a request and
   shows on the ticket for the owner. The structured / access-gated "advanced
   mode" is deferred.
@@ -468,6 +478,8 @@ src/lib/
   stories.ts             every operation on a print ticket — the rules, once
   features.ts            every operation on a feature request — the 'frr' track
   benefits.ts            the owner-managed benefits (tip) catalogue
+  settings.ts            instance settings: the registry, environment-wins, the reads
+  settings-admin.ts      saving them: the role check, the row lock, the audit row
   catalog.ts             request schemas, priorities and catalogue types, shared with the browser
   catalog-data.ts        live material/colour reads and the authoritative lookup
   models.ts              upload validation + mesh measurement
@@ -535,6 +547,7 @@ scripts/
   verify-frr.ts          the feature-request track, filed and triaged
   verify-benefits.ts     the owner-managed benefits catalogue
   verify-catalog.ts      the owner-managed material/colour catalogue
+  verify-settings.ts     instance settings, and the environment winning over them
   verify-api.ts          the JSON API, the document and the console
   verify-passkey.ts      WebAuthn in a real browser
   security-probe.ts      OWASP-mapped security probes

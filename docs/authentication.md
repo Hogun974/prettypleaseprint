@@ -251,6 +251,11 @@ This is the sudo gate, and it exists because shortening the session window does
 not help against a cookie captured *now*. It is the one control a thief holding
 a copied cookie cannot satisfy.
 
+Saving `/admin/settings` is gated the same way. It grants nobody access, but
+it changes what the server does for everyone: switching importing on has the
+server fetch from a third party on any signed-in person's say-so, and the
+sender name is what every invitation and reset link arrives signed with.
+
 Withdrawing an unaccepted invitation is not gated — it only ever removes reach
 — and nor are `/admin/benefits` and `/admin/catalog`, which decide what the
 request form offers and grant nobody anything.
