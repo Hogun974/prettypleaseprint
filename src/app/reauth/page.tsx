@@ -8,7 +8,9 @@ import { ReauthForm } from "./reauth-form";
 import { safeRedirect } from "@/lib/safe-redirect";
 
 /**
- * "Confirm it's you" before the actions that move access around.
+ * "Confirm it's you" before the actions that move access around, and before
+ * saving the instance settings, which change what the server does for
+ * everybody.
  *
  * Reached only by being sent here from one of those actions — see
  * `requireFreshAuth` in `src/lib/reauth.ts`. Anyone whose sign-in is already
@@ -37,7 +39,8 @@ export default async function ReauthPage({
       <Kicker>One more time, please</Kicker>
       <H1>Is that still you?</H1>
       <Lead>
-        You are about to change who can get in. A password or a passkey confirms
+        You are about to change who can get in, or how the app behaves for
+        everyone. A password or a passkey confirms
         it is you at the keyboard and not a browser somebody left open.
       </Lead>
 
