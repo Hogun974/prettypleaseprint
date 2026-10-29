@@ -37,6 +37,7 @@ const NAV: Record<Actor["role"], Array<{ label: string; href: string }>> = {
     { label: "Benefits", href: "/admin/benefits" },
     { label: "Guest list", href: "/admin/invites" },
     { label: "Audit", href: "/admin/audit" },
+    { label: "Settings", href: "/admin/settings" },
   ],
 };
 

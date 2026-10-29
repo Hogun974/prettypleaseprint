@@ -210,6 +210,9 @@ async function main() {
       ["queue", `${APP}/queue`],
       ["books", `${APP}/me`],
       ["story-admin", `${APP}/story/${printing!.id}`],
+      // On the test stack this shows both states a field can be in: import
+      // pinned by IMPORT_SOURCES, the sender name left to the owner.
+      ["settings", `${APP}/admin/settings`],
     ] as Array<[string, string]>) {
       await adminPage.goto(url, { waitUntil: "networkidle2" });
       await adminPage.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
@@ -223,7 +226,7 @@ async function main() {
   await page.screenshot({ path: `${OUT}/board-mobile.png`, fullPage: true });
 
   await browser.close();
-  console.info(`wrote ${pages.length + 4} screenshots to ${OUT}/`);
+  console.info(`wrote ${pages.length + 5} screenshots to ${OUT}/`);
 }
 
 main()

@@ -26,8 +26,16 @@ export const SOURCE_LABEL: Record<ImportSource, string> = {
  * A name that is not a source is an error rather than something to skip.
  * `IMPORT_SOURCES=printable` silently meaning "off" is the kind of quiet
  * fallback that costs an afternoon.
+ *
+ * The same text can also come from `/admin/settings` (see `src/lib/settings.ts`),
+ * which stores it in this exact format so that both doors share this one
+ * parser and its refusal. `origin` is only what the refusal calls the place the
+ * text came from, so the owner is pointed at the right one.
  */
-export function enabledSources(raw: string | undefined = process.env.IMPORT_SOURCES): ImportSource[] {
+export function enabledSources(
+  raw: string | undefined = process.env.IMPORT_SOURCES,
+  origin = "IMPORT_SOURCES",
+): ImportSource[] {
   const names = (raw ?? "")
     .split(",")
     .map((name) => name.trim().toLowerCase())
@@ -35,7 +43,7 @@ export function enabledSources(raw: string | undefined = process.env.IMPORT_SOUR
   const unknown = names.filter((name) => !(IMPORT_SOURCES as readonly string[]).includes(name));
   if (unknown.length > 0) {
     throw new Error(
-      `IMPORT_SOURCES names ${unknown.map((n) => JSON.stringify(n)).join(", ")}, ` +
+      `${origin} names ${unknown.map((n) => JSON.stringify(n)).join(", ")}, ` +
         `which is not a source this app can import from. Known: ${IMPORT_SOURCES.join(", ")}.`,
     );
   }

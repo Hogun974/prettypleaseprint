@@ -58,6 +58,8 @@ export type AuditAction =
   // benefits (the owner-managed tip catalogue)
   | "benefit.created"
   | "benefit.updated"
+  // instance settings (/admin/settings): detail is { key: { from, to } }
+  | "settings.changed"
   // feature requests (the 'frr' track)
   | "feature.created"
   | "feature.status_changed"

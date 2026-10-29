@@ -575,7 +575,8 @@ README now says.
 
 Added after the audit above, and the first thing in the app that makes a
 request to another server on a requester's say-so. It is off unless
-`IMPORT_SOURCES` names a source. What follows is what it was built to refuse.
+`IMPORT_SOURCES` names a source, or the owner switches one on at
+`/admin/settings` (behind the same re-authentication as an invitation). What follows is what it was built to refuse.
 Every row but the last is asserted by `npm run verify:import`, and the four
 that are new code rather than reuse — the link parse, the download origin and
 redirect, the size cut-off, and the stored link — were each watched failing

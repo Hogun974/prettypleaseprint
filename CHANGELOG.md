@@ -38,6 +38,32 @@ Notable changes. Every entry names a released version; deployments pin
   upload. `npm run verify:import` is the eleventh suite, and runs against a
   stand-in for Printables so that the far end can be made to misbehave.
 
+- **Instance settings at `/admin/settings`** (#104). The printer owner can
+  switch importing from a link on or off and choose the sender name on outgoing
+  mail without editing `.env.docker` or restarting: a save is in effect from the
+  next request. **The environment still wins** — if `IMPORT_SOURCES` is set, or
+  `MAIL_FROM` carries a name, that is what the app uses and the page shows the
+  field locked with the variable that sets it, so a deployment already
+  configured there sees no difference. The mail *address* stays in
+  `MAIL_FROM`; leave the name off it to choose the name on the page. An unknown
+  import source is still refused by name, at save time.
+
+  Saving asks for the password or passkey again after five minutes, like
+  inviting someone, and each change is in the audit trail as `settings.changed`
+  with the old and the new value. Below the form, a read-only panel says what
+  stays in the environment — the sign-in methods, whether mail is configured,
+  whether proxy headers are trusted, the source link, the running tag — and
+  never shows a secret or a connection string.
+
+  `PASSKEY_RP_NAME` did not move: the passkey library copies it when the app
+  starts, so it cannot change per request, and the page says so.
+
+  One additive migration (a new `instanceSettings` table, no row inserted: a
+  missing row is every setting at its default, which is the old behaviour), so
+  the previous image keeps working against the migrated database.
+  `npm run verify:settings` is the twelfth suite. The test overlay now sets a
+  bare `MAIL_FROM` so that the suite has a setting the environment does not pin.
+
 ### Changed
 
 - **Opening a ticket from a model's bytes lives in one place.** It was the body

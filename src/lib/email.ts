@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 import { isBuildPhase } from "@/lib/runtime";
+import { currentMailFrom } from "@/lib/settings";
 
 /**
  * Where mail goes, if anywhere:
@@ -43,25 +44,28 @@ if (!isBuildPhase && process.env.NODE_ENV === "production" && !mailConfigured())
   );
 }
 
-const from = process.env.MAIL_FROM ?? "Pretty Please Print <printer@example.org>";
-
 export type Mail = { to: string; subject: string; html: string; text: string };
 
 /**
  * Delivers, or reports that it could not. The caller decides what to do about
  * it — for an invitation, that means showing the link to the admin instead.
+ *
+ * The sender is read per message, not once at module load: its display name
+ * can be set at /admin/settings, and a save there has to reach the next
+ * message without a restart. With nothing saved it is `MAIL_FROM` as written,
+ * or the built-in default, exactly as before — see `mailFromLine`.
  */
 export async function sendMail(mail: Mail): Promise<boolean> {
   switch (mailTransport()) {
     case "resend": {
       const resend = new Resend(process.env.RESEND_API_KEY!);
-      const { error } = await resend.emails.send({ from, ...mail });
+      const { error } = await resend.emails.send({ from: await currentMailFrom(), ...mail });
       if (error) throw new Error(`Resend refused the message: ${error.message}`);
       return true;
     }
     case "smtp": {
       const t = nodemailer.createTransport(process.env.SMTP_URL!);
-      await t.sendMail({ from, ...mail });
+      await t.sendMail({ from: await currentMailFrom(), ...mail });
       return true;
     }
     case "none":
