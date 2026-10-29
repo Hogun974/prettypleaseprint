@@ -229,7 +229,7 @@
   "common": {
     "priority": {
       "high": "Haute",
-      "medium": "Moyenne",
+      "medium": "Normale",
       "low": "Basse"
     },
     "category": {

@@ -550,7 +550,7 @@ async function main() {
     ["← Back to requests", "Asked by", "Change priority", "Where it’s at", "Withdraw this request",
      "Talk it over", "Nothing said yet", "Medium", "Other"],
     ["← Retour aux demandes", "Demandée par", "Changer la priorité", "Où elle en est",
-     "Retirer cette demande", "Parlons-en", "Rien de dit pour l’instant", "Moyenne", "Autre"]);
+     "Retirer cette demande", "Parlons-en", "Rien de dit pour l’instant", "Normale", "Autre"]);
 
   await inBoth("the new-request form", as(client, "/frr/new"),
     ["New request", "Ask for a feature", "What & why", "File the request", "High", "Low"],
