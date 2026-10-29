@@ -126,6 +126,8 @@ jobs:
             echo "DB_PASSWORD=$(openssl rand -hex 24)"
             echo "ADMIN_EMAIL=ci-admin@example.test"
             echo "ADMIN_NAME=Ruben Haas"
+            # verify:catalog-sync calls the sync route with the token this hashes.
+            echo "CATALOG_SYNC_TOKEN_HASH=$(printf %s ci-catalog-sync | sha256sum | cut -d" " -f1)"
           } >> .env.docker
 
       - name: Raise the stack
@@ -175,6 +177,11 @@ jobs:
       # upload choices, authoritative validation, and historical snapshots.
       - name: Materials and colours, owner-managed
         run: npm run verify:catalog
+      # The catalogue following a spool inventory: the token, the refusals, a
+      # dry run, the changes applied and audited as the owner, and a rerun
+      # that changes nothing.
+      - name: Catalogue sync from a spool inventory
+        run: npm run verify:catalog-sync
       # Instance settings at /admin/settings: owner-only, the re-auth gate, the
       # environment winning over a saved value, and a saved sender name read
       # back off a real message — the test overlay leaves MAIL_FROM bare so
