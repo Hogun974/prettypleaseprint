@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
 
 import { SourceLink } from "@/components/source-link";
+import { getClientMessages } from "@/i18n/server";
 import { sourceUrl } from "@/lib/runtime";
 import { themeForRequest } from "@/lib/theme";
 
@@ -67,21 +70,32 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The language src/i18n/request.ts chose for this request. `lang` follows
+  // it so a screen reader picks the right voice and the browser the right
+  // hyphenation — on the screens that are translated. On the ones that are not
+  // yet, a French reader gets English copy under lang="fr"; docs/i18n.md says
+  // why that is the lesser evil for now.
+  const [locale, clientMessages] = await Promise.all([getLocale(), getClientMessages()]);
   return (
     <html
-      lang="en"
+      lang={locale}
       // The palette. Decided on the server so the first paint is already in
       // it — a theme applied by script after load would flash the diner.
       data-theme={await themeForRequest()}
       className={`${script.variable} ${slab.variable} ${archivo.variable} ${courier.variable}`}
     >
       <body className="plate flex min-h-screen flex-col bg-cream text-ink antialiased">
-        <div className="flex-1">{children}</div>
-        {/* AGPL-3.0 section 13 wants the source offer in front of people using
-            the app over a network. In the root layout it reaches every page,
-            signed in or not, and is resolved server-side so a fork can point
-            it at its own source with SOURCE_URL. */}
-        <SourceLink href={sourceUrl()} />
+        {/* Hands the locale and the messages to client components
+            (`useTranslations` in the sign-in form, the header's menus) — only
+            the groups they use; getClientMessages says why. */}
+        <NextIntlClientProvider messages={clientMessages}>
+          <div className="flex-1">{children}</div>
+          {/* AGPL-3.0 section 13 wants the source offer in front of people using
+              the app over a network. In the root layout it reaches every page,
+              signed in or not, and is resolved server-side so a fork can point
+              it at its own source with SOURCE_URL. */}
+          <SourceLink href={sourceUrl()} />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

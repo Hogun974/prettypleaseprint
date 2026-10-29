@@ -427,6 +427,7 @@ has no outbound internet, set `HIBP_DISABLED=true` — and only then.
 | **[Open in PrusaSlicer](docs/prusaslicer.md)** | the one-click "send to the slicer" bridge, the helper, and why the deep link cannot be used |
 | **[Themes](docs/theming.md)** | the palette as tokens, "diner after hours", and how the colour rule survives a dark counter |
 | **[Development](docs/development.md)** | stack, local setup, the verification suites, the full local run, CI, cutting a release |
+| **[Translation](docs/i18n.md)** | how the language is chosen, adding a key or a language, and the French glossary for the diner's words |
 | **[Security audit](docs/security-audit.md)** | the OWASP Top 10 assessment, findings, and residual risk accepted |
 | **[Security policy](SECURITY.md)** | how to report a vulnerability |
 | **[Contributing](CONTRIBUTING.md)** | the twelve suites are the contract; what a good change looks like |

@@ -2,8 +2,9 @@
 #
 # Four independent gates, so branch protection can require them by name:
 #
-#   guard    — typecheck, the secret scanner over the whole tree, and the
-#              documentation link checker. Cheap and first: a leaked
+#   guard    — typecheck, the secret scanner over the whole tree, the
+#              documentation link checker and the translation checker.
+#              Cheap and first: a leaked
 #              credential should fail in seconds, not after a six-minute
 #              integration run.
 #   models   — the upload validator against hostile fixtures. Needs no
@@ -67,6 +68,14 @@ jobs:
       # CSS itself — see docs/theming.md.
       - name: Theme contrast
         run: npm run check:contrast
+      # Translations drift as quietly as links do: a key added in English shows
+      # in English to a French reader, and nothing else in CI reads fr.json.
+      # An untranslated or stale key does NOT fail this step — an English-only
+      # change must not wait on a translator — but each one is printed as a
+      # ::warning annotation, so the gap shows on the pull request. Broken
+      # translations (placeholders, ICU quoting, malformed files) still fail.
+      - name: Translations against English
+        run: npm run check:messages
       # The wizards are shell, and nothing else in this job executes shell.
       # Each test file runs its script in a sandbox: a temp directory, stub
       # executables for docker, gh and curl, and a PATH that holds only those

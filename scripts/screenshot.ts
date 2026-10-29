@@ -6,6 +6,11 @@
  *   SHOT_DIR=/tmp/x npm run shots
  *   SHOT_THEME=after-hours npm run shots   # in another theme (src/lib/theme.ts)
  *   SHOT_THEME=auto SHOT_SCHEME=dark npm run shots   # as a system set to dark
+ *   SHOT_LANG=fr npm run shots   # as a browser asking for French sees it
+ *
+ * The language is sent as Accept-Language on every request, English unless
+ * SHOT_LANG says otherwise — not left to Chrome, which asks for the machine's
+ * locale, so the same command gives the same pictures on any machine.
  *
  * Seeds a handful of tickets first, because an empty rail says nothing about
  * whether the rail works.
@@ -26,6 +31,7 @@ import { TEST_PASSWORD, ensureCredentials, usernameFor } from "./_accounts";
 
 const APP = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 const OUT = process.env.SHOT_DIR ?? "shots";
+const LANG = process.env.SHOT_LANG ?? "en";
 
 /**
  * A theme for the screenshots, which nobody can choose in the app yet.
@@ -47,6 +53,7 @@ if (SCHEME !== undefined && SCHEME !== "light" && SCHEME !== "dark") {
 
 /** Set up a page the way every screenshot expects it. */
 async function prepare(page: Page): Promise<void> {
+  await page.setExtraHTTPHeaders({ "accept-language": LANG });
   await page.setViewport({ width: 1280, height: 980, deviceScaleFactor: 1 });
   if (SCHEME) await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: SCHEME }]);
   if (THEME) {
