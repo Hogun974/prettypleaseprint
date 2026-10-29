@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { getStoryOr404, printerName, requireUser, storyRef } from "@/lib/authz";
 import { listActiveBenefits } from "@/lib/benefits";
@@ -6,6 +7,7 @@ import { availableCatalog } from "@/lib/catalog-data";
 import { AppHeader } from "@/components/app-header";
 import { Kicker, Notice } from "@/components/ui";
 import { UploadForm } from "@/app/upload/upload-form";
+import { UPLOAD_FORM_WORDS, getPageMessages } from "@/i18n/page-messages";
 
 export const dynamic = "force-dynamic";
 
@@ -37,11 +39,14 @@ export default async function PrintAgainPage({
   const story = await getStoryOr404(storyId, user);
   if (story.uploader.id !== user.id) notFound();
 
-  const [owner, catalog, activeBenefits] = await Promise.all([
+  const [owner, catalog, activeBenefits, t, tTicket] = await Promise.all([
     printerName(),
     availableCatalog(),
     listActiveBenefits(),
+    getTranslations("upload"),
+    getTranslations("ticket"),
   ]);
+  const words = await getPageMessages(UPLOAD_FORM_WORDS);
   const benefits = activeBenefits.map((b) => ({ label: b.label, preferred: b.preferred }));
   const ref = storyRef(story.id);
 
@@ -50,18 +55,17 @@ export default async function PrintAgainPage({
       <AppHeader user={user} active="/history" />
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
         <div className="max-w-[780px]">
-          <Kicker>Print {ref} again</Kicker>
+          <Kicker>{t("again.kicker", { ref })}</Kicker>
           <h1 className="m-0 mb-[13.2px] break-words text-[46px] leading-[0.98] text-ink">
-            Same again?
+            {t("again.title")}
           </h1>
           <p className="m-0 mb-[26.4px] text-[16.5px] leading-[1.5] text-ink-2 text-pretty">
-            This opens a fresh request from the file on {ref}. It starts as you
-            asked for it last time — change whatever should be different.{" "}
-            {ref} itself stays exactly as it is.
+            {t("again.lead", { ref })}
           </p>
         </div>
         {catalog.length > 0 ? (
           <UploadForm
+            words={words}
             owner={owner}
             catalog={catalog}
             benefits={benefits}
@@ -82,8 +86,8 @@ export default async function PrintAgainPage({
           />
         ) : (
           <div className="max-w-[780px]">
-            <Notice tone="warn">
-              The printer owner has not listed any available material and colour combinations yet.
+            <Notice tone="warn" label={tTicket("holdOn")}>
+              {t("noCatalog")}
             </Notice>
           </div>
         )}

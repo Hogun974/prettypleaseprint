@@ -36,3 +36,7 @@ export const CLIENT_GROUPS = [
 // guest-list controls (admin.guests). Their server pages say those words and
 // hand them down as props, so no client's page carries them — verify:auth
 // checks a client's page source for them.
+// Also not here: the request form's words and the refusals it can show,
+// and the 3D viewer's. The pages that draw those components hand them their
+// words as a prop (getPageMessages in ./page-messages.ts), so the rail, a
+// ticket and the sign-in page do not carry them.

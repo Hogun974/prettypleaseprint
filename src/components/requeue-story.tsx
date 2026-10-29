@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 /**
  * "Print this one again." (FRR-102)
@@ -13,7 +14,7 @@ import Link from "next/link";
  * identical to the first. Nothing is created until that form is sent, and the
  * original is left exactly as it was.
  */
-export function RequeueStory({
+export async function RequeueStory({
   storyId,
   label,
   compact = false,
@@ -25,17 +26,18 @@ export function RequeueStory({
   compact?: boolean;
 }) {
   const href = `/story/${storyId}/again`;
+  const t = await getTranslations("requeue");
 
   if (compact) {
     return (
       <Link
         href={href}
-        aria-label={`Print ${label} again`}
-        title="Opens a fresh request from the same file — no re-upload"
+        aria-label={t("aria", { ref: label })}
+        title={t("title")}
         className="stamp inline-flex cursor-pointer items-center gap-[6px] rounded-chip border-[3px] border-ink bg-aqua px-[13.2px] py-[6px] text-[13px] font-bold text-ink hover:bg-sun"
       >
         <span aria-hidden className="font-mono text-[14px] leading-none">↻</span>
-        Print again
+        {t("short")}
       </Link>
     );
   }
@@ -48,11 +50,10 @@ export function RequeueStory({
       >
         {/* A plain refresh wedge, not a brand mark. */}
         <span aria-hidden className="font-mono text-[15px] leading-none">↻</span>
-        Print {label} again
+        {t("long", { ref: label })}
       </Link>
       <p className="m-0 mt-[6px] font-mono text-[11px] leading-[1.5] text-ink-3">
-        Opens a fresh request from the same file — no re-upload. You can change
-        the material, colour, quantity and settings first.
+        {t("hint")}
       </p>
     </div>
   );

@@ -908,6 +908,129 @@ async function main() {
   check("this suite made more than one kind",
         new Set(keyed.map((n) => n.messageKey)).size > 3, [...new Set(keyed.map((n) => n.messageKey))].join(", "));
 
+  // ------------------------------------------------------------------
+  section("the print-request track speaks the reader's language");
+  // English first, because every other check in every suite reads it: the
+  // same words whatever a browser that is not asking for French sends. Then
+  // French, page by page, with none of those English words left in it.
+  const en = (b: Browser, path: string, lang?: string) =>
+    b.go(`${APP}${path}`, { headers: lang ? { "accept-language": lang } : {} }).then((r) => r.text());
+
+  const tReq = await makeStory(ayla.id, "Hook, in two languages", "Requested");
+  const tPrinting = await makeStory(ayla.id, "Clip, mid-print", "Printing");
+  const tDone = await makeStory(ayla.id, "Stand, all done", "Done");
+  const reqRef = storyRefOf(tReq.id);
+
+  const PAGES: {
+    name: string;
+    who: Browser;
+    path: string;
+    english: string[];
+    french: string[];
+  }[] = [
+    {
+      name: "the board", who: client, path: "/board",
+      english: ["The backlog", "Order a print", "The rail carries what is still moving.",
+                "has everything, declined included.", "Printing", "on the bed",
+                "Accepted", "Requested"],
+      french: ["Le carnet de commandes", "Commander une impression", "Le rail porte ce qui avance encore.",
+               "En impression", "sur le plateau", "Accepté", "Demandé"],
+    },
+    {
+      name: "a ticket", who: client, path: `/story/${tReq.id}`,
+      english: ["← Back to the rail", "Asked by", "Quantity", "1 print", "Colour wish", "On offer",
+                "Where it’s at", "Talk it over", "Nothing said yet", "Withdraw this request",
+                "Yes, withdraw it", `Download ${reqRef}`, "the file exactly as it was uploaded.",
+                `Print ${reqRef} again`, "Change priority", "Warming up the plate…"],
+      french: ["← Retour au rail", "Demandé par", "1 exemplaire", "Couleur souhaitée", "Pourboire",
+               "Où il en est", "On en parle", "Retirer cette demande", "Oui, le retirer",
+               `Télécharger ${reqRef}`, `Réimprimer ${reqRef}`, "Changer la priorité", "Le plateau chauffe…"],
+    },
+    {
+      name: "the history", who: client, path: "/history",
+      english: ["Your print history", "All time", "Last 30 days", "Print again", "Filter"],
+      french: ["Vos impressions passées", "Depuis toujours", "Ces 30 derniers jours", "Réimprimer", "Filtrer",
+               "Terminé"],
+    },
+    {
+      name: "the request form", who: client, path: "/upload",
+      english: ["New order", "Drop your .stl or .3mf here", "What is it?", "How many do you need?",
+                "How much does it matter?", "Colour you’re hoping for", "Print settings (optional)",
+                "Cancel", "Pick a file to continue."],
+      french: ["Nouvelle commande", "Déposez votre .stl ou .3mf ici", "Qu’est-ce que c’est ?",
+               "Combien vous en faut-il ?", "La couleur espérée", "Réglages d’impression (facultatif)",
+               "Annuler", "Choisissez un fichier pour continuer.", "Normale"],
+    },
+    {
+      name: "print it again", who: client, path: `/story/${tDone.id}/again`,
+      english: ["Same again?", `Same file as ${storyRefOf(tDone.id)} — no re-upload`],
+      french: ["On remet ça ?", `Même fichier que ${storyRefOf(tDone.id)} — rien à renvoyer`],
+    },
+    {
+      name: "the owner's queue", who: ruben, path: "/queue",
+      english: ["Printer view · the machine by the window", "Waiting on you", "Rest of the queue",
+                "offers A beer", "waiting for a yes.", "Accept it", "Flag the model", "Yes, decline"],
+      french: ["Côté imprimante · la machine près de la fenêtre", "À vous de dire oui", "Le reste de la file",
+               "pourboire : A beer", "un oui.", "Accepter", "Signaler un souci", "Oui, refuser"],
+    },
+    {
+      name: "the owner's view of a ticket", who: ruben, path: `/story/${tPrinting.id}`,
+      english: ["Move it along", "Move to Delivery", "Printing", "Flag the model"],
+      french: ["Le faire avancer", "Prêt à remettre", "En impression", "Signaler un souci"],
+    },
+  ];
+
+  for (const page of PAGES) {
+    const plainHtml = await en(page.who, page.path);
+    const plain = visibleText(plainHtml);
+    const missing = page.english.filter((s) => !plain.includes(s));
+    check(`${page.name}: English by default, word for word`, missing.length === 0,
+          `missing: ${missing.join(" | ")}`);
+    for (const header of ["en-GB,en;q=0.9", "de-DE,de;q=0.9"]) {
+      const text = visibleText(await en(page.who, page.path, header));
+      check(`${page.name}: Accept-Language "${header}" renders the same English`,
+            text === plain, firstDifference(plain, text));
+    }
+    const frHtml = await en(page.who, page.path, "fr-FR,fr;q=0.9");
+    const fr = visibleText(frHtml);
+    const absent = page.french.filter((s) => !fr.includes(s));
+    check(`${page.name}: French to a French reader`, absent.length === 0 && htmlLang(frHtml) === "fr",
+          `missing: ${absent.join(" | ")}`);
+    const leftover = page.english.filter((s) => fr.includes(s) && !page.french.includes(s));
+    check(`${page.name}: with none of that English left in it`, leftover.length === 0, leftover.join(" | "));
+  }
+
+  // A toast and a refusal, said by the server action in the reader's language.
+  const ticketHtml = await en(client, `/story/${tReq.id}`);
+  const pIdx = formIndexContaining(ticketHtml, 'name="priority"');
+  const toastOf = async (storyId: number, lang?: string) => {
+    const r = await client.submit(`${APP}/story/${storyId}`, ticketHtml, pIdx,
+      { storyId: String(storyId), priority: "high" }, lang ? { "accept-language": lang } : {});
+    return paramOf(r.headers.get("location"), "toast");
+  };
+  check("a priority toast is English by default", (await toastOf(tReq.id)) === "Priority → high.");
+  check("and French to a French reader", (await toastOf(tReq.id, "fr")) === "Déjà en priorité haute.");
+  check("a refusal is English by default",
+        (await toastOf(tDone.id)) === `${storyRefOf(tDone.id)} is done — there is nothing left to prioritise.`);
+  check("and French to a French reader",
+        (await toastOf(tDone.id, "fr")) === `${storyRefOf(tDone.id)} est terminé — il n’y a plus rien à prioriser.`);
+
+  // The API stays English; the key comes beside the sentence, never instead.
+  const theirs = await makeStory(mallory.id, "Mallory's, not Ayla's", "Done");
+  const requeue = await client.raw(`${APP}/api/stories/${theirs.id}/requeue`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "accept-language": "fr" },
+    body: "{}",
+  });
+  const refused = await requeue.json().catch(() => ({}));
+  check("an API refusal keeps its English sentence, even asked in French",
+        requeue.status === 404 && refused.error === "That ticket no longer exists.",
+        JSON.stringify(refused));
+  check("and carries the key the form says it with",
+        refused.errorKey === "problems.requeue.gone", JSON.stringify(refused));
+
+  await db.story.deleteMany({ where: { id: { in: [tReq.id, tPrinting.id, tDone.id, theirs.id] } } });
+
   console.info(
     `\n${passed} checks passed, ${failures.length} failed` +
       (failures.length ? `:\n  - ${failures.join("\n  - ")}` : ""),

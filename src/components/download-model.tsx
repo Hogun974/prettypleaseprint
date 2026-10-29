@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { storyRef } from "@/lib/scope";
 
 /**
@@ -20,13 +22,14 @@ import { storyRef } from "@/lib/scope";
  * themselves put there reveals nothing, and a rule that said otherwise would be
  * strange to explain.
  */
-export function DownloadModel({
+export async function DownloadModel({
   storyId,
   filename,
 }: {
   storyId: number;
   filename: string;
 }) {
+  const t = await getTranslations("download");
   return (
     <div className="mt-[13.2px]">
       <a
@@ -34,10 +37,10 @@ export function DownloadModel({
         className="stamp inline-flex cursor-pointer items-center gap-[8px] rounded-chip border-[3px] border-ink bg-porcelain px-[15px] py-[8px] text-[14px] font-bold text-ink hover:bg-sun"
       >
         <span aria-hidden className="font-mono text-[15px] leading-none">↓</span>
-        Download {storyRef(storyId)}
+        {t("link", { ref: storyRef(storyId) })}
       </a>
       <p className="m-0 mt-[6px] font-mono text-[11px] leading-[1.5] text-ink-3">
-        {filename} — the file exactly as it was uploaded.
+        {t("hint", { filename })}
       </p>
     </div>
   );

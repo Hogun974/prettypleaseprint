@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 /**
  * Where the source of *this* instance lives.
  *
@@ -11,7 +13,8 @@
  * dragged into the client bundle by anything that imports it, where the value
  * is simply absent.
  */
-export function SourceLink({ href }: { href: string }) {
+export async function SourceLink({ href }: { href: string }) {
+  const t = await getTranslations("sourceLink");
   return (
     <footer className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[26.4px] pt-[8.8px]">
       <a
@@ -20,7 +23,7 @@ export function SourceLink({ href }: { href: string }) {
         rel="noreferrer noopener"
         className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3 underline underline-offset-2 hover:text-cherry-dk"
       >
-        Source · AGPL-3.0
+        {t("label")}
       </a>
     </footer>
   );

@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createTranslator } from "next-intl";
+
+import type { PageMessages } from "@/i18n/page-messages";
 
 import {
   DEFAULT_STORY_PRIORITY,
-  PRIORITY_CHIP,
   QUANTITY_PRESETS,
   STORY_PRIORITIES,
   type CatalogMaterialChoice,
@@ -50,6 +52,9 @@ type Phase =
   | { kind: "idle" }
   | { kind: "uploading"; percent: number }
   | { kind: "error"; message: string };
+
+/** An API refusal, as `fail` in src/lib/api.ts writes it. */
+type Refusal = { error?: unknown; errorKey?: unknown; errorValues?: unknown };
 
 /** What `POST /api/import/files` answers with — a model and its printable files. */
 type Listing = {
@@ -120,7 +125,10 @@ export function UploadForm({
   benefits,
   again,
   importSources = [],
+  words,
 }: {
+  /** Its words, from the page: `getPageMessages(UPLOAD_FORM_WORDS)`. */
+  words: PageMessages;
   owner: string;
   catalog: CatalogMaterialChoice[];
   benefits: Benefit[];
@@ -134,6 +142,42 @@ export function UploadForm({
   const defaultTip = preferredLabels[0] ?? benefits[0]?.label ?? "";
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Said from the words the page handed down — see src/i18n/page-messages.ts
+  // for why these are not in the catalogue every page carries.
+  const { t, tPriority, said } = useMemo(
+    () => ({
+      t: createTranslator({ ...words, namespace: "upload.form" }),
+      tPriority: createTranslator({ ...words, namespace: "common.priority" }),
+      // One per group the API's keys fall in.
+      said: {
+        wish: createTranslator({ ...words, namespace: "problems.wish" }),
+        upload: createTranslator({ ...words, namespace: "problems.upload" }),
+        requeue: createTranslator({ ...words, namespace: "problems.requeue" }),
+        api: createTranslator({ ...words, namespace: "problems.api" }),
+      },
+    }),
+    [words],
+  );
+  const locale = words.locale;
+  const bytes = (n: number) => formatBytes(n, locale);
+
+  /**
+   * What to show for a refusal from the API. Its `error` is the English
+   * sentence, which is exactly what an English reader has always been shown;
+   * any other reader gets the same sentence from the catalogue, by the key the
+   * API sends beside it. A refusal without a key — or one this page was not
+   * sent — stays English rather than showing nothing.
+   */
+  const refusal = (body: Refusal, fallback: string): string => {
+    const english = typeof body.error === "string" ? body.error : fallback;
+    if (locale === "en" || typeof body.errorKey !== "string") return english;
+    const [, group, ...rest] = body.errorKey.split(".");
+    const speak = group && Object.hasOwn(said, group) ? said[group as keyof typeof said] : null;
+    const key = rest.join(".");
+    if (body.errorKey.split(".")[0] !== "problems" || !speak || !speak.has(key as never)) return english;
+    const values = typeof body.errorValues === "object" && body.errorValues !== null ? body.errorValues : {};
+    return speak(key as never, values as never);
+  };
   // Printing again starts from what was asked for last time — where that is
   // still on the shelf. A material, colour or benefit the owner has since
   // retired falls back to the usual default, and `gone` says which, because a
@@ -146,8 +190,12 @@ export function UploadForm({
   const tipStillOffered = again ? benefits.some((b) => b.label === again.tip) : false;
   const gone = again
     ? [
-        !wanted ? again.material : !wantedColor ? `${again.material} in ${again.colorName}` : null,
-        !tipStillOffered && benefits.length > 0 ? `“${again.tip}”` : null,
+        !wanted
+          ? again.material
+          : !wantedColor
+            ? t("materialIn", { material: again.material, colour: again.colorName })
+            : null,
+        !tipStillOffered && benefits.length > 0 ? t("quoted", { tip: again.tip }) : null,
       ].filter((x): x is string => x !== null)
     : [];
 
@@ -187,22 +235,25 @@ export function UploadForm({
       setFile(null);
       return setPhase({
         kind: "error",
-        message: "Only .stl and .3mf files can be printed here.",
+        message: t("badExtension"),
       });
     }
     if (picked.size > MAX_UPLOAD_BYTES) {
       setFile(null);
       return setPhase({
         kind: "error",
-        message: `That file is ${formatBytes(picked.size)} — the limit is ${formatBytes(MAX_UPLOAD_BYTES)}.`,
+        message: t("tooLarge", {
+          size: formatBytes(picked.size, locale),
+          limit: formatBytes(MAX_UPLOAD_BYTES, locale),
+        }),
       });
     }
     setFile(picked);
     // One model per ticket: a file from disk replaces a file picked from a link.
     setLinked({ kind: "idle" });
-  }, []);
+  }, [t, locale]);
 
-  const sourceNames = importSources.map((s) => SOURCE_LABEL[s]).join(" or ");
+  const sourceNames = importSources.map((s) => SOURCE_LABEL[s]).join(t("orJoin"));
   const picked =
     linked.kind === "listed"
       ? linked.listing.files.find((f) => f.id === linked.fileId) ?? null
@@ -219,7 +270,7 @@ export function UploadForm({
     // The same parse the server makes, for an answer before the round trip.
     if (!identifySource(url, importSources)) {
       setLinked({ kind: "idle" });
-      return setPhase({ kind: "error", message: `That is not a link to a model on ${sourceNames}.` });
+      return setPhase({ kind: "error", message: t("notALink", { sources: sourceNames }) });
     }
     setPhase({ kind: "idle" });
     setLinked({ kind: "looking" });
@@ -232,7 +283,7 @@ export function UploadForm({
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setLinked({ kind: "idle" });
-        return setPhase({ kind: "error", message: body.error ?? "That did not go through. Try again." });
+        return setPhase({ kind: "error", message: refusal(body, t("failed")) });
       }
       const listing = body as Listing;
       // A model with exactly one printable file needs no choosing.
@@ -246,7 +297,7 @@ export function UploadForm({
       setTitle((current) => current || listing.model.name.slice(0, 120));
     } catch {
       setLinked({ kind: "idle" });
-      setPhase({ kind: "error", message: "The connection dropped. Try again." });
+      setPhase({ kind: "error", message: t("dropped") });
     }
   }
 
@@ -267,13 +318,13 @@ export function UploadForm({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        return setPhase({ kind: "error", message: body.error ?? "That did not go through. Try again." });
+        return setPhase({ kind: "error", message: refusal(body, t("failed")) });
       }
       const id: number | null = body.story?.id ?? null;
       router.push(id === null ? "/board" : `/story/${id}?sent=1`);
       router.refresh();
     } catch {
-      setPhase({ kind: "error", message: "The connection dropped. Try again." });
+      setPhase({ kind: "error", message: t("dropped") });
     }
   }
 
@@ -297,13 +348,13 @@ export function UploadForm({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        return setPhase({ kind: "error", message: body.error ?? "That did not go through. Try again." });
+        return setPhase({ kind: "error", message: refusal(body, t("failed")) });
       }
       const id: number | null = body.story?.id ?? null;
       router.push(id === null ? "/board" : `/story/${id}?sent=1`);
       router.refresh();
     } catch {
-      setPhase({ kind: "error", message: "The connection dropped. Try again." });
+      setPhase({ kind: "error", message: t("dropped") });
     }
   }
 
@@ -352,16 +403,16 @@ export function UploadForm({
         router.refresh();
         return;
       }
-      let message = "That did not go through. Try again.";
+      let message = t("failed");
       try {
-        message = JSON.parse(xhr.responseText).error ?? message;
+        message = refusal(JSON.parse(xhr.responseText), message);
       } catch {
         /* a non-JSON error body is not worth surfacing verbatim */
       }
       setPhase({ kind: "error", message });
     });
     xhr.addEventListener("error", () =>
-      setPhase({ kind: "error", message: "The connection dropped mid-upload." }),
+      setPhase({ kind: "error", message: t("droppedMidUpload") }),
     );
     xhr.addEventListener("abort", () => setPhase({ kind: "idle" }));
 
@@ -384,19 +435,18 @@ export function UploadForm({
       {again && (
         <div className="rounded-panel border-[3px] border-ink bg-porcelain px-[22px] py-[17.6px] shadow-stamp">
           <p className="m-0 font-mono text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-3">
-            Same file as {again.ref} — no re-upload
+            {t("sameFile", { ref: again.ref })}
           </p>
           <p className="m-0 mt-[4px] break-words font-display text-[19px] text-ink">{again.filename}</p>
           <p className="m-0 mt-[3px] font-mono text-[12px] uppercase tracking-[0.04em] text-ink-3">
-            {formatBytes(again.fileSize)} · change anything below, or send it as it was
+            {t("sameFileHint", { size: bytes(again.fileSize) })}
           </p>
         </div>
       )}
       {gone.length > 0 && (
         <div className="mt-[13.2px]">
-          <Notice tone="warn">
-            {gone.join(" and ")} {gone.length === 1 ? "is" : "are"} not on offer any more, so
-            that has been set to something that is. Check it before you send.
+          <Notice tone="warn" label={t("holdOn")}>
+            {t(gone.length === 1 ? "goneOne" : "goneMany", { what: gone.join(t("andJoin")) })}
           </Notice>
         </div>
       )}
@@ -448,14 +498,14 @@ export function UploadForm({
           className="mx-auto mb-[13.2px] block h-[56px] w-[56px] rounded-full border-[3px] border-ink bg-aqua"
         />
         <span className="block font-display text-[19px] text-ink">
-          {file ? file.name : "Drop your .stl or .3mf here"}
+          {file ? file.name : t("drop")}
         </span>
         <span className="mt-[6px] block font-mono text-[12px] uppercase tracking-[0.04em] text-ink-3">
           {busy && !picked
-            ? `Uploading… ${phase.percent}%`
+            ? t("uploading", { percent: phase.percent })
             : file
-              ? `${formatBytes(file.size)} · checked on the server when you send it`
-              : `or click to choose a file · ${formatBytes(MAX_UPLOAD_BYTES)} max`}
+              ? t("checkedOnSend", { size: bytes(file.size) })
+              : t("orChoose", { max: bytes(MAX_UPLOAD_BYTES) })}
         </span>
 
         {busy && !picked && (
@@ -471,7 +521,7 @@ export function UploadForm({
       {/* ---- or a link (only where the instance has switched importing on) ---- */}
       {!again && importSources.length > 0 && (
         <div className="mt-[17.6px]">
-          <Label htmlFor="import-link">Or paste a {sourceNames} link</Label>
+          <Label htmlFor="import-link">{t("pasteLink", { sources: sourceNames })}</Label>
           <div className="flex flex-wrap gap-[8.8px]">
             <input
               id="import-link"
@@ -496,7 +546,7 @@ export function UploadForm({
               disabled={busy || linked.kind === "looking" || !link.trim()}
               onClick={() => void lookUp()}
             >
-              {linked.kind === "looking" ? "Looking…" : "Find the files"}
+              {linked.kind === "looking" ? t("looking") : t("findFiles")}
             </Button>
           </div>
 
@@ -508,7 +558,7 @@ export function UploadForm({
               <p className="m-0 break-words font-display text-[19px] text-ink">{linked.listing.model.name}</p>
               <p className="m-0 mt-[3px] font-mono text-[12px] uppercase tracking-[0.04em] text-ink-3">
                 {[
-                  linked.listing.model.author ? `by ${linked.listing.model.author}` : null,
+                  linked.listing.model.author ? t("by", { author: linked.listing.model.author }) : null,
                   linked.listing.model.license,
                 ]
                   .filter(Boolean)
@@ -517,12 +567,12 @@ export function UploadForm({
 
               {linked.listing.files.length === 0 ? (
                 <p className="m-0 mt-[13.2px] text-[15px] text-ink-2">
-                  There is no .stl or .3mf in that model, so there is nothing here to print.
+                  {t("noPrintable")}
                 </p>
               ) : (
                 <div
                   role="radiogroup"
-                  aria-label="Which file to print"
+                  aria-label={t("whichFile")}
                   className="mt-[13.2px] flex max-h-[280px] flex-col gap-[6px] overflow-y-auto"
                 >
                   {linked.listing.files.map((f) => {
@@ -541,8 +591,8 @@ export function UploadForm({
                       >
                         <span className="min-w-0 break-words text-[15px] font-bold">{f.name}</span>
                         <span className="shrink-0 font-mono text-[12px] uppercase tracking-[0.04em]">
-                          {formatBytes(f.size)}
-                          {f.tooLarge ? ` · over ${formatBytes(MAX_UPLOAD_BYTES)}` : ""}
+                          {bytes(f.size)}
+                          {f.tooLarge ? ` · ${t("over", { max: bytes(MAX_UPLOAD_BYTES) })}` : ""}
                         </span>
                       </button>
                     );
@@ -551,11 +601,13 @@ export function UploadForm({
               )}
 
               <p className="m-0 mt-[11px] font-mono text-[11.5px] uppercase tracking-[0.04em] text-ink-3">
-                {linked.listing.files.length > 1 ? "One file per request · " : ""}
-                {linked.listing.otherFiles > 0
-                  ? `${linked.listing.otherFiles} other ${linked.listing.otherFiles === 1 ? "file" : "files"} there cannot be printed here · `
-                  : ""}
-                fetched and checked on the server when you send it
+                {[
+                  linked.listing.files.length > 1 ? t("onePerRequest") : null,
+                  linked.listing.otherFiles > 0 ? t("otherFiles", { count: linked.listing.otherFiles }) : null,
+                  t("fetchedOnSend"),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
           )}
@@ -564,27 +616,27 @@ export function UploadForm({
 
       {phase.kind === "error" && (
         <div className="mt-[13.2px]">
-          <Notice tone="warn">{phase.message}</Notice>
+          <Notice tone="warn" label={t("holdOn")}>{phase.message}</Notice>
         </div>
       )}
 
       {/* ---- title + material ---- */}
       <div className="mt-[26.4px] grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[22px]">
         <div>
-          <Label htmlFor="title">What is it?</Label>
+          <Label htmlFor="title">{t("whatIsIt")}</Label>
           <input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={120}
-            placeholder="Hook for the monitor arm"
+            placeholder={t("titlePlaceholder")}
             className="w-full rounded-card border-[3px] border-ink bg-porcelain px-[15px] py-[12px] text-[16px] text-ink placeholder:text-ink-3"
           />
         </div>
         <div>
-          <Label htmlFor="material">Material you&rsquo;d like</Label>
+          <Label htmlFor="material">{t("materialLabel")}</Label>
           <Segmented
-            label="Material"
+            label={t("materialAria")}
             options={catalog.map((item) => item.name)}
             value={material}
             onChange={chooseMaterial}
@@ -594,9 +646,9 @@ export function UploadForm({
 
       {/* ---- quantity ---- */}
       <div className="mt-[22px] max-w-[320px]">
-        <Label htmlFor="quantity">How many do you need?</Label>
+        <Label htmlFor="quantity">{t("howMany")}</Label>
         <Segmented
-          label="Quantity"
+          label={t("quantityAria")}
           mono
           options={QUANTITY_PRESETS}
           value={QUANTITY_PRESETS.includes(quantity as never) ? quantity : 0}
@@ -607,7 +659,7 @@ export function UploadForm({
         />
         <div className="mt-[8.8px] flex items-center gap-[8.8px]">
           <label htmlFor="quantity-other" className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-            or type a number
+            {t("typeNumber")}
           </label>
           <input
             id="quantity-other"
@@ -632,8 +684,8 @@ export function UploadForm({
 
       {/* ---- priority ---- */}
       <div className="mt-[22px] max-w-[420px]">
-        <Label htmlFor="priority">How much does it matter?</Label>
-        <div role="radiogroup" aria-label="Priority" className="flex flex-wrap gap-[6px]">
+        <Label htmlFor="priority">{t("howMuch")}</Label>
+        <div role="radiogroup" aria-label={t("priorityAria")} className="flex flex-wrap gap-[6px]">
           {STORY_PRIORITIES.map((p) => {
             const active = p === priority;
             return (
@@ -647,20 +699,20 @@ export function UploadForm({
                   active ? "bg-cherry-dk text-cream" : "bg-porcelain text-ink hover:bg-sun"
                 }`}
               >
-                {PRIORITY_CHIP[p]?.label ?? p}
+                {tPriority(p)}
               </button>
             );
           })}
         </div>
         <p className="m-0 mt-[8.8px] font-mono text-[11.5px] uppercase tracking-[0.04em] text-ink-3">
-          {owner} sees the urgent ones first. You can change it later.
+          {t("priorityHint", { owner })}
         </p>
       </div>
 
       {/* ---- colour ---- */}
       <fieldset className="mt-[22px] border-0 p-0">
         <legend className="mb-[8.8px] font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-ink-2">
-          Colour you&rsquo;re hoping for
+          {t("colour")}
         </legend>
         <div className="flex flex-wrap gap-[13.2px]">
           {selectedMaterial.colors.map((c) => {
@@ -671,7 +723,7 @@ export function UploadForm({
                 type="button"
                 role="radio"
                 aria-checked={active}
-                aria-label={`${c.name} filament`}
+                aria-label={t("colourAria", { colour: c.name })}
                 onClick={() => setColor(c.name)}
                 className="flex w-[80px] cursor-pointer flex-col items-center gap-[7px] border-0 bg-transparent p-0"
               >
@@ -694,7 +746,7 @@ export function UploadForm({
           })}
         </div>
         <p className="mt-[11px] font-mono text-[11.5px] uppercase tracking-[0.04em] text-ink-3">
-          {owner} confirms what&rsquo;s actually on the spool.
+          {t("colourHint", { owner })}
         </p>
       </fieldset>
 
@@ -710,14 +762,14 @@ export function UploadForm({
         className="mt-[26.4px] rounded-panel border-[3px] border-ink bg-aqua-wash p-[22px] shadow-stamp"
       >
         <h2 id="tip-heading" className="m-0 mb-[4px] font-display text-[22px] text-ink">
-          And what&rsquo;s in it for {owner}?
+          {t("tipTitle", { owner })}
         </h2>
         <p className="m-0 mb-[8px] text-[14.5px] text-ink-2">
-          Optional. Nobody is counting. {owner} is counting a little.
+          {t("tipLead", { owner })}
         </p>
         {preferredLabels.length > 0 && (
           <p className="m-0 mb-[15px] font-mono text-[12px] font-bold uppercase tracking-[0.04em] text-cherry-dk">
-            ★ {owner} currently prefers: {preferredLabels.join(", ")}
+            {t("prefers", { owner, list: preferredLabels.join(", ") })}
           </p>
         )}
         <div role="radiogroup" aria-labelledby="tip-heading" className="flex flex-wrap gap-[8.8px]">
@@ -735,7 +787,7 @@ export function UploadForm({
                 }`}
               >
                 {b.preferred && (
-                  <span aria-label="preferred" title="Preferred">
+                  <span aria-label={t("preferredAria")} title={t("preferredTitle")}>
                     ★{" "}
                   </span>
                 )}
@@ -749,32 +801,32 @@ export function UploadForm({
       {/* ---- note ---- */}
       <div className="mt-[22px]">
         {/* Named, not "he" — the printer owner is a role anyone can hold. */}
-        <Label htmlFor="note">Anything {owner} should know</Label>
+        <Label htmlFor="note">{t("noteLabel", { owner })}</Label>
         <textarea
           id="note"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={2000}
-          placeholder="No rush — needs to survive a bit of pulling."
+          placeholder={t("notePlaceholder")}
           className="w-full resize-y rounded-card border-[3px] border-ink bg-porcelain px-[15px] py-[12px] text-[16px] text-ink placeholder:text-ink-3"
         />
       </div>
 
       {/* ---- print settings (optional, FRR-103) ---- */}
       <div className="mt-[22px]">
-        <Label htmlFor="printSettings">Print settings (optional)</Label>
+        <Label htmlFor="printSettings">{t("settingsLabel")}</Label>
         <textarea
           id="printSettings"
           rows={3}
           value={printSettings}
           onChange={(e) => setPrintSettings(e.target.value)}
           maxLength={2000}
-          placeholder="Any specific slicer settings: layer height, infill, supports, temps…"
+          placeholder={t("settingsPlaceholder")}
           className="w-full resize-y rounded-card border-[3px] border-ink bg-porcelain px-[15px] py-[12px] font-mono text-[15px] text-ink placeholder:text-ink-3"
         />
         <p className="m-0 mt-[6px] font-mono text-[11px] uppercase tracking-[0.04em] text-ink-3">
-          Comes with some files — saves a round of messages with {owner}.
+          {t("settingsHint", { owner })}
         </p>
       </div>
 
@@ -782,18 +834,18 @@ export function UploadForm({
       <div className="mt-[26.4px] flex flex-wrap items-center gap-[13.2px]">
         <Button type="submit" disabled={(!file && !again && !picked) || busy} className="px-[30px]">
           {busy
-            ? again ? "Sending…" : picked ? "Fetching it…" : `Sending… ${phase.percent}%`
-            : again ? `Send it to ${owner} again` : `Send it to ${owner}`}
+            ? again ? t("sending") : picked ? t("fetching") : t("sendingPercent", { percent: phase.percent })
+            : again ? t("sendAgain", { owner }) : t("send", { owner })}
         </Button>
         <Button
           type="button"
           variant="ghost"
           onClick={() => router.push(again ? `/story/${again.id}` : "/board")}
         >
-          Cancel
+          {t("cancel")}
         </Button>
         {!file && !again && !picked && (
-          <span className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Pick a file to continue.</span>
+          <span className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{t("pickFile")}</span>
         )}
       </div>
     </form>

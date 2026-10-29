@@ -1,9 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 
 import { requireAdmin, requireUser } from "@/lib/authz";
+import { say } from "@/i18n/spoken";
+import { getTicketWords } from "@/i18n/tickets";
 import {
   StoryProblem,
   advanceStory as advance,
@@ -28,6 +31,10 @@ import {
  * inside the service. It is the one that answers 404 rather than 403, which is
  * what a page owes a client poking at a control that was never drawn for
  * them — the API answers differently, and deliberately. See `src/lib/api.ts`.
+ *
+ * The toasts are said in the reader's language, and so is a refusal (`say`):
+ * the sentence travels in the query string already written, so the page that
+ * shows it has nothing left to translate.
  */
 
 /**
@@ -60,21 +67,27 @@ async function run(
   formData: FormData,
   operation: (id: number) => Promise<{ toast: string }>,
 ): Promise<never> {
+  let outcome: Record<string, string>;
   try {
     const id = storyIdOr400(formData.get("id") ?? formData.get("storyId"));
-    const { toast } = await operation(id);
-    back(formData.get("from"), { toast });
+    outcome = await operation(id);
   } catch (error) {
-    if (error instanceof StoryProblem) back(formData.get("from"), { error: error.message });
+    if (error instanceof StoryProblem) back(formData.get("from"), { error: await say(error) });
     throw error;
   }
+  back(formData.get("from"), outcome);
 }
+
+const toasts = () => getTranslations("story.toast");
 
 export async function advanceStory(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   await run(formData, async (id) => {
     const done = await advance(admin, id);
-    return { toast: `“${done.title}” → ${done.to} · ${done.uploaderName} notified` };
+    const [t, words] = await Promise.all([toasts(), getTicketWords()]);
+    return {
+      toast: t("advanced", { title: done.title, status: words.status(done.to), name: done.uploaderName }),
+    };
   });
 }
 
@@ -82,7 +95,7 @@ export async function declineStory(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   await run(formData, async (id) => {
     const done = await decline(admin, id);
-    return { toast: `Declined · ${done.uploaderName} notified` };
+    return { toast: (await toasts())("declined", { name: done.uploaderName }) };
   });
 }
 
@@ -90,7 +103,7 @@ export async function flagStory(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   await run(formData, async (id) => {
     const done = await flag(admin, id, formData.get("reason") ?? "");
-    return { toast: `Flagged · ${done.uploaderName} notified` };
+    return { toast: (await toasts())("flagged", { name: done.uploaderName }) };
   });
 }
 
@@ -98,7 +111,7 @@ export async function clearFlag(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   await run(formData, async (id) => {
     const done = await clear(admin, id);
-    return { toast: `Flag cleared · ${done.uploaderName} notified` };
+    return { toast: (await toasts())("flagCleared", { name: done.uploaderName }) };
   });
 }
 
@@ -114,13 +127,14 @@ export async function clearFlag(formData: FormData): Promise<void> {
 export async function withdrawStory(formData: FormData): Promise<void> {
   const user = await requireUser();
   const id = storyIdOr400(formData.get("storyId"));
+  let ref: string;
   try {
-    const done = await withdraw(user, id);
-    back("/board", { toast: `${done.ref} withdrawn.` });
+    ref = (await withdraw(user, id)).ref;
   } catch (error) {
-    if (error instanceof StoryProblem) back(`/story/${id}`, { toast: error.message });
+    if (error instanceof StoryProblem) back(`/story/${id}`, { toast: await say(error) });
     throw error;
   }
+  back("/board", { toast: (await toasts())("withdrawn", { ref }) });
 }
 
 /**
@@ -131,13 +145,15 @@ export async function withdrawStory(formData: FormData): Promise<void> {
 export async function changeStoryPriority(formData: FormData): Promise<void> {
   const user = await requireUser();
   const id = storyIdOr400(formData.get("storyId"));
+  let done: Awaited<ReturnType<typeof reprioritise>>;
   try {
-    const done = await reprioritise(user, id, formData.get("priority") ?? "");
-    back(`/story/${id}`, {
-      toast: done.unchanged ? `Already ${done.to} priority.` : `Priority → ${done.to}.`,
-    });
+    done = await reprioritise(user, id, formData.get("priority") ?? "");
   } catch (error) {
-    if (error instanceof StoryProblem) back(`/story/${id}`, { toast: error.message });
+    if (error instanceof StoryProblem) back(`/story/${id}`, { toast: await say(error) });
     throw error;
   }
+  const t = await toasts();
+  back(`/story/${id}`, {
+    toast: done.unchanged ? t("priorityAlready", { to: done.to }) : t("priorityChanged", { to: done.to }),
+  });
 }

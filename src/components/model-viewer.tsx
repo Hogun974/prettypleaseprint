@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createTranslator } from "next-intl";
 import type * as THREE from "three";
 
-import { VIEWER_MAX_BYTES, formatBytes } from "@/lib/upload-limits";
+import type { PageMessages } from "@/i18n/page-messages";
+import { VIEWER_MAX_BYTES } from "@/lib/upload-limits";
 
 /**
  * The real geometry, rotatable. Handoff §4.
@@ -22,10 +24,25 @@ import { VIEWER_MAX_BYTES, formatBytes } from "@/lib/upload-limits";
  * to the new palette: the print bed should look like the app it lives in.
  */
 
+/**
+ * Why there is no preview. `said` is one of the viewer's own sentences, by its
+ * key; `message` is whatever else threw — a loader's or the theme's, shown as
+ * it was written.
+ */
 type Phase =
   | { kind: "loading" }
   | { kind: "ready" }
+  | { kind: "error"; said: ViewerProblem }
   | { kind: "error"; message: string };
+
+type ViewerProblem = "notAvailable" | "notFetched" | "notDisplayed";
+
+/** A refusal of the viewer's own, carried by its key to the render. */
+class ViewerError extends Error {
+  constructor(readonly said: ViewerProblem) {
+    super(said);
+  }
+}
 
 export function ModelViewer({
   storyId,
@@ -33,7 +50,7 @@ export function ModelViewer({
   colorHex,
   dims,
   fileSize,
-  slicerLabel,
+  words,
 }: {
   storyId: number;
   filename: string;
@@ -42,15 +59,12 @@ export function ModelViewer({
   dims: string | null;
   /** Measured on upload. Decides whether the preview is attempted at all. */
   fileSize: number;
-  /**
-   * The slicer button's label as this viewer reads it ("Open in OrcaSlicer"),
-   * for the note that sends them to it. Decided on the server, so this client
-   * component does not ask which slicer anybody uses.
-   */
-  slicerLabel: string;
+  /** Its words, from the page: `getPageMessages(VIEWER_WORDS)`. */
+  words: PageMessages;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+  const t = useMemo(() => createTranslator({ ...words, namespace: "viewer" }), [words]);
 
   /*
    * Decided from the stored size, before anything is fetched.
@@ -83,11 +97,7 @@ export function ModelViewer({
 
         const response = await fetch(`/api/models/${storyId}`);
         if (!response.ok) {
-          throw new Error(
-            response.status === 404
-              ? "That model is not available."
-              : "The model could not be fetched.",
-          );
+          throw new ViewerError(response.status === 404 ? "notAvailable" : "notFetched");
         }
         const buffer = await response.arrayBuffer();
         if (disposed) return;
@@ -288,13 +298,13 @@ export function ModelViewer({
       } catch (error) {
         if (disposed) return;
         console.error("[viewer]", error);
-        setPhase({
-          kind: "error",
-          message:
-            error instanceof Error && error.message
-              ? error.message
-              : "That model could not be displayed.",
-        });
+        setPhase(
+          error instanceof ViewerError
+            ? { kind: "error", said: error.said }
+            : error instanceof Error && error.message
+              ? { kind: "error", message: error.message }
+              : { kind: "error", said: "notDisplayed" },
+        );
       }
     })();
 
@@ -306,9 +316,10 @@ export function ModelViewer({
     };
   }, [storyId, filename, colorHex, tooLarge]);
 
-  if (tooLarge) {
-    return <TooLargeToPreview fileSize={fileSize} slicerLabel={slicerLabel} />;
-  }
+  // The page draws `ModelTooLarge` (./model-too-large.tsx) instead of this for
+  // such a file; this is the guard that keeps the download from starting even
+  // if one ever did not.
+  if (tooLarge) return null;
 
   return (
     <div className="relative overflow-hidden rounded-panel border-[3px] border-ink bg-cream-2 shadow-stamp-lg">
@@ -318,13 +329,13 @@ export function ModelViewer({
         ref={host}
         className="h-[380px] w-full"
         role="img"
-        aria-label={`3D view of ${filename}${dims ? `, ${dims}` : ""}. Drag to rotate.`}
+        aria-label={dims ? t("ariaDims", { filename, dims }) : t("aria", { filename })}
       />
 
       {phase.kind === "loading" && (
         <div className="layers absolute inset-0 flex items-center justify-center bg-cream-2">
           <p className="m-0 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-3">
-            Warming up the plate…
+            {t("warming")}
           </p>
         </div>
       )}
@@ -332,93 +343,19 @@ export function ModelViewer({
       {phase.kind === "error" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-[8px] bg-cream-2 px-[26.4px] text-center">
           <p className="m-0 font-display text-[18px] text-ink">
-            No preview for this one
+            {t("noPreview")}
           </p>
           <p className="m-0 max-w-[34ch] text-[14px] leading-[1.5] text-ink-2">
-            {phase.message} The file itself is fine — the measurements below
-            came off it on upload.
+            {t("fileFine", { message: "said" in phase ? t(phase.said) : phase.message })}
           </p>
         </div>
       )}
 
       {phase.kind === "ready" && (
         <p className="absolute bottom-[13.2px] left-[13.2px] m-0 rounded-chip border-2 border-ink bg-porcelain px-[11px] py-[3px] font-mono text-[11px] font-bold uppercase tracking-[0.05em] text-ink">
-          drag to rotate · {filename}
+          {t("dragHint", { filename })}
         </p>
       )}
-    </div>
-  );
-}
-
-/**
- * What the viewer says instead of hanging.
- *
- * Two jobs, and the second is the one usually skipped. It has to say *why*
- * nothing is loading — otherwise a blank panel on a perfectly good file reads
- * as a broken app — and it has to give the size some meaning. "180 MB" is a
- * number; "three and a half times what a browser can rotate" is an answer, and
- * the bars make that true at a glance rather than on arithmetic.
- *
- * Amber rather than red: nothing has failed. The file is intact, it is stored,
- * it will print. Only the preview is declined, and the two things that actually
- * get the model onto a plate are both still there.
- */
-function TooLargeToPreview({ fileSize, slicerLabel }: { fileSize: number; slicerLabel: string }) {
-  // The larger bar is the full width; the limit is drawn to scale against it.
-  const limitWidth = Math.max(4, (VIEWER_MAX_BYTES / fileSize) * 100);
-  const times = fileSize / VIEWER_MAX_BYTES;
-
-  return (
-    <div className="rounded-panel border-[3px] border-ink bg-sun-wash p-[22px] shadow-stamp-lg">
-      <p className="m-0 font-mono text-[11.5px] font-bold uppercase tracking-[0.12em] text-sun-dk">
-        Preview skipped
-      </p>
-      <h3 className="m-0 mt-[6px] font-display text-[21px] leading-[1.15] text-ink">
-        This one is too big to spin in a browser
-      </h3>
-      <p className="m-0 mt-[8px] max-w-[46ch] text-[14.5px] leading-[1.5] text-ink-2">
-        The viewer downloads the whole model and rebuilds every triangle of it
-        on this machine. At {formatBytes(fileSize)} that is a long download and
-        a tab that stops answering, so it is not started.
-      </p>
-
-      {/* The comparison. Drawn to scale, because the point is the gap. */}
-      <div className="mt-[17.6px] flex flex-col gap-[8px]">
-        <div>
-          <div className="mb-[3px] flex items-baseline justify-between gap-[8px]">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-ink-2">
-              A browser handles
-            </span>
-            <span className="font-mono text-[11.5px] font-bold text-ink">
-              {formatBytes(VIEWER_MAX_BYTES)}
-            </span>
-          </div>
-          <div aria-hidden className="h-[16px] overflow-hidden rounded-chip border-2 border-ink bg-cream">
-            <div className="h-full bg-aqua" style={{ width: `${limitWidth}%` }} />
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-[3px] flex items-baseline justify-between gap-[8px]">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-ink-2">
-              This model
-            </span>
-            <span className="font-mono text-[11.5px] font-bold text-cherry-dk">
-              {formatBytes(fileSize)} · {times.toFixed(1)}&times;
-            </span>
-          </div>
-          <div aria-hidden className="h-[16px] overflow-hidden rounded-chip border-2 border-ink bg-cream">
-            <div className="h-full w-full bg-cherry" />
-          </div>
-        </div>
-      </div>
-
-      <p className="m-0 mt-[17.6px] border-t-2 border-dashed border-ink-3 pt-[11px] text-[13.5px] leading-[1.5] text-ink-2">
-        Nothing is wrong with the file. It is stored whole and it prints exactly
-        as it would have. <strong>Download</strong> and{" "}
-        <strong>{slicerLabel}</strong> both work on it — a slicer is built
-        for meshes this size and a browser is not.
-      </p>
     </div>
   );
 }

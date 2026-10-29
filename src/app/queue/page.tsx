@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/lib/db";
 import { nextStatus, storyRef } from "@/lib/scope";
 import { printerName, requireAdmin } from "@/lib/authz";
-import { formatBytes } from "@/lib/models";
-import { PRIORITY_RANK, quantityText, relativeTime } from "@/lib/catalog";
+import { PRIORITY_RANK } from "@/lib/catalog";
+import { getTicketWords } from "@/i18n/tickets";
 import { AppHeader } from "@/components/app-header";
 import { AdminActions } from "@/components/admin-actions";
 import { Kicker, Notice, StatusChip, PriorityChip } from "@/components/ui";
@@ -31,7 +32,12 @@ export default async function QueuePage({
   searchParams: Promise<{ toast?: string; error?: string }>;
 }) {
   const [{ toast, error }, admin] = await Promise.all([searchParams, requireAdmin()]);
-  const owner = await printerName();
+  const [owner, t, tTicket, words] = await Promise.all([
+    printerName(),
+    getTranslations("queue"),
+    getTranslations("ticket"),
+    getTicketWords(),
+  ]);
 
   const stories = await db.story.findMany({
     orderBy: { createdAt: "asc" },
@@ -53,19 +59,17 @@ export default async function QueuePage({
       <AppHeader user={admin} active="/queue" />
 
       <main className="mx-auto w-full max-w-[1180px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Printer view · the machine by the window</Kicker>
+        <Kicker>{t("kicker")}</Kicker>
         <h1 className="m-0 mb-[11px] text-[46px] leading-[0.95] text-ink">
-          {owner}&rsquo;s queue
+          {t("title", { owner })}
         </h1>
         <p className="m-0 mb-[26.4px] text-[16.5px] leading-[1.5] text-ink-2">
-          {waiting.length
-            ? `${waiting.length} ${waiting.length === 1 ? "ticket is" : "tickets are"} waiting for a yes.`
-            : "Nothing waiting. Enjoy the quiet."}
+          {waiting.length ? t("waiting", { count: waiting.length }) : t("nothingWaiting")}
         </p>
 
         {error && (
           <div className="mb-[22px] max-w-[640px]">
-            <Notice tone="warn">{error}</Notice>
+            <Notice tone="warn" label={tTicket("holdOn")}>{error}</Notice>
           </div>
         )}
 
@@ -73,7 +77,7 @@ export default async function QueuePage({
         {waiting.length > 0 && (
           <section className="mb-[26.4px] overflow-hidden rounded-panel border-[3px] border-ink bg-sun shadow-stamp-lg">
             <div className="layers border-b-[3px] border-ink px-[22px] py-[11px]">
-              <h2 className="m-0 font-display text-[20px] text-ink">Waiting on you</h2>
+              <h2 className="m-0 font-display text-[20px] text-ink">{t("waitingOnYou")}</h2>
             </div>
             <div className="flex flex-col gap-[13.2px] p-[17.6px]">
               {waiting.map((story) => (
@@ -84,7 +88,7 @@ export default async function QueuePage({
                   <div className="min-w-[220px] flex-[1_1_280px]">
                     <p className="m-0 flex flex-wrap items-center gap-[8px] font-mono text-[11.5px] font-bold tracking-[0.06em] text-ink-3">
                       <PriorityChip priority={story.priority} />
-                      <span>{storyRef(story.id)} · {story.filename} · {formatBytes(story.fileSize)}</span>
+                      <span>{storyRef(story.id)} · {story.filename} · {words.bytes(story.fileSize)}</span>
                     </p>
                     <Link
                       href={`/story/${story.id}`}
@@ -93,11 +97,15 @@ export default async function QueuePage({
                       {story.title}
                     </Link>
                     <p className="m-0 mt-[6px] text-[14px] text-ink-2">
-                      {quantityText(story.quantity)} · {story.material} ·{" "}
-                      {story.colorName} · offers {story.tip}
+                      {t("line", {
+                        quantity: words.quantity(story.quantity),
+                        material: story.material,
+                        colour: story.colorName,
+                        tip: story.tip,
+                      })}
                     </p>
                     <p className="m-0 mt-[4px] font-mono text-[11.5px] uppercase tracking-[0.05em] text-ink-3">
-                      {story.uploader.name} · {relativeTime(story.createdAt)}
+                      {story.uploader.name} · {words.ago(story.createdAt)}
                     </p>
                   </div>
                   <AdminActions
@@ -116,12 +124,12 @@ export default async function QueuePage({
 
         {/* ---- everything already said yes to ---- */}
         <h2 className="m-0 mb-[13.2px] font-display text-[24px] text-ink">
-          Rest of the queue
+          {t("rest")}
         </h2>
         <div className="overflow-hidden rounded-panel border-[3px] border-ink bg-porcelain shadow-stamp">
           {working.length === 0 ? (
             <p className="m-0 p-[22px] font-mono text-[12px] uppercase tracking-[0.06em] text-ink-3">
-              Nothing on the go.
+              {t("nothingOnTheGo")}
             </p>
           ) : (
             working.map((story, i) => (
@@ -144,14 +152,13 @@ export default async function QueuePage({
                     {story.title}
                   </Link>
                   <p className="m-0 mt-[3px] font-mono text-[11px] uppercase tracking-[0.04em] text-ink-3">
-                    {story.filename} · {story.uploader.name} ·{" "}
-                    {relativeTime(story.createdAt)}
+                    {story.filename} · {story.uploader.name} · {words.ago(story.createdAt)}
                   </p>
                 </div>
-                <StatusChip status={story.status} />
+                <StatusChip status={story.status} label={words.status(story.status)} />
                 {story.flagged && (
                   <span className="rounded-chip border-2 border-ink bg-cherry px-[9px] py-[2px] font-mono text-[10.5px] font-bold uppercase text-ink">
-                    needs a look
+                    {tTicket("needsALook")}
                   </span>
                 )}
                 <span className="w-[120px] font-mono text-[11px] uppercase tracking-[0.04em] text-ink-3">

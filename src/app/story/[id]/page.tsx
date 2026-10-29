@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { getStoryOr404, printerName, requireUser, storyRef, FLOW } from "@/lib/authz";
-import { PRIORITY_CHIP, STORY_PRIORITIES, quantityText, relativeTime } from "@/lib/catalog";
+import { STORY_PRIORITIES } from "@/lib/catalog";
 import { changeStoryPriority } from "@/app/actions/stories";
-import { formatBytes } from "@/lib/models";
+import { getTicketWords } from "@/i18n/tickets";
 import { trustedSourceLink } from "@/lib/import-source";
 import { AppHeader } from "@/components/app-header";
 import { Fact, Notice, StatusChip } from "@/components/ui";
 import { AdminActions } from "@/components/admin-actions";
 import { Conversation } from "@/components/conversation";
 import { ModelViewer } from "@/components/model-viewer";
+import { ModelTooLarge } from "@/components/model-too-large";
+import { VIEWER_WORDS, getPageMessages } from "@/i18n/page-messages";
+import { VIEWER_MAX_BYTES } from "@/lib/upload-limits";
 import { OpenInSlicer, openInSlicerLabel } from "@/components/open-in-slicer";
 import { DownloadModel } from "@/components/download-model";
 import { Toast } from "@/components/toast";
@@ -42,7 +46,12 @@ export default async function StoryPage({
   // 404s rather than 403s for a client asking after someone else's story —
   // a 403 would confirm it exists.
   const story = await getStoryOr404(storyId, user);
-  const owner = await printerName();
+  const [owner, t, tTicket, words] = await Promise.all([
+    printerName(),
+    getTranslations("story"),
+    getTranslations("ticket"),
+    getTicketWords(),
+  ]);
 
   const currentIndex = (FLOW as readonly string[]).indexOf(story.status);
   // Null for an upload — and for anything in the column that is not a link
@@ -63,24 +72,30 @@ export default async function StoryPage({
           href="/board"
           className="inline-block font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-ink-2 underline underline-offset-4 hover:text-cherry-dk"
         >
-          ← Back to the rail
+          {t("back")}
         </Link>
 
         <div className="mt-[13.2px] grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-start gap-[26.4px]">
           {/* ---------- left: the file ---------- */}
           <div>
-            <ModelViewer
-              storyId={story.id}
-              filename={story.filename}
-              colorHex={story.colorHex}
-              dims={story.dims}
-              fileSize={story.fileSize}
-              slicerLabel={await openInSlicerLabel()}
-            />
+            {/* Decided from the stored size, before anything is fetched: past
+                what a browser can rebuild, the viewer is not drawn at all. */}
+            {story.fileSize > VIEWER_MAX_BYTES ? (
+              <ModelTooLarge fileSize={story.fileSize} slicerLabel={await openInSlicerLabel()} />
+            ) : (
+              <ModelViewer
+                storyId={story.id}
+                filename={story.filename}
+                colorHex={story.colorHex}
+                dims={story.dims}
+                fileSize={story.fileSize}
+                words={await getPageMessages(VIEWER_WORDS)}
+              />
+            )}
 
             {/* Both measured from the file itself. Nothing inferred. */}
             <div className="mt-[13.2px] flex flex-wrap gap-[8px]">
-              {[story.dims ?? "dimensions unknown", formatBytes(story.fileSize)].map((v) => (
+              {[story.dims ?? t("dimsUnknown"), words.bytes(story.fileSize)].map((v) => (
                 <span
                   key={v}
                   className="rounded-chip border-2 border-ink bg-porcelain px-[11px] py-[3px] font-mono text-[12px] font-bold text-ink"
@@ -95,15 +110,19 @@ export default async function StoryPage({
                 carry. */}
             {source && (
               <p className="m-0 mt-[13.2px] font-mono text-[12px] uppercase tracking-[0.04em] text-ink-3">
-                Imported from{" "}
-                <a
-                  href={source.href}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="font-bold text-ink-2 underline underline-offset-4 hover:text-cherry-dk"
-                >
-                  {source.label} ↗
-                </a>
+                {t.rich("importedFrom", {
+                  source: source.label,
+                  link: (chunks) => (
+                    <a
+                      href={source.href}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="font-bold text-ink-2 underline underline-offset-4 hover:text-cherry-dk"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </p>
             )}
 
@@ -131,10 +150,10 @@ export default async function StoryPage({
               <span className="rounded-chip border-2 border-ink bg-porcelain px-[11px] py-[3px] font-mono text-[12px] font-bold tracking-[0.06em] text-ink">
                 {storyRef(story.id)}
               </span>
-              <StatusChip status={story.status} />
+              <StatusChip status={story.status} label={words.status(story.status)} />
               {story.flagged && (
                 <span className="rounded-chip border-2 border-ink bg-cherry px-[11px] py-[3px] font-mono text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink">
-                  flagged{story.flagReason ? `: ${story.flagReason}` : ""}
+                  {story.flagReason ? t("flaggedWith", { reason: story.flagReason }) : t("flagged")}
                 </span>
               )}
             </div>
@@ -150,11 +169,11 @@ export default async function StoryPage({
 
             <div className="rounded-panel border-[3px] border-ink bg-porcelain p-[22px] shadow-stamp">
               <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-[17.6px]">
-                <Fact label="Asked by">{story.uploader.name}</Fact>
-                <Fact label="Quantity">{quantityText(story.quantity)}</Fact>
-                <Fact label="Priority">{PRIORITY_CHIP[story.priority]?.label ?? story.priority}</Fact>
-                <Fact label="Material">{story.material}</Fact>
-                <Fact label="Colour wish">
+                <Fact label={t("facts.askedBy")}>{story.uploader.name}</Fact>
+                <Fact label={t("facts.quantity")}>{words.quantity(story.quantity)}</Fact>
+                <Fact label={t("facts.priority")}>{words.priority(story.priority)}</Fact>
+                <Fact label={t("facts.material")}>{story.material}</Fact>
+                <Fact label={t("facts.colour")}>
                   <span className="flex items-center gap-[8.8px]">
                     <ColorSwatch
                       mode={story.colorMode}
@@ -164,7 +183,7 @@ export default async function StoryPage({
                     {story.colorName}
                   </span>
                 </Fact>
-                <Fact label="On offer">
+                <Fact label={t("facts.onOffer")}>
                   <span className="text-cherry-dk">{story.tip}</span>
                 </Fact>
               </div>
@@ -184,7 +203,7 @@ export default async function StoryPage({
                       htmlFor="priority"
                       className="mb-[4px] block font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-3"
                     >
-                      Change priority
+                      {t("changePriority")}
                     </label>
                     <select
                       id="priority"
@@ -194,7 +213,7 @@ export default async function StoryPage({
                     >
                       {STORY_PRIORITIES.map((p) => (
                         <option key={p} value={p}>
-                          {PRIORITY_CHIP[p]?.label ?? p}
+                          {words.priority(p)}
                         </option>
                       ))}
                     </select>
@@ -203,7 +222,7 @@ export default async function StoryPage({
                     type="submit"
                     className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-aqua px-[18px] py-[9px] text-[14px] font-bold text-ink hover:bg-sun"
                   >
-                    Set
+                    {t("set")}
                   </button>
                 </form>
               )}
@@ -215,7 +234,7 @@ export default async function StoryPage({
             {story.printSettings && (
               <div className="mt-[17.6px] rounded-panel border-[3px] border-ink bg-cream-2 p-[17.6px]">
                 <div className="mb-[6px] font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-3">
-                  Print settings
+                  {t("printSettings")}
                 </div>
                 <p className="m-0 whitespace-pre-wrap font-mono text-[14px] leading-[1.5] text-ink">
                   {story.printSettings}
@@ -225,11 +244,11 @@ export default async function StoryPage({
 
             <section className="mt-[26.4px]">
               <h2 className="m-0 mb-[13.2px] font-display text-[22px] text-ink">
-                Where it&rsquo;s at
+                {t("whereItsAt")}
               </h2>
               {story.status === "Declined" ? (
                 <p className="m-0 rounded-card border-[3px] border-ink bg-cream-3 px-[17.6px] py-[13.2px] text-[15px] text-ink-2">
-                  This one was declined {relativeTime(story.updatedAt)}.
+                  {t("declinedAgo", { ago: words.ago(story.updatedAt) })}
                 </p>
               ) : (
                 <ol className="m-0 flex list-none flex-col p-0">
@@ -259,10 +278,10 @@ export default async function StoryPage({
                               done || now ? "text-ink" : "text-ink-3"
                             }`}
                           >
-                            {step}
+                            {words.status(step)}
                           </div>
                           <div className="mt-[3px] font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-ink-3">
-                            {now ? "now" : done ? "cleared" : "waiting"}
+                            {now ? t("step.now") : done ? t("step.cleared") : t("step.waiting")}
                           </div>
                         </div>
                       </li>
@@ -307,11 +326,11 @@ export default async function StoryPage({
             {user.role === "admin" && (
               <section className="mt-[26.4px] rounded-panel border-[3px] border-ink bg-aqua-wash p-[22px] shadow-stamp">
                 <h2 className="m-0 mb-[13.2px] font-display text-[20px] text-ink">
-                  {story.status === "Requested" ? "This one needs a yes" : "Move it along"}
+                  {story.status === "Requested" ? t("needsYes") : t("moveAlong")}
                 </h2>
                 {error && (
                   <div className="mb-[13.2px]">
-                    <Notice tone="warn">{error}</Notice>
+                    <Notice tone="warn" label={tTicket("holdOn")}>{error}</Notice>
                   </div>
                 )}
                 <AdminActions
@@ -327,7 +346,7 @@ export default async function StoryPage({
         </div>
       </main>
 
-      {sent && <Toast>Order in · {owner} has been notified</Toast>}
+      {sent && <Toast>{tTicket("sent", { owner })}</Toast>}
       {toast && <Toast>{toast}</Toast>}
     </>
   );

@@ -237,6 +237,15 @@
       "api": "API",
       "bug": "Bug",
       "other": "Autre"
+    },
+    "quantity": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+    "status": {
+      "Requested": "Demandé",
+      "Accepted": "Accepté",
+      "Printing": "En impression",
+      "Delivery": "À remettre",
+      "Done": "Terminé",
+      "Declined": "Refusé"
     }
   },
   "frr": {
@@ -552,6 +561,71 @@
         "importSources": "Importer depuis un lien est fixé par {env} dans l’environnement, qui l’emporte. Changez-le là-bas.",
         "mailFromName": "Le nom de l’expéditeur est fixé par {env} dans l’environnement, qui l’emporte. Changez-le là-bas."
       }
+    },
+    "story": {
+      "notATicket": "Ce n’est pas un ticket.",
+      "ownerOnlySeesPeople": "Seule la personne qui s’occupe de l’imprimante voit qui a envoyé quoi.",
+      "gone": "Ce ticket n’existe plus.",
+      "ownerOnlyMoves": "Seule la personne qui s’occupe de l’imprimante fait avancer un ticket.",
+      "endOfLine": "{status, select, Done {Terminé : c’est le terminus.} Declined {Refusé : c’est le terminus.} other {{status} : c’est le terminus.}}",
+      "notFlagged": "Ce ticket n’est pas signalé.",
+      "withdrawNotYours": "Seule la personne qui l’a demandé peut le retirer.",
+      "alreadyStarted": "{ref} {status, select, printing {est déjà en impression} delivery {est déjà imprimé} done {est déjà terminé} other {est déjà {status}}} — voyez plutôt avec {owner}.",
+      "notAPriority": "Ce n’est pas une priorité.",
+      "reprioritiseNotYours": "Seule la personne qui l’a demandé, ou celle qui s’occupe de l’imprimante, peut en changer la priorité.",
+      "nothingToPrioritise": "{ref} est {status, select, done {terminé} declined {refusé} other {{status}}} — il n’y a plus rien à prioriser.",
+      "cannotDecline": "Impossible de refuser un ticket déjà {status, select, Accepted {accepté} Printing {en impression} Delivery {à remettre} Done {terminé} Declined {refusé} other {{status}}}.",
+      "notAStep": "{from, select, Requested {Demandé} Accepted {Accepté} Printing {En impression} Delivery {À remettre} Done {Terminé} Declined {Refusé} other {{from}}} → {to, select, Requested {demandé} Accepted {accepté} Printing {en impression} Delivery {à remettre} Done {terminé} Declined {refusé} other {{to}}} : ce n’est pas une étape du parcours.",
+      "reasonTooShort": "Dites ce qui ne va pas — c’est tout l’intérêt d’un signalement.",
+      "reasonTooLong": "Une raison courte, s’il vous plaît.",
+      "giveReason": "Donnez une raison.",
+      "saySomething": "Dites d’abord quelque chose.",
+      "commentTooLong": "C’est plus long qu’un commentaire ne devrait l’être.",
+      "checkAgain": "Vérifiez encore."
+    },
+    "requeue": {
+      "gone": "Ce ticket n’existe plus.",
+      "notYours": "Seule la personne qui l’a demandé peut le réimprimer.",
+      "offShelf": "{material} en {colour} n’est plus en rayon — choisissez parmi ce qui l’est.",
+      "tipGone": "« {tip} » n’est plus un pourboire proposé — choisissez-en un dans la liste.",
+      "copyFailed": "Le fichier n’a pas pu être copié. Réessayez dans un instant.",
+      "checkForm": "Vérifiez le formulaire."
+    },
+    "wish": {
+      "wholePrints": "Des exemplaires entiers seulement.",
+      "atLeastOne": "Au moins un.",
+      "productionRun": "Plus de 24, c’est de la production en série — demandez d’abord à la personne qui s’occupe de l’imprimante.",
+      "titleTooLong": "Gardez le titre sous les 120 caractères.",
+      "pickMaterial": "Choisissez une matière.",
+      "pickColour": "Choisissez une couleur.",
+      "notAPriority": "Ce n’est pas une priorité.",
+      "pickTip": "Choisissez le pourboire.",
+      "tipTooLong": "Ce pourboire est étrangement long.",
+      "noteTooLong": "Cette note est bien longue.",
+      "settingsTooLong": "Ces réglages d’impression sont bien longs."
+    },
+    "upload": {
+      "signIn": "Connectez-vous d’abord.",
+      "notIntact": "L’envoi n’est pas arrivé entier. Réessayez.",
+      "noFile": "Aucun fichier n’était joint.",
+      "busy": "Trop d’envois en même temps — patientez un instant et renvoyez-le.",
+      "notSaved": "La demande n’a pas pu être enregistrée. Réessayez.",
+      "notStored": "Le fichier n’a pas pu être stocké. Réessayez dans un instant.",
+      "combinationGone": "Cette combinaison de matière et de couleur n’est plus disponible.",
+      "tipNotOnOffer": "Ce n’est pas un pourboire proposé — choisissez-en un dans la liste.",
+      "checkForm": "Vérifiez le formulaire.",
+      "rejected": {
+        "empty": "Ce fichier est vide.",
+        "too_large": "Ce fichier dépasse {limitMb, number, ::unit/megabyte .0}.",
+        "bad_extension": "Seuls les fichiers .stl et .3mf s’impriment ici.",
+        "not_a_model": "Ce n’est ni un STL ni un 3MF à l’intérieur, quel que soit son nom.",
+        "corrupt": "Ce fichier est abîmé — il n’a pas pu être lu jusqu’au bout.",
+        "no_geometry": "Ce fichier ne contient aucune géométrie."
+      }
+    },
+    "api": {
+      "signIn": "Connectez-vous d’abord.",
+      "ourEnd": "Quelque chose a coincé de notre côté."
     }
   },
   "admin": {
@@ -886,5 +960,222 @@
     "withdrew": "{name} a retiré {ref} — « {title} ».",
     "priority": "{name} a mis « {title} » en {priority, select, low {priorité basse} medium {priorité normale} high {priorité haute} other {priorité {priority}}}.",
     "commented": "{name} a commenté « {title} »."
+  },
+  "ticket": {
+    "needsALook": "à regarder",
+    "onTheBed": "sur le plateau",
+    "holdOn": "Un instant",
+    "sent": "Commande passée · on a prévenu {owner}"
+  },
+  "board": {
+    "kickerAdmin": "Vue d’ensemble · tous les tickets, avec qui les a demandés",
+    "kickerMember": "Entre vous et {owner}",
+    "title": "Le carnet de commandes",
+    "leadAdmin": "Tous les tickets du groupe, où qu’ils en soient sur le rail. Ouvrez-en un pour voir ce qui a été demandé.",
+    "leadMember": "Chaque demande est un ticket sur le rail. Seuls {owner} et vous voyez les vôtres — ceux des autres restent les leurs.",
+    "order": "Commander une impression",
+    "rail": {
+      "Requested": "attend un oui",
+      "Accepted": "dans la file",
+      "Printing": "sur le plateau",
+      "Delivery": "venez le chercher",
+      "Done": "remis"
+    },
+    "emptyColumn": "{note} — rien ici",
+    "footerAdmin": "Le rail porte ce qui avance encore. <link>La caisse</link> : tout y est, refus compris.",
+    "footerMember": "Le rail porte ce qui avance encore. <link>Mes commandes</link> : tout y est, refus compris.",
+    "empty": {
+      "titleAdmin": "Personne n’a encore rien commandé.",
+      "titleMember": "Pas encore de demande.",
+      "bodyAdmin": "Quand quelqu’un du groupe envoie un modèle, il arrive sur le rail et vous recevez une notification.",
+      "bodyMember": "Déposez un .stl ou un .3mf : il apparaît ici, en ticket que {owner} pourra traiter."
+    }
+  },
+  "story": {
+    "back": "← Retour au rail",
+    "dimsUnknown": "dimensions inconnues",
+    "importedFrom": "Importé depuis <link>{source} ↗</link>",
+    "flagged": "signalé",
+    "flaggedWith": "signalé : {reason}",
+    "facts": {
+      "askedBy": "Demandé par",
+      "quantity": "Quantité",
+      "priority": "Priorité",
+      "material": "Matière",
+      "colour": "Couleur souhaitée",
+      "onOffer": "Pourboire"
+    },
+    "changePriority": "Changer la priorité",
+    "set": "Valider",
+    "printSettings": "Réglages d’impression",
+    "whereItsAt": "Où il en est",
+    "declinedAgo": "Celui-ci a été refusé {ago}.",
+    "step": {
+      "now": "en cours",
+      "cleared": "fait",
+      "waiting": "à venir"
+    },
+    "needsYes": "Celui-ci attend un oui",
+    "moveAlong": "Le faire avancer",
+    "toast": {
+      "advanced": "« {title} » → {status} · on a prévenu {name}",
+      "declined": "Refusé · on a prévenu {name}",
+      "flagged": "Signalé · on a prévenu {name}",
+      "flagCleared": "Signalement levé · on a prévenu {name}",
+      "withdrawn": "{ref} retiré.",
+      "priorityAlready": "{to, select, high {Déjà en priorité haute.} medium {Déjà en priorité normale.} low {Déjà en priorité basse.} other {Déjà en priorité {to}.}}",
+      "priorityChanged": "{to, select, high {Priorité → haute.} medium {Priorité → normale.} low {Priorité → basse.} other {Priorité → {to}.}}",
+      "commentSent": "Envoyé"
+    }
+  },
+  "conversation": {
+    "title": "On en parle",
+    "empty": "Rien de dit pour l’instant",
+    "bylineOwner": "{name} · aux fourneaux · {ago}",
+    "label": "Ajouter à la conversation",
+    "placeholderOwner": "Posez une question, ou dites ce que vous avez changé…",
+    "placeholderMember": "Répondre à {owner}…",
+    "send": "Envoyer"
+  },
+  "withdraw": {
+    "summary": "Retirer cette demande",
+    "body": "Supprime {ref} pour de bon — le ticket, tout ce qui s’y est dit, et le fichier du modèle lui-même. Rien ne s’annule : pour revenir en arrière, il faudra le renvoyer.",
+    "confirm": "Oui, le retirer"
+  },
+  "requeue": {
+    "aria": "Réimprimer {ref}",
+    "title": "Ouvre une nouvelle demande avec le même fichier — sans le renvoyer",
+    "short": "Réimprimer",
+    "long": "Réimprimer {ref}",
+    "hint": "Ouvre une nouvelle demande avec le même fichier — sans le renvoyer. Vous pouvez d’abord changer la matière, la couleur, la quantité et les réglages."
+  },
+  "download": {
+    "link": "Télécharger {ref}",
+    "hint": "{filename} — le fichier tel qu’il a été envoyé."
+  },
+  "sourceLink": {
+    "label": "Code source · AGPL-3.0"
+  },
+  "history": {
+    "kicker": "Historique",
+    "titleAdmin": "Tout ce que le groupe a fait imprimer",
+    "titleMember": "Vos impressions passées",
+    "lead": "Les commandes qui ont quitté le rail — à remettre, terminées ou refusées. Vous retrouvez celle qu’il vous faut ? <b>Réimprimer</b> ouvre une nouvelle demande avec le même fichier, sans le renvoyer.",
+    "status": "Statut",
+    "anyStatus": "Tous",
+    "material": "Matière",
+    "anyMaterial": "Toutes",
+    "filed": "Demandée",
+    "since": {
+      "last30": "Ces 30 derniers jours",
+      "last90": "Ces 90 derniers jours",
+      "lastYear": "Depuis un an",
+      "allTime": "Depuis toujours"
+    },
+    "filter": "Filtrer",
+    "clear": "Effacer",
+    "emptyFiltered": "Rien ne correspond à ces filtres.",
+    "emptyAdmin": "Rien n’est encore terminé.",
+    "emptyMember": "Pas encore d’impression terminée — elles arrivent ici une fois à remettre, terminées ou refusées."
+  },
+  "queue": {
+    "kicker": "Côté imprimante · la machine près de la fenêtre",
+    "title": "Le passe de {owner}",
+    "waiting": "{count, plural, one {# ticket attend} other {# tickets attendent}} un oui.",
+    "nothingWaiting": "Rien en attente. Profitez du calme.",
+    "waitingOnYou": "À vous de dire oui",
+    "line": "{quantity} · {material} · {colour} · pourboire : {tip}",
+    "rest": "Le reste de la file",
+    "nothingOnTheGo": "Rien sur le feu."
+  },
+  "upload": {
+    "kicker": "Nouvelle commande",
+    "lead": "Déposez un <mono>.stl</mono> ou un <mono>.3mf</mono>. {owner} reçoit une notification, et votre commande monte sur le rail en ticket que vous pouvez suivre.",
+    "noCatalog": "La personne qui s’occupe de l’imprimante n’a encore proposé aucune combinaison de matière et de couleur.",
+    "again": {
+      "kicker": "Réimprimer {ref}",
+      "title": "On remet ça ?",
+      "lead": "Ceci ouvre une nouvelle demande à partir du fichier de {ref}. Elle reprend ce que vous aviez demandé la dernière fois — changez ce qui doit l’être. {ref} lui-même reste tel quel."
+    },
+    "form": {
+      "badExtension": "Seuls les fichiers .stl et .3mf s’impriment ici.",
+      "tooLarge": "Ce fichier fait {size} — la limite est de {limit}.",
+      "notALink": "Ce n’est pas un lien vers un modèle sur {sources}.",
+      "orJoin": " ou ",
+      "failed": "Ça n’est pas passé. Réessayez.",
+      "dropped": "La connexion a été coupée. Réessayez.",
+      "droppedMidUpload": "La connexion a été coupée pendant l’envoi.",
+      "sameFile": "Même fichier que {ref} — rien à renvoyer",
+      "sameFileHint": "{size} · changez ce que vous voulez ci-dessous, ou envoyez-la telle quelle",
+      "goneOne": "{what} n’est plus à la carte, alors on a mis quelque chose qui l’est. Vérifiez avant d’envoyer.",
+      "goneMany": "{what} ne sont plus à la carte, alors on a mis ce qui l’est. Vérifiez avant d’envoyer.",
+      "andJoin": " et ",
+      "materialIn": "{material} en {colour}",
+      "quoted": "« {tip} »",
+      "drop": "Déposez votre .stl ou .3mf ici",
+      "uploading": "Envoi… {percent} %",
+      "checkedOnSend": "{size} · vérifié par le serveur à l’envoi",
+      "orChoose": "ou cliquez pour choisir un fichier · {max} maximum",
+      "pasteLink": "Ou collez un lien {sources}",
+      "looking": "Recherche…",
+      "findFiles": "Trouver les fichiers",
+      "by": "par {author}",
+      "noPrintable": "Ce modèle ne contient ni .stl ni .3mf : rien à imprimer ici.",
+      "whichFile": "Quel fichier imprimer",
+      "over": "plus de {max}",
+      "onePerRequest": "Un fichier par demande",
+      "otherFiles": "{count, plural, one {# autre fichier ne peut pas être imprimé ici} other {# autres fichiers ne peuvent pas être imprimés ici}}",
+      "fetchedOnSend": "récupéré et vérifié par le serveur à l’envoi",
+      "whatIsIt": "Qu’est-ce que c’est ?",
+      "titlePlaceholder": "Crochet pour le bras de l’écran",
+      "materialLabel": "La matière souhaitée",
+      "materialAria": "Matière",
+      "howMany": "Combien vous en faut-il ?",
+      "quantityAria": "Quantité",
+      "typeNumber": "ou tapez un nombre",
+      "howMuch": "C’est pressé ?",
+      "priorityAria": "Priorité",
+      "priorityHint": "{owner} voit d’abord les urgentes. Vous pourrez la changer plus tard.",
+      "colour": "La couleur espérée",
+      "colourAria": "Filament {colour}",
+      "colourHint": "{owner} confirme ce qu’il y a vraiment sur la bobine.",
+      "tipTitle": "Et pour {owner}, ce sera ?",
+      "tipLead": "Facultatif. Personne ne compte. {owner} compte un peu.",
+      "prefers": "★ {owner} préfère en ce moment : {list}",
+      "preferredAria": "préféré",
+      "preferredTitle": "Préféré",
+      "noteLabel": "Ce que {owner} devrait savoir",
+      "notePlaceholder": "Pas pressé — doit résister à quelques tractions.",
+      "settingsLabel": "Réglages d’impression (facultatif)",
+      "settingsPlaceholder": "Des réglages de trancheur précis : hauteur de couche, remplissage, supports, températures…",
+      "settingsHint": "Fourni avec certains fichiers — ça vous épargne un aller-retour de messages avec {owner}.",
+      "sending": "Envoi…",
+      "fetching": "Récupération…",
+      "sendingPercent": "Envoi… {percent} %",
+      "sendAgain": "La renvoyer à {owner}",
+      "send": "L’envoyer à {owner}",
+      "cancel": "Annuler",
+      "pickFile": "Choisissez un fichier pour continuer.",
+      "holdOn": "Un instant"
+    }
+  },
+  "viewer": {
+    "notAvailable": "Ce modèle n’est pas disponible.",
+    "notFetched": "Le modèle n’a pas pu être récupéré.",
+    "notDisplayed": "Ce modèle n’a pas pu être affiché.",
+    "aria": "Vue 3D de {filename}. Faites glisser pour la tourner.",
+    "ariaDims": "Vue 3D de {filename}, {dims}. Faites glisser pour la tourner.",
+    "warming": "Le plateau chauffe…",
+    "noPreview": "Pas d’aperçu pour celui-ci",
+    "fileFine": "{message} Le fichier lui-même va bien — les mesures ci-dessous en ont été tirées à l’envoi.",
+    "dragHint": "glissez pour tourner · {filename}"
+  },
+  "modelTooLarge": {
+    "kicker": "Pas d’aperçu",
+    "title": "Celui-ci est trop gros pour tourner dans un navigateur",
+    "body": "L’aperçu télécharge le modèle entier et en reconstruit chaque triangle sur cette machine. À {size}, c’est un long téléchargement et un onglet qui ne répond plus : il n’est donc pas lancé.",
+    "browserHandles": "Un navigateur tient",
+    "thisModel": "Ce modèle",
+    "nothingWrong": "Le fichier n’a aucun problème. Il est stocké en entier et s’imprimera exactement comme prévu. <b>Télécharger</b> et <b>{slicer}</b> marchent tous les deux — un trancheur est fait pour des maillages de cette taille, pas un navigateur."
   }
 }

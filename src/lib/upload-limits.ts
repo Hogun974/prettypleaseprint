@@ -1,3 +1,5 @@
+import type { Locale } from "@/i18n/locales";
+
 /**
  * How large and how complex an uploaded model may be.
  *
@@ -95,8 +97,20 @@ export const VIEWER_MAX_BYTES = 50 * 1024 * 1024;
 
 export const ACCEPTED_EXTENSIONS = [".stl", ".3mf"] as const;
 
-/** Bytes as a person would say them. Shared so the form and the API agree. */
-export function formatBytes(n: number): string {
+/**
+ * Bytes as a person would say them. Shared so the form and the API agree.
+ *
+ * English unless a page passes its reader's language: French writes octets
+ * (o, Ko, Mo) with a decimal comma, and a no-break space so the unit never
+ * wraps away from its number. The API and every log keep the English.
+ */
+export function formatBytes(n: number, locale: Locale = "en"): string {
+  if (locale === "fr") {
+    if (n < 1024) return `${n} o`;
+    const comma = (x: number) => x.toFixed(1).replace(".", ",");
+    if (n < 1024 * 1024) return `${comma(n / 1024)} Ko`;
+    return `${comma(n / (1024 * 1024))} Mo`;
+  }
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;

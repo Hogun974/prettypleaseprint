@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { requireUser } from "@/lib/authz";
 import { StoryProblem, addComment as post, IdSchema } from "@/lib/stories";
+import { say } from "@/i18n/spoken";
 
 /**
  * The composer on a ticket, as a plain form.
@@ -32,10 +34,10 @@ export async function addComment(formData: FormData): Promise<void> {
       // cannot reach would be a redirect into a wall, and naming it at all
       // would confirm it exists — so they go back to their own board.
       if (error.status === 404) redirect("/board");
-      back(storyId, { error: error.message });
+      back(storyId, { error: await say(error) });
     }
     throw error;
   }
 
-  back(storyId, { toast: "Sent" });
+  back(storyId, { toast: (await getTranslations("story.toast"))("commentSent") });
 }

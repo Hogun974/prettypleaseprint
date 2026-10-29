@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { withdrawStory } from "@/app/actions/stories";
 
 /**
@@ -28,7 +30,7 @@ import { withdrawStory } from "@/app/actions/stories";
  * commits. Tone is carried by the fill *and* by the word, never by colour
  * alone, which is the rule the notices follow.
  */
-export function WithdrawStory({
+export async function WithdrawStory({
   storyId,
   label,
   from,
@@ -39,25 +41,24 @@ export function WithdrawStory({
   label: string;
   from: string;
 }) {
+  const t = await getTranslations("withdraw");
   return (
     <details className="mt-[17.6px]">
       <summary className="stamp inline-block cursor-pointer list-none rounded-chip border-[3px] border-ink bg-cherry-wash px-[15px] py-[8px] text-[14px] font-bold text-cherry-dk hover:bg-cherry-dk hover:text-cream">
-        Withdraw this request
+        {t("summary")}
       </summary>
       <form action={withdrawStory} className="mt-[8px]">
         <input type="hidden" name="storyId" value={storyId} />
         <input type="hidden" name="from" value={from} />
         <div className="rounded-card border-[3px] border-ink bg-cherry-wash p-[13.2px]">
           <p className="m-0 mb-[11px] text-[13.5px] leading-[1.45] text-ink">
-            Removes {label} for good — the ticket, anything said on it,
-            and the model file itself. There is no undo, and re-uploading is
-            the only way back.
+            {t("body", { ref: label })}
           </p>
           <button
             type="submit"
             className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[17.6px] py-[7px] font-mono text-[11.5px] font-bold uppercase text-cream hover:bg-cherry"
           >
-            Yes, withdraw it
+            {t("confirm")}
           </button>
         </div>
       </form>

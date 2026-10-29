@@ -237,6 +237,15 @@
       "api": "API",
       "bug": "Bug",
       "other": "Other"
+    },
+    "quantity": "{count, plural, one {# print} other {# prints}}",
+    "status": {
+      "Requested": "Requested",
+      "Accepted": "Accepted",
+      "Printing": "Printing",
+      "Delivery": "Delivery",
+      "Done": "Done",
+      "Declined": "Declined"
     }
   },
   "frr": {
@@ -552,6 +561,71 @@
         "importSources": "Import from a link is set by {env} in the environment, which wins. Change it there.",
         "mailFromName": "Sender name is set by {env} in the environment, which wins. Change it there."
       }
+    },
+    "story": {
+      "notATicket": "That is not a ticket.",
+      "ownerOnlySeesPeople": "Only the printer owner sees who has uploaded what.",
+      "gone": "That ticket no longer exists.",
+      "ownerOnlyMoves": "Only the printer owner moves a story along.",
+      "endOfLine": "{status} is the end of the line.",
+      "notFlagged": "That ticket is not flagged.",
+      "withdrawNotYours": "Only the person who asked for it can withdraw it.",
+      "alreadyStarted": "{ref} is already {status} — ask {owner} instead.",
+      "notAPriority": "That is not a priority.",
+      "reprioritiseNotYours": "Only the person who asked for it, or the printer owner, can reprioritise it.",
+      "nothingToPrioritise": "{ref} is {status} — there is nothing left to prioritise.",
+      "cannotDecline": "Cannot decline a story that is already {status}.",
+      "notAStep": "{from} → {to} is not a step along the flow.",
+      "reasonTooShort": "Say what is wrong with it — that is the whole point of a flag.",
+      "reasonTooLong": "Keep the reason short.",
+      "giveReason": "Give a reason.",
+      "saySomething": "Say something first.",
+      "commentTooLong": "That is longer than a comment wants to be.",
+      "checkAgain": "Check that again."
+    },
+    "requeue": {
+      "gone": "That ticket no longer exists.",
+      "notYours": "Only the person who asked for it can print it again.",
+      "offShelf": "{material} in {colour} is not on the shelf any more — pick from what is.",
+      "tipGone": "“{tip}” is not a benefit on offer any more — pick one from the list.",
+      "copyFailed": "The file could not be copied. Try again in a moment.",
+      "checkForm": "Check the form."
+    },
+    "wish": {
+      "wholePrints": "Whole prints only.",
+      "atLeastOne": "At least one.",
+      "productionRun": "More than 24 is a production run — ask the printer owner first.",
+      "titleTooLong": "Keep the title under 120 characters.",
+      "pickMaterial": "Pick a material.",
+      "pickColour": "Pick a colour.",
+      "notAPriority": "That is not a priority.",
+      "pickTip": "Pick what's in it for them.",
+      "tipTooLong": "That tip is oddly long.",
+      "noteTooLong": "That note is very long.",
+      "settingsTooLong": "Those print settings are very long."
+    },
+    "upload": {
+      "signIn": "Sign in first.",
+      "notIntact": "That upload did not arrive intact. Try again.",
+      "noFile": "No file was attached.",
+      "busy": "Too many uploads at once — give it a moment and send it again.",
+      "notSaved": "The request could not be saved. Try again.",
+      "notStored": "The file could not be stored. Try again in a moment.",
+      "combinationGone": "That material and colour combination is no longer available.",
+      "tipNotOnOffer": "That is not a benefit on offer — pick one from the list.",
+      "checkForm": "Check the form.",
+      "rejected": {
+        "empty": "That file is empty.",
+        "too_large": "That file is over {limitMb, number, ::unit/megabyte .0}.",
+        "bad_extension": "Only .stl and .3mf files can be printed here.",
+        "not_a_model": "That does not look like an STL or 3MF inside, whatever it is named.",
+        "corrupt": "That file is damaged — it could not be read all the way through.",
+        "no_geometry": "There is no geometry in that file."
+      }
+    },
+    "api": {
+      "signIn": "Sign in first.",
+      "ourEnd": "Something went wrong at our end."
     }
   },
   "admin": {
@@ -886,5 +960,222 @@
     "withdrew": "{name} withdrew {ref} — “{title}”.",
     "priority": "{name} set “{title}” to {priority} priority.",
     "commented": "{name} commented on “{title}”."
+  },
+  "ticket": {
+    "needsALook": "needs a look",
+    "onTheBed": "on the bed",
+    "holdOn": "Hold on",
+    "sent": "Order in · {owner} has been notified"
+  },
+  "board": {
+    "kickerAdmin": "Admin view · every ticket, with who asked",
+    "kickerMember": "Private to you and {owner}",
+    "title": "The backlog",
+    "leadAdmin": "Every ticket from the group, wherever it sits on the rail. Open one to see what was asked for.",
+    "leadMember": "Every request is a ticket on the rail. Only you and {owner} see yours — other people's stay theirs.",
+    "order": "Order a print",
+    "rail": {
+      "Requested": "waiting on a yes",
+      "Accepted": "queued up",
+      "Printing": "on the bed",
+      "Delivery": "come and get it",
+      "Done": "handed over"
+    },
+    "emptyColumn": "{note} — nothing here",
+    "footerAdmin": "The rail carries what is still moving. <link>The books</link> has everything, declined included.",
+    "footerMember": "The rail carries what is still moving. <link>My orders</link> has everything, declined included.",
+    "empty": {
+      "titleAdmin": "Nobody has ordered anything yet.",
+      "titleMember": "No requests yet.",
+      "bodyAdmin": "When someone in the group sends a model it lands on the rail, and you get a notification.",
+      "bodyMember": "Drop an .stl or .3mf and it turns up here as a ticket {owner} can work through."
+    }
+  },
+  "story": {
+    "back": "← Back to the rail",
+    "dimsUnknown": "dimensions unknown",
+    "importedFrom": "Imported from <link>{source} ↗</link>",
+    "flagged": "flagged",
+    "flaggedWith": "flagged: {reason}",
+    "facts": {
+      "askedBy": "Asked by",
+      "quantity": "Quantity",
+      "priority": "Priority",
+      "material": "Material",
+      "colour": "Colour wish",
+      "onOffer": "On offer"
+    },
+    "changePriority": "Change priority",
+    "set": "Set",
+    "printSettings": "Print settings",
+    "whereItsAt": "Where it’s at",
+    "declinedAgo": "This one was declined {ago}.",
+    "step": {
+      "now": "now",
+      "cleared": "cleared",
+      "waiting": "waiting"
+    },
+    "needsYes": "This one needs a yes",
+    "moveAlong": "Move it along",
+    "toast": {
+      "advanced": "“{title}” → {status} · {name} notified",
+      "declined": "Declined · {name} notified",
+      "flagged": "Flagged · {name} notified",
+      "flagCleared": "Flag cleared · {name} notified",
+      "withdrawn": "{ref} withdrawn.",
+      "priorityAlready": "Already {to} priority.",
+      "priorityChanged": "Priority → {to}.",
+      "commentSent": "Sent"
+    }
+  },
+  "conversation": {
+    "title": "Talk it over",
+    "empty": "Nothing said yet",
+    "bylineOwner": "{name} · the printer · {ago}",
+    "label": "Add to the conversation",
+    "placeholderOwner": "Ask a question, or say what you changed…",
+    "placeholderMember": "Reply to {owner}…",
+    "send": "Send"
+  },
+  "withdraw": {
+    "summary": "Withdraw this request",
+    "body": "Removes {ref} for good — the ticket, anything said on it, and the model file itself. There is no undo, and re-uploading is the only way back.",
+    "confirm": "Yes, withdraw it"
+  },
+  "requeue": {
+    "aria": "Print {ref} again",
+    "title": "Opens a fresh request from the same file — no re-upload",
+    "short": "Print again",
+    "long": "Print {ref} again",
+    "hint": "Opens a fresh request from the same file — no re-upload. You can change the material, colour, quantity and settings first."
+  },
+  "download": {
+    "link": "Download {ref}",
+    "hint": "{filename} — the file exactly as it was uploaded."
+  },
+  "sourceLink": {
+    "label": "Source · AGPL-3.0"
+  },
+  "history": {
+    "kicker": "History",
+    "titleAdmin": "Everything the group has printed",
+    "titleMember": "Your print history",
+    "lead": "The jobs that have left the rail — delivered, done, or declined. Found the one you want again? <b>Print again</b> opens a fresh request from the same file, no re-upload.",
+    "status": "Status",
+    "anyStatus": "Any",
+    "material": "Material",
+    "anyMaterial": "Any",
+    "filed": "Filed",
+    "since": {
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "lastYear": "Last year",
+      "allTime": "All time"
+    },
+    "filter": "Filter",
+    "clear": "Clear",
+    "emptyFiltered": "Nothing matches those filters.",
+    "emptyAdmin": "Nothing has finished yet.",
+    "emptyMember": "No finished prints yet — they land here once they're delivered, done or declined."
+  },
+  "queue": {
+    "kicker": "Printer view · the machine by the window",
+    "title": "{owner}’s queue",
+    "waiting": "{count, plural, one {# ticket is} other {# tickets are}} waiting for a yes.",
+    "nothingWaiting": "Nothing waiting. Enjoy the quiet.",
+    "waitingOnYou": "Waiting on you",
+    "line": "{quantity} · {material} · {colour} · offers {tip}",
+    "rest": "Rest of the queue",
+    "nothingOnTheGo": "Nothing on the go."
+  },
+  "upload": {
+    "kicker": "New order",
+    "lead": "Drop an <mono>.stl</mono> or <mono>.3mf</mono>. {owner} gets a ping, and your order goes up on the rail as a ticket you can follow.",
+    "noCatalog": "The printer owner has not listed any available material and colour combinations yet.",
+    "again": {
+      "kicker": "Print {ref} again",
+      "title": "Same again?",
+      "lead": "This opens a fresh request from the file on {ref}. It starts as you asked for it last time — change whatever should be different. {ref} itself stays exactly as it is."
+    },
+    "form": {
+      "badExtension": "Only .stl and .3mf files can be printed here.",
+      "tooLarge": "That file is {size} — the limit is {limit}.",
+      "notALink": "That is not a link to a model on {sources}.",
+      "orJoin": " or ",
+      "failed": "That did not go through. Try again.",
+      "dropped": "The connection dropped. Try again.",
+      "droppedMidUpload": "The connection dropped mid-upload.",
+      "sameFile": "Same file as {ref} — no re-upload",
+      "sameFileHint": "{size} · change anything below, or send it as it was",
+      "goneOne": "{what} is not on offer any more, so that has been set to something that is. Check it before you send.",
+      "goneMany": "{what} are not on offer any more, so that has been set to something that is. Check it before you send.",
+      "andJoin": " and ",
+      "materialIn": "{material} in {colour}",
+      "quoted": "“{tip}”",
+      "drop": "Drop your .stl or .3mf here",
+      "uploading": "Uploading… {percent}%",
+      "checkedOnSend": "{size} · checked on the server when you send it",
+      "orChoose": "or click to choose a file · {max} max",
+      "pasteLink": "Or paste a {sources} link",
+      "looking": "Looking…",
+      "findFiles": "Find the files",
+      "by": "by {author}",
+      "noPrintable": "There is no .stl or .3mf in that model, so there is nothing here to print.",
+      "whichFile": "Which file to print",
+      "over": "over {max}",
+      "onePerRequest": "One file per request",
+      "otherFiles": "{count, plural, one {# other file} other {# other files}} there cannot be printed here",
+      "fetchedOnSend": "fetched and checked on the server when you send it",
+      "whatIsIt": "What is it?",
+      "titlePlaceholder": "Hook for the monitor arm",
+      "materialLabel": "Material you’d like",
+      "materialAria": "Material",
+      "howMany": "How many do you need?",
+      "quantityAria": "Quantity",
+      "typeNumber": "or type a number",
+      "howMuch": "How much does it matter?",
+      "priorityAria": "Priority",
+      "priorityHint": "{owner} sees the urgent ones first. You can change it later.",
+      "colour": "Colour you’re hoping for",
+      "colourAria": "{colour} filament",
+      "colourHint": "{owner} confirms what’s actually on the spool.",
+      "tipTitle": "And what’s in it for {owner}?",
+      "tipLead": "Optional. Nobody is counting. {owner} is counting a little.",
+      "prefers": "★ {owner} currently prefers: {list}",
+      "preferredAria": "preferred",
+      "preferredTitle": "Preferred",
+      "noteLabel": "Anything {owner} should know",
+      "notePlaceholder": "No rush — needs to survive a bit of pulling.",
+      "settingsLabel": "Print settings (optional)",
+      "settingsPlaceholder": "Any specific slicer settings: layer height, infill, supports, temps…",
+      "settingsHint": "Comes with some files — saves a round of messages with {owner}.",
+      "sending": "Sending…",
+      "fetching": "Fetching it…",
+      "sendingPercent": "Sending… {percent}%",
+      "sendAgain": "Send it to {owner} again",
+      "send": "Send it to {owner}",
+      "cancel": "Cancel",
+      "pickFile": "Pick a file to continue.",
+      "holdOn": "Hold on"
+    }
+  },
+  "viewer": {
+    "notAvailable": "That model is not available.",
+    "notFetched": "The model could not be fetched.",
+    "notDisplayed": "That model could not be displayed.",
+    "aria": "3D view of {filename}. Drag to rotate.",
+    "ariaDims": "3D view of {filename}, {dims}. Drag to rotate.",
+    "warming": "Warming up the plate…",
+    "noPreview": "No preview for this one",
+    "fileFine": "{message} The file itself is fine — the measurements below came off it on upload.",
+    "dragHint": "drag to rotate · {filename}"
+  },
+  "modelTooLarge": {
+    "kicker": "Preview skipped",
+    "title": "This one is too big to spin in a browser",
+    "body": "The viewer downloads the whole model and rebuilds every triangle of it on this machine. At {size} that is a long download and a tab that stops answering, so it is not started.",
+    "browserHandles": "A browser handles",
+    "thisModel": "This model",
+    "nothingWrong": "Nothing is wrong with the file. It is stored whole and it prints exactly as it would have. <b>Download</b> and <b>{slicer}</b> both work on it — a slicer is built for meshes this size and a browser is not."
   }
 }

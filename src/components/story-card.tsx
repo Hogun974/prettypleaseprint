@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Story, User } from "@prisma/client";
 
-import { relativeTime } from "@/lib/catalog";
+import { getRelativeTime } from "@/i18n/server";
 import { storyRef } from "@/lib/scope";
 import { ColorSwatch } from "@/components/color-swatch";
 import { PriorityChip } from "@/components/ui";
@@ -20,7 +21,7 @@ export type CardStory = Story & { uploader: Pick<User, "name" | "initials"> };
  * `showUploader` carries the authorisation rule into the design: a client only
  * ever sees their own tickets, so their name on every one would be noise.
  */
-export function StoryCard({
+export async function StoryCard({
   story,
   showUploader,
   compact = false,
@@ -30,6 +31,7 @@ export function StoryCard({
   compact?: boolean;
 }) {
   const printing = story.status === "Printing";
+  const [t, ago] = await Promise.all([getTranslations("ticket"), getRelativeTime()]);
 
   return (
     <Link
@@ -54,7 +56,7 @@ export function StoryCard({
           <PriorityChip priority={story.priority} quiet />
           {story.flagged && (
             <span className="rounded-chip border-2 border-ink bg-cherry px-[8px] py-[1px] font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink">
-              needs a look
+              {t("needsALook")}
             </span>
           )}
         </div>
@@ -101,7 +103,7 @@ export function StoryCard({
               className="ppp-extrude h-[4px] w-[26px] flex-none rounded-full bg-sun-dk"
             />
             <span className="font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-sun-dk">
-              on the bed
+              {t("onTheBed")}
             </span>
           </div>
         )}
@@ -117,8 +119,8 @@ export function StoryCard({
           )}
           <span className="truncate">
             {showUploader
-              ? `${story.uploader.name} · ${relativeTime(story.createdAt)}`
-              : relativeTime(story.createdAt)}
+              ? `${story.uploader.name} · ${ago(story.createdAt)}`
+              : ago(story.createdAt)}
           </span>
         </div>
       </div>
