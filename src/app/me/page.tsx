@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/lib/db";
 import { printerName, requireUser, storyScope } from "@/lib/authz";
@@ -6,8 +7,10 @@ import { storyRef } from "@/lib/scope";
 import { formatBytes } from "@/lib/models";
 import { relativeTime } from "@/lib/catalog";
 import { AppHeader } from "@/components/app-header";
-import { Kicker, StatusChip } from "@/components/ui";
+import { Kicker, Notice, StatusChip } from "@/components/ui";
 import { ColorSwatch } from "@/components/color-swatch";
+import { Toast } from "@/components/toast";
+import { PreferencesForm } from "./preferences-form";
 
 import type { StoryStatus } from "@prisma/client";
 
@@ -33,12 +36,24 @@ const PRINTED: StoryStatus[] = ["Delivery", "Done"];
  * This is also where declined tickets finally surface. They are deliberately
  * off the rail, which left them reachable only by URL; the whole history
  * belongs here, including the parts that did not happen.
+ *
+ * And where a person sets how the app speaks and looks to them, at the foot:
+ * `PreferencesForm`. The rest of this page is not translated yet; that form
+ * is, being new (docs/i18n.md).
  */
 
 type Card = { value: string; label: string; skin: string };
 
-export default async function ProfilePage() {
-  const user = await requireUser("/me");
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ preferences?: string }>;
+}) {
+  const [user, { preferences }, t] = await Promise.all([
+    requireUser("/me"),
+    searchParams,
+    getTranslations("preferences"),
+  ]);
   const owner = await printerName();
   const isAdmin = user.role === "admin";
   const scope = storyScope(user);
@@ -192,7 +207,19 @@ export default async function ProfilePage() {
           Declined orders are listed here too — the rail only carries what is
           still moving.
         </p>
+
+        <PreferencesForm
+          notice={
+            preferences === "refused" && (
+              <div className="mb-[13.2px]">
+                <Notice tone="warn">{t("refused")}</Notice>
+              </div>
+            )
+          }
+        />
       </main>
+
+      {preferences === "saved" && <Toast>{t("saved")}</Toast>}
     </>
   );
 }

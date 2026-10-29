@@ -8,6 +8,9 @@
  * ask which theme they are in — see "Signs and the counter" in globals.css
  * for how the colour rule survives a dark counter without them knowing.
  *
+ * A person chooses on /me and the printer owner sets the default for everyone
+ * else at /admin/settings; `themeForRequest()` below is where those meet.
+ *
  * This is the one list. A theme added here and not in CSS draws as the diner
  * — `npm run check:contrast` refuses that — and one in CSS but not here can
  * never be chosen.
@@ -39,22 +42,54 @@ export type ThemeChoice = ThemeId | "auto";
 
 export const THEME_CHOICES: readonly ThemeChoice[] = [...THEMES.map((t) => t.id), "auto"];
 
+/**
+ * Each choice's key in the `themes` message group, where the names a person
+ * picks from are translated. `name` above is the English one, for the docs
+ * and the scripts.
+ */
+export const THEME_KEY = {
+  diner: "diner",
+  "after-hours": "afterHours",
+  auto: "auto",
+} as const satisfies Record<ThemeChoice, string>;
+
 /** Where everyone starts, and what an unknown value falls back to. */
 export const DEFAULT_THEME: ThemeChoice = "diner";
+
+export function isThemeChoice(value: unknown): value is ThemeChoice {
+  return typeof value === "string" && (THEME_CHOICES as readonly string[]).includes(value);
+}
+
+/**
+ * Which theme: the person's own preference, then the instance's default, then
+ * DEFAULT_THEME — in that order, and decided here and nowhere else.
+ *
+ * Pure, so the order can be tested without a request. Both inputs were
+ * checked against THEME_CHOICES on the way out of the database
+ * (`src/lib/preferences.ts`), so a stored value naming a theme that has since
+ * been removed arrives as null and lands on the next one down, rather than on
+ * a page with no palette.
+ */
+export function resolveTheme(sources: {
+  preference: ThemeChoice | null;
+  instanceDefault: ThemeChoice | null;
+}): ThemeChoice {
+  return sources.preference ?? sources.instanceDefault ?? DEFAULT_THEME;
+}
 
 /**
  * The theme this request is drawn in — the value of `data-theme` on <html>.
  *
- * Today that is the default for everyone, because nobody can choose yet. When
- * someone can, the choice is made here and nowhere else, in this order: the
- * person's own preference, then the instance's default, then DEFAULT_THEME.
- * A stored value has to be checked against THEME_CHOICES on the way in, so
- * one naming a theme that has since been removed lands on the default rather
- * than on a page with no palette.
+ * Called once per render of the root layout. A signed-out page (sign-in, a
+ * reset link) has no person, so it gets the instance's default.
  *
- * Async, and called once per render of the root layout, so that reading a
- * session or a setting later changes this body and not its callers.
+ * The request side is imported when called rather than at the top: it reads
+ * the session, which is `server-only`, and this file is also imported by
+ * `npm run shots` and `check:contrast`, which run outside Next, where
+ * `server-only` throws on import.
  */
 export async function themeForRequest(): Promise<ThemeChoice> {
-  return DEFAULT_THEME;
+  const { viewerPreferences } = await import("@/lib/viewer-preferences");
+  const { person, instance } = await viewerPreferences();
+  return resolveTheme({ preference: person?.theme ?? null, instanceDefault: instance.theme });
 }

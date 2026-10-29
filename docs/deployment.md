@@ -371,6 +371,18 @@ restart:
 | --- | --- | --- |
 | Import from a link | `IMPORT_SOURCES` | off |
 | Sender name on outgoing mail | a name in `MAIL_FROM` (`Name <address>`) | `MAIL_FROM` as written, or `Pretty Please Print` when it is unset |
+| Default language | — | English |
+| Default theme | — | the diner |
+| Default slicer (the name on the ticket button) | — | PrusaSlicer |
+
+The three defaults are for everyone who has not chosen for themselves: each
+person can pick a language, a theme and a slicer on their own page, `/me`, and
+their choice wins. The default language only applies to a browser that asks for
+no language the app speaks — a browser asking for English or French gets it.
+No variable sets them: how the app looks and speaks is the printer owner's
+call, and none of them changes what the server does. The slicer default only
+changes the button's label; what opens is still decided by the helper on each
+machine ([PrusaSlicer](prusaslicer.md#orcaslicer-and-other-slicers)).
 
 **The environment wins.** If the variable says something about a setting, that
 is what the app uses, and the page shows the field locked with the variable

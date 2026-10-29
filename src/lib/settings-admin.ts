@@ -83,5 +83,8 @@ export async function saveSettings(actor: Actor, form: FormData): Promise<Settin
   });
   revalidatePath("/admin/settings");
   revalidatePath("/upload");
+  // The defaults reach every page: the theme and the language are decided in
+  // the root layout.
+  revalidatePath("/", "layout");
   return keys;
 }

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 
+import { viewerPreferences } from "@/lib/viewer-preferences";
 import en from "../../messages/en.json";
 import { resolveLocale, type Locale } from "./locales";
 
@@ -10,15 +11,20 @@ import { resolveLocale, type Locale } from "./locales";
  * Found by the plugin in next.config.ts. There is no locale in the URL and no
  * next-intl middleware — every link, redirect and `next=` parameter in the app
  * stays exactly what it was — so the language is decided here, from the
- * request, by the one function that knows the order of preference.
+ * request, by the one function that knows the order of preference. Its inputs
+ * are the person's choice and the instance's default (`viewerPreferences`,
+ * shared with the theme and the slicer button) and the browser's header.
  *
  * Reading `headers()` makes the root layout dynamic. Every page already was:
  * middleware.ts mints a CSP nonce per request, and Next stamps it onto its own
  * inline scripts, which no static page could carry.
  */
 export default getRequestConfig(async () => {
+  const [{ person, instance }, requestHeaders] = await Promise.all([viewerPreferences(), headers()]);
   const locale = resolveLocale({
-    acceptLanguage: (await headers()).get("accept-language"),
+    preference: person?.locale ?? null,
+    acceptLanguage: requestHeaders.get("accept-language"),
+    instanceDefault: instance.locale,
   });
   return { locale, messages: await messagesFor(locale) };
 });

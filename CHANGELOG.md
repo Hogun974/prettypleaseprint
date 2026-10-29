@@ -58,11 +58,10 @@ Notable changes. Every entry names a released version; deployments pin
   are each refused by name; nothing is guessed. A config that sets neither
   behaves exactly as before.
 
-- **A second theme, "diner after hours"** (#105, step two; nothing changes
-  for anyone yet). The same diner at night: a walnut counter, cream keylines
-  and stamp shadows, the neon fills as bright as by day and still carrying
-  dark ink. Nobody can choose it in the app yet — per-person and instance
-  choices are later work — but the mechanism is in place: themes are listed
+- **A second theme, "diner after hours"** (#105, step two). The same diner
+  at night: a walnut counter, cream keylines and stamp shadows, the neon fills
+  as bright as by day and still carrying dark ink. Who gets it is chosen per
+  person and per instance (*Each person chooses…*, below). Themes are listed
   once in `src/lib/theme.ts`, `themeForRequest()` decides the theme for a
   request, and the root layout writes it into `<html data-theme>`. `auto`
   follows the system's dark setting, in CSS, with no script.
@@ -116,7 +115,7 @@ Notable changes. Every entry names a released version; deployments pin
 
   There is no locale in the URL, so no link, redirect or bookmark changes. The
   language is chosen per request in one function, which is where a person's own
-  choice and an instance default will plug in later. `messages/en.json` is the
+  choice and an instance default plug in (next entry). `messages/en.json` is the
   source of truth, every key is a type, and a key French has not caught up with
   shows in English rather than as its own name. `<html lang>` follows the
   language, and so do relative times on the translated screens. The API, the
@@ -140,6 +139,45 @@ Notable changes. Every entry names a released version; deployments pin
   and `@parcel/watcher` into the lockfile for an extractor this app does not
   use; neither reaches the runtime image. The guide says why that version and
   not a leaner one.
+
+- **Each person chooses their language, theme and slicer, and the printer
+  owner sets the defaults** (#102, #103, #105). `/me` has a new form at the
+  foot, *How you like it*, for everyone — owner and members alike: a language,
+  a theme (the diner, after hours, or *follow the system*) and a slicer. Each
+  opens on *Same as the house (…)*, naming what the house serves today, and
+  left there it follows the house when the owner changes it. `/admin/settings`
+  gains the house's three, under *For everyone who has not chosen*. Nothing
+  changes for anybody until somebody chooses: the defaults are English, the
+  diner and PrusaSlicer.
+
+  Who wins is decided in one place each. The theme: the person's choice, then
+  the house's, then the diner. The slicer: the same, then PrusaSlicer. The
+  language: the person's choice, then the browser's `Accept-Language`, then
+  the house's, then English — a stranger's browser is a better guess than the
+  house's, but a choice made in the app beats both. The sign-in page, with no
+  person, gets the house's theme, and its language when the browser asks for
+  none the app speaks.
+
+  **The slicer button follows the choice**: *Open in OrcaSlicer*, *Open in
+  ElegooSlicer*, *Open in Bambu Studio*, *Open in UltiMaker Cura*, or *Open in
+  your slicer* for one the helper has no profile for — the same names as
+  `PPP_SLICER_PROFILE`. Only the words change, in the button, its help line and
+  the too-big-to-preview note; the link and its credential are the same, and
+  the helper on each machine still decides what opens.
+
+  A person only ever changes their own row: the form carries no id, and the
+  action writes to the session's. It asks for no fresh sign-in — these change
+  how one person's own pages look, nothing else — and records nothing in the
+  audit trail; the owner's defaults do both, like every setting. A value that
+  is not on a list is refused whole. The new copy is in next-intl with French
+  (*À votre goût*, *Comme la maison*, *trancheur*), over pages that are not
+  translated yet; [Translation](docs/i18n.md) says why.
+
+  One additive migration: three nullable columns on `user`, three on
+  `instanceSettings`, nothing written, so the previous image runs unchanged
+  against the migrated database. `npm run verify:preferences` is the
+  thirteenth suite (CI and `scripts/full-test.sh`), and `verify:settings`
+  covers the three defaults.
 
 ### Changed
 

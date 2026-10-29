@@ -6,6 +6,12 @@ Every ticket has an **Open in PrusaSlicer** control. Clicking it fetches the
 model and opens it in PrusaSlicer on the machine you clicked from. This page is
 how to set that up once, and why it works the way it does.
 
+The control is named for the slicer you use: pick yours on your own page
+(`/me`), or the printer owner sets one for everyone at `/admin/settings`, and it
+reads **Open in OrcaSlicer**, **Open in ElegooSlicer** and so on — or **Open in
+your slicer** for one the helper has no profile for. Only the words change.
+Which slicer actually opens is decided by the helper on your machine, below.
+
 ## Why it is not a one-line deep link
 
 PrusaSlicer has its own scheme — `prusaslicer://open?file=<url>` — and it would
@@ -270,6 +276,11 @@ PPP_SLICER_PATH="/c/Program Files/ElegooSlicer/elegoo-slicer.exe"
 | `cura` | UltiMaker Cura | the file |
 
 The profile decides two things: the name in a message, and the arguments.
+The app's button is named separately, by the choice on `/me` (or the
+instance's default) — the same names as this table, under the same ids, plus
+*another slicer* for one that is not in it. Set both to the same slicer: the
+app cannot see your helper's config, and the helper does not read the app's
+choice. The link the button carries is the same whichever is picked.
 `--single-instance` is PrusaSlicer's own; the OrcaSlicer family keeps "one
 window" as a preference inside the slicer, so its profiles pass the file alone.
 Only PrusaSlicer is looked for when no location is set — for the others the

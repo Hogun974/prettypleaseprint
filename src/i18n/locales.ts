@@ -19,32 +19,51 @@ export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
 
+/**
+ * Each language in its own words, for the choosers on /me and the settings
+ * page: someone looking for French looks for "Français", whatever language
+ * the page around it is in. Not in the catalogues for that reason.
+ */
+export const LOCALE_NAMES: Record<Locale, string> = {
+  en: "English",
+  fr: "Français",
+};
+
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
 }
 
 /**
- * Everything a locale can be chosen from. Only the browser's say-so today.
+ * Everything a locale can be chosen from, trusted in this order — written
+ * down here and nowhere else:
  *
- * Two more are planned, and both go here rather than anywhere else, so the
- * order in which they are trusted is written down in exactly one place:
- *
- *   1. the person's own choice — a nullable `User` column, set on /me;
+ *   1. the person's own choice — `User.preferredLocale`, set on /me;
  *   2. what the browser asks for — `Accept-Language`, below;
- *   3. the instance's default — from the settings page the owner edits;
+ *   3. the instance's default — `defaultLocale`, from /admin/settings;
  *   4. English.
  *
  * A person's choice beats their browser because they made it in this app; the
  * instance default comes after the browser because it is a guess about a
- * stranger, and the browser is better placed to make that guess. Neither is
- * built yet — the field types below should be added with them, not before.
+ * stranger, and the browser is better placed to make that guess. A signed-out
+ * page has no person, so it starts at 2.
+ *
+ * The two stored values were checked against LOCALES on the way out of the
+ * database (`src/lib/preferences.ts`): a language this version no longer has
+ * arrives as null and is skipped, never served.
  */
 export type LocaleSources = {
+  preference: Locale | null;
   acceptLanguage: string | null | undefined;
+  instanceDefault: Locale | null;
 };
 
 export function resolveLocale(sources: LocaleSources): Locale {
-  return negotiate(sources.acceptLanguage) ?? DEFAULT_LOCALE;
+  return (
+    sources.preference ??
+    negotiate(sources.acceptLanguage) ??
+    sources.instanceDefault ??
+    DEFAULT_LOCALE
+  );
 }
 
 /**

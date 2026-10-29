@@ -101,8 +101,9 @@ that: there is no multi-tenancy, no billing, and no queue theory.
   model to a slicer running on your own machine. A small helper the printer
   owner installs once does the fetch, because PrusaSlicer's own deep link
   refuses any host but Printables. The link carries its own short-lived
-  credential, so nothing secret sits in the helper's config.
-  See **[Open in PrusaSlicer](docs/prusaslicer.md)**.
+  credential, so nothing secret sits in the helper's config. OrcaSlicer,
+  ElegooSlicer, Bambu Studio and Cura work too, and the button is named for the
+  one you pick on your page. See **[Open in PrusaSlicer](docs/prusaslicer.md)**.
 - **Or just take the file** — a plain download on every ticket, for a machine
   without the helper, a phone, or a slicer that is not PrusaSlicer. Same
   permissions as the ticket, and recorded when the bytes go to somebody other
@@ -430,7 +431,7 @@ has no outbound internet, set `HIBP_DISABLED=true` — and only then.
 | **[Translation](docs/i18n.md)** | how the language is chosen, adding a key or a language, and the French glossary for the diner's words |
 | **[Security audit](docs/security-audit.md)** | the OWASP Top 10 assessment, findings, and residual risk accepted |
 | **[Security policy](SECURITY.md)** | how to report a vulnerability |
-| **[Contributing](CONTRIBUTING.md)** | the twelve suites are the contract; what a good change looks like |
+| **[Contributing](CONTRIBUTING.md)** | the thirteen suites are the contract; what a good change looks like |
 | **[Changelog](CHANGELOG.md)** | what changed in each release |
 
 ## Security
@@ -461,9 +462,9 @@ something, see [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-Issues and pull requests are welcome. The twelve verification suites in
+Issues and pull requests are welcome. The thirteen verification suites in
 `scripts/` are the contract — `verify:models`, `verify:auth`, `verify:upload`,
-`verify:import`, `verify:queue`, `verify:frr`, `verify:benefits`, `verify:catalog`, `verify:settings`, `verify:api`,
+`verify:import`, `verify:queue`, `verify:frr`, `verify:benefits`, `verify:catalog`, `verify:settings`, `verify:preferences`, `verify:api`,
 `verify:passkey` and `probe:security`. All but `verify:models` run in CI against the built
 container image rather than a dev server. If a change makes one fail, that is the
 change talking.

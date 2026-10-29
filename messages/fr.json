@@ -73,5 +73,40 @@
       "setUp": "C’est parti — 30 secondes",
       "notNow": "Pas maintenant"
     }
+  },
+  "themes": {
+    "diner": "Le diner, de jour",
+    "afterHours": "Le diner, de nuit",
+    "auto": "Comme le système — de jour, ou de nuit en mode sombre"
+  },
+  "slicer": {
+    "yours": "votre trancheur",
+    "openIn": "Ouvrir dans {slicer}",
+    "send": "Envoyer {ref} au trancheur",
+    "help": "Ouvre {slicer} sur <strong>cette</strong> machine. Il faut l’assistant, à installer une fois — voyez <setup>la mise en place</setup>. Sans lui, rien ne se passe : le téléchargement juste à côté marche partout."
+  },
+  "preferences": {
+    "title": "À votre goût",
+    "lead": "Votre langue, l’allure de la salle et le trancheur nommé sur le bouton de chaque ticket. Laissé à la maison, chacun suit le choix de la personne qui s’occupe de l’imprimante — aujourd’hui comme quand il change.",
+    "language": "Langue",
+    "languageHelp": "Laissée à la maison, c’est la langue de votre navigateur qui passe d’abord, si l’application la parle.",
+    "theme": "Thème",
+    "slicer": "Trancheur",
+    "slicerHelp": "Seul le nom du bouton change. C’est l’assistant installé sur votre machine qui décide quel trancheur s’ouvre.",
+    "otherSlicer": "Un autre trancheur",
+    "house": "Comme la maison ({name})",
+    "save": "Enregistrer",
+    "saved": "C’est noté — ça arrive",
+    "refused": "Ce n’est pas à la carte. Choisissez dans la liste."
+  },
+  "settingsDefaults": {
+    "title": "Pour qui n’a rien choisi",
+    "lead": "Chacun peut choisir les siens sur sa page ; voici ce qu’ont tous les autres, page de connexion comprise.",
+    "language": "Langue",
+    "languageHelp": "Pour un navigateur qui ne demande aucune langue que l’application parle, ou aucune du tout. Un navigateur qui demande l’anglais ou le français l’obtient toujours.",
+    "theme": "Thème",
+    "slicer": "Trancheur",
+    "slicerHelp": "Le nom sur le bouton du trancheur, sur chaque ticket — « Ouvrir dans votre trancheur » pour un autre. Rien que l’étiquette : l’assistant de chaque machine décide de ce qui s’ouvre.",
+    "otherSlicer": "Un autre trancheur"
   }
 }

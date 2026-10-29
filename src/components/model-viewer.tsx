@@ -33,6 +33,7 @@ export function ModelViewer({
   colorHex,
   dims,
   fileSize,
+  slicerLabel,
 }: {
   storyId: number;
   filename: string;
@@ -41,6 +42,12 @@ export function ModelViewer({
   dims: string | null;
   /** Measured on upload. Decides whether the preview is attempted at all. */
   fileSize: number;
+  /**
+   * The slicer button's label as this viewer reads it ("Open in OrcaSlicer"),
+   * for the note that sends them to it. Decided on the server, so this client
+   * component does not ask which slicer anybody uses.
+   */
+  slicerLabel: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
@@ -300,7 +307,7 @@ export function ModelViewer({
   }, [storyId, filename, colorHex, tooLarge]);
 
   if (tooLarge) {
-    return <TooLargeToPreview fileSize={fileSize} />;
+    return <TooLargeToPreview fileSize={fileSize} slicerLabel={slicerLabel} />;
   }
 
   return (
@@ -356,7 +363,7 @@ export function ModelViewer({
  * it will print. Only the preview is declined, and the two things that actually
  * get the model onto a plate are both still there.
  */
-function TooLargeToPreview({ fileSize }: { fileSize: number }) {
+function TooLargeToPreview({ fileSize, slicerLabel }: { fileSize: number; slicerLabel: string }) {
   // The larger bar is the full width; the limit is drawn to scale against it.
   const limitWidth = Math.max(4, (VIEWER_MAX_BYTES / fileSize) * 100);
   const times = fileSize / VIEWER_MAX_BYTES;
@@ -409,7 +416,7 @@ function TooLargeToPreview({ fileSize }: { fileSize: number }) {
       <p className="m-0 mt-[17.6px] border-t-2 border-dashed border-ink-3 pt-[11px] text-[13.5px] leading-[1.5] text-ink-2">
         Nothing is wrong with the file. It is stored whole and it prints exactly
         as it would have. <strong>Download</strong> and{" "}
-        <strong>Open in PrusaSlicer</strong> both work on it — a slicer is built
+        <strong>{slicerLabel}</strong> both work on it — a slicer is built
         for meshes this size and a browser is not.
       </p>
     </div>

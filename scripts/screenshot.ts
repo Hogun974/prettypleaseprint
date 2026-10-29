@@ -7,6 +7,7 @@
  *   SHOT_THEME=after-hours npm run shots   # in another theme (src/lib/theme.ts)
  *   SHOT_THEME=auto SHOT_SCHEME=dark npm run shots   # as a system set to dark
  *   SHOT_LANG=fr npm run shots   # as a browser asking for French sees it
+ *   SHOT_SLICER=elegoo npm run shots   # the instance's default slicer (src/lib/slicers.ts)
  *
  * The language is sent as Accept-Language on every request, English unless
  * SHOT_LANG says otherwise — not left to Chrome, which asks for the machine's
@@ -26,6 +27,7 @@ import "./_env";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import puppeteer, { type Page } from "puppeteer-core";
 import { db } from "../src/lib/db";
+import { SLICER_IDS } from "../src/lib/slicers";
 import { THEME_CHOICES } from "../src/lib/theme";
 import { TEST_PASSWORD, ensureCredentials, usernameFor } from "./_accounts";
 
@@ -34,16 +36,26 @@ const OUT = process.env.SHOT_DIR ?? "shots";
 const LANG = process.env.SHOT_LANG ?? "en";
 
 /**
- * A theme for the screenshots, which nobody can choose in the app yet.
+ * A theme for every screenshot, whatever the accounts or the instance chose.
  *
  * Written onto <html> as the document is parsed, before any stylesheet
  * applies or the 3D viewer reads its colours, so the page is drawn in it from
  * the first frame — the same as the server writing it. Test-only: the server
- * still says `data-theme="diner"`, and this overrides it in this browser.
+ * still says what `themeForRequest()` decided, and this overrides it in this
+ * browser, so one run shows every page in one theme without touching a row.
  */
 const THEME = process.env.SHOT_THEME;
 if (THEME !== undefined && !(THEME_CHOICES as readonly string[]).includes(THEME)) {
   throw new Error(`SHOT_THEME=${THEME} is not a theme. Known: ${THEME_CHOICES.join(", ")}.`);
+}
+/**
+ * The instance's default slicer, written to the settings row before the shots
+ * so the ticket pages show the button named for it. Unlike SHOT_THEME this is
+ * the real setting, on a database this script already treats as throwaway.
+ */
+const SLICER = process.env.SHOT_SLICER;
+if (SLICER !== undefined && !(SLICER_IDS as readonly string[]).includes(SLICER)) {
+  throw new Error(`SHOT_SLICER=${SLICER} is not a slicer. Known: ${SLICER_IDS.join(", ")}.`);
 }
 /** prefers-color-scheme for the browser — what `auto` follows. */
 const SCHEME = process.env.SHOT_SCHEME;
@@ -223,6 +235,14 @@ async function main() {
 
   const admin = await db.user.findFirst({ where: { role: "admin" } });
   if (!admin) throw new Error("No admin — run npm run db:seed");
+
+  if (SLICER) {
+    await db.instanceSettings.upsert({
+      where: { id: 1 },
+      create: { id: 1, defaultSlicer: SLICER },
+      update: { defaultSlicer: SLICER },
+    });
+  }
 
   await db.story.deleteMany();
   await db.user.deleteMany({ where: { email: "ayla@office.example" } });

@@ -63,6 +63,17 @@ model User {
   banReason  String?
   banExpires DateTime?
 
+  /// --- the person's own preferences, set on /me ---
+  ///
+  /// Null is "follow the instance default", not "the built-in one": an owner
+  /// who switches the house to French moves everyone who never chose. Plain
+  /// text, checked against the lists in code on every read (src/lib/
+  /// preferences.ts), so a value a later version drops reads as null rather
+  /// than failing a query — an enum would make removing a theme a migration.
+  preferredLocale String?
+  preferredTheme  String?
+  preferredSlicer String?
+
   sessions Session[]
   accounts Account[]
   passkeys Passkey[]
@@ -525,6 +536,11 @@ model InstanceSettings {
   importSources String?
   /// The display name on outgoing mail. The address stays in `MAIL_FROM`.
   mailFromName  String?
+  /// What a person who has not chosen gets: a language (after their
+  /// browser's), a theme, and the slicer the ticket button names.
+  defaultLocale String?
+  defaultTheme  String?
+  defaultSlicer String?
   updatedAt     DateTime @updatedAt
 
   @@map("instanceSettings")

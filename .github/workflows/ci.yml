@@ -181,6 +181,11 @@ jobs:
       # there is one setting the environment does not pin.
       - name: Instance settings, owner-managed
         run: npm run verify:settings
+      # A person's language, theme and slicer on /me against the instance's
+      # defaults: who wins, on rendered pages (<html lang>, data-theme, the
+      # slicer button), and that nobody can change somebody else's.
+      - name: Personal preferences, against the instance's defaults
+        run: npm run verify:preferences
       # The second front door onto the same operations. Runs against the built
       # image, which is the only place the production CSP is in force — the
       # console's inline-script nonce and its stylesheet-in-a-file are both

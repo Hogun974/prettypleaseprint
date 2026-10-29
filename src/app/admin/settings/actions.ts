@@ -24,7 +24,9 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
   // Switching importing on has the server fetch from a third party on any
   // signed-in person's say-so, and the sender name is what every invitation
   // and reset link arrives signed with — a name people are asked to trust
-  // enough to click. Both outlive a stolen twenty minutes.
+  // enough to click. Both outlive a stolen twenty minutes. The defaults for
+  // language, theme and slicer ride the same form and so the same gate; on
+  // their own they would not need it (see the /me action, which has none).
   await requireFreshAuth("/admin/settings");
   try {
     const changed = await saveSettings(admin, formData);

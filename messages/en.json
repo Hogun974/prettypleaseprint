@@ -73,5 +73,40 @@
       "setUp": "Set it up — 30 seconds",
       "notNow": "Not now"
     }
+  },
+  "themes": {
+    "diner": "Diner",
+    "afterHours": "Diner after hours",
+    "auto": "Follow the system — the diner by day, after hours in dark mode"
+  },
+  "slicer": {
+    "yours": "your slicer",
+    "openIn": "Open in {slicer}",
+    "send": "Send {ref} to the slicer",
+    "help": "Opens {slicer} on <strong>this</strong> machine. Needs the one-time helper — see <setup>the setup</setup>. Nothing happens if it is not installed — the download beside this works anywhere."
+  },
+  "preferences": {
+    "title": "How you like it",
+    "lead": "Your language, how the place looks, and the slicer named on the button of every ticket. Left to the house, each one follows the printer owner’s choice — today and when it changes.",
+    "language": "Language",
+    "languageHelp": "Left to the house, your browser’s language comes first, if this app speaks it.",
+    "theme": "Theme",
+    "slicer": "Slicer",
+    "slicerHelp": "Only the button’s name changes. The helper on your own machine decides which slicer opens.",
+    "otherSlicer": "Another slicer",
+    "house": "Same as the house ({name})",
+    "save": "Save",
+    "saved": "Noted — coming right up",
+    "refused": "That is not on the menu. Pick from the list."
+  },
+  "settingsDefaults": {
+    "title": "For everyone who has not chosen",
+    "lead": "Each person can pick their own on their page; these are what everyone else gets, the sign-in page included.",
+    "language": "Language",
+    "languageHelp": "For a browser that asks for no language this app speaks, or for none. A browser asking for English or French still gets it.",
+    "theme": "Theme",
+    "slicer": "Slicer",
+    "slicerHelp": "The name on the slicer button of every ticket — “Open in your slicer” for another slicer. Only the label: the helper on each machine decides what opens.",
+    "otherSlicer": "Another slicer"
   }
 }

@@ -15,6 +15,8 @@ import "./_env";
  * The test overlay sets `IMPORT_SOURCES=printables` and a bare
  * `MAIL_FROM=printer@example.org`, so on the stack import is a setting the
  * environment pins and the sender name is one the owner may set — one of each.
+ * The defaults for language, theme and slicer have no variable at all; what a
+ * person who chose gets instead is verify:preferences'.
  *
  * DESTRUCTIVE: removes the settings row, its audit rows and the invitations it
  * sends. Development database only.
@@ -200,6 +202,30 @@ async function main() {
   quote.set("mailFromName", 'Printer" <evil@example.test>');
   check("nor close its quotes to add an address", "problem" in parseSettingsForm(quote, {}));
 
+  check("no row: English, the diner and PrusaSlicer, as before there was a choice",
+        none.defaultLocale.value === "en" && none.defaultTheme.value === "diner" &&
+        none.defaultSlicer.value === "prusa" && none.defaultTheme.source === "default");
+  check("no variable pins a default", !none.defaultLocale.envName && !none.defaultTheme.envName && !none.defaultSlicer.envName);
+  const removed = resolveSettings({ defaultTheme: "neon" }, {});
+  check("a saved theme this version does not have falls back to the diner, and says so",
+        removed.defaultTheme.value === "diner" && !!removed.defaultTheme.problem?.includes('"neon"'),
+        JSON.stringify(removed.defaultTheme));
+  const neon = new FormData();
+  neon.set("defaultTheme", "neon");
+  const neonResult = parseSettingsForm(neon, {});
+  check("the form refuses a theme it does not have, by name, with the list",
+        "problem" in neonResult && neonResult.problem.includes('"neon"') && neonResult.problem.includes("after-hours"),
+        JSON.stringify(neonResult));
+  const picks = new FormData();
+  picks.set("defaultLocale", "fr");
+  picks.set("defaultTheme", "");
+  picks.set("defaultSlicer", "elegoo");
+  const picksResult = parseSettingsForm(picks, {});
+  check("a default chosen is stored as its id; the built-in option sends '' and is stored as null",
+        "changes" in picksResult && picksResult.changes.defaultLocale === "fr" &&
+        picksResult.changes.defaultTheme === null && picksResult.changes.defaultSlicer === "elegoo",
+        JSON.stringify(picksResult));
+
   const cleared = new FormData();
   cleared.set("mailFromName", "  ");
   cleared.append("importSources", "");
@@ -359,6 +385,60 @@ async function main() {
   check("the refusal quotes the name it did not know",
         refusal(misspelt).includes('"printable"'), refusal(misspelt) || `${misspelt.headers.get("location")}`);
   check("and nothing is saved", (await row())?.importSources === "" && (await settingsAudits()).length === 2);
+
+  // ------------------------------------------------------------------
+  section("the defaults for everyone who has not chosen");
+  page = await (await ruben.go(`${APP}/admin/settings`)).text();
+  check("the page offers the three, none locked",
+        ["defaultLocale", "defaultTheme", "defaultSlicer"].every((n) => page.includes(`name="${n}"`)) &&
+        !page.includes("set by <code>undefined</code>"));
+  check("each opens on the built-in default, whose option sends an empty value",
+        /<select[^>]*name="defaultTheme"[^>]*>\s*<option value="" selected="">Diner<\/option>/.test(page),
+        (/<select[^>]*name="defaultTheme"[\s\S]*?<\/select>/.exec(page) ?? ["no select"])[0]);
+  const auditsBefore = (await settingsAudits()).length;
+  const defaults = await ruben.submit(`${APP}/admin/settings`, page, findForm(page, ['name="defaultTheme"']), {
+    defaultLocale: "fr", defaultTheme: "after-hours", defaultSlicer: "elegoo",
+  });
+  check("the owner's save is accepted", defaults.status === 303 && !refusal(defaults),
+        refusal(defaults) || `status ${defaults.status}`);
+  const withDefaults = await row();
+  check("the row holds the three",
+        withDefaults?.defaultLocale === "fr" && withDefaults?.defaultTheme === "after-hours" &&
+        withDefaults?.defaultSlicer === "elegoo", JSON.stringify(withDefaults));
+  const lastAudit = (await settingsAudits()).at(-1);
+  check("and the trail records them, from null",
+        (await settingsAudits()).length === auditsBefore + 1 &&
+        (lastAudit?.detail as Record<string, { from: unknown }>)?.defaultTheme?.from === null,
+        JSON.stringify(lastAudit?.detail));
+
+  const stranger = await fetch(`${APP}/signin`);
+  const strangerPage = await stranger.text();
+  check("the next request is drawn in them: a stranger's sign-in page is after hours, in French",
+        /<html\b[^>]*data-theme="after-hours"/.test(strangerPage) && /<html\b[^>]*lang="fr"/.test(strangerPage),
+        (/<html\b[^>]*>/.exec(strangerPage) ?? ["no <html>"])[0]);
+  const samMe = await (await client.go(`${APP}/me`)).text();
+  check("and a member who has not chosen is offered the house's slicer by name",
+        samMe.includes("ElegooSlicer") && /<html\b[^>]*data-theme="after-hours"/.test(samMe));
+
+  page = await (await ruben.go(`${APP}/admin/settings`)).text();
+  check("the page opens on what was saved",
+        /<option value="after-hours" selected="">/.test(page) && /<option value="elegoo" selected="">/.test(page));
+  const unknownTheme = await ruben.submit(`${APP}/admin/settings`, page, findForm(page, ['name="defaultTheme"']), {
+    defaultTheme: "neon",
+  });
+  check("a crafted theme is refused by name, and nothing is saved",
+        refusal(unknownTheme).includes('"neon"') && (await row())?.defaultTheme === "after-hours",
+        refusal(unknownTheme) || `${unknownTheme.headers.get("location")}`);
+  await ruben.submit(`${APP}/admin/settings`, page, findForm(page, ['name="defaultTheme"']), {
+    defaultLocale: "", defaultTheme: "", defaultSlicer: "",
+  });
+  const backToBuiltIn = await row();
+  const plainSignin = await (await fetch(`${APP}/signin`)).text();
+  check("the built-in options put all three back to null, and the diner in English",
+        backToBuiltIn?.defaultLocale === null && backToBuiltIn?.defaultTheme === null &&
+        backToBuiltIn?.defaultSlicer === null &&
+        /<html\b[^>]*lang="en"[^>]*data-theme="diner"/.test(plainSignin),
+        `${JSON.stringify(backToBuiltIn)} ${(/<html\b[^>]*>/.exec(plainSignin) ?? [""])[0]}`);
 
   // ------------------------------------------------------------------
   section("teardown");

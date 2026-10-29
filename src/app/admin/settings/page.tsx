@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 
+import { DEFAULT_LOCALE, LOCALES, LOCALE_NAMES } from "@/i18n/locales";
 import { requireAdmin } from "@/lib/authz";
 import { PASSKEY_RP_NAME } from "@/lib/auth";
 import { ipSource } from "@/lib/client-ip";
@@ -7,6 +9,8 @@ import { mailTransport } from "@/lib/email";
 import { IMPORT_SOURCES, SOURCE_LABEL } from "@/lib/import-source";
 import { sourceUrl } from "@/lib/runtime";
 import { SETTINGS, currentSettings, mailFromLine, type Resolved } from "@/lib/settings";
+import { DEFAULT_SLICER, SLICERS, slicerName } from "@/lib/slicers";
+import { DEFAULT_THEME, THEME_CHOICES, THEME_KEY } from "@/lib/theme";
 import { AppHeader } from "@/components/app-header";
 import { Kicker, Notice } from "@/components/ui";
 import { Toast } from "@/components/toast";
@@ -26,15 +30,24 @@ export const dynamic = "force-dynamic";
  *
  * The lower panel never shows a secret or a connection string: it says
  * *whether* mail is configured and by which kind of transport, never where.
+ *
+ * The three defaults for people who have not chosen (language, theme, slicer)
+ * are new, and so are in next-intl with French; the rest of the page is not
+ * translated yet (docs/i18n.md).
  */
 export default async function SettingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ toast?: string; error?: string }>;
 }) {
-  const [{ toast, error }, admin] = await Promise.all([searchParams, requireAdmin()]);
+  const [{ toast, error }, admin, t, themes] = await Promise.all([
+    searchParams,
+    requireAdmin(),
+    getTranslations("settingsDefaults"),
+    getTranslations("themes"),
+  ]);
   const settings = await currentSettings();
-  const { importSources, mailFromName } = settings;
+  const { importSources, mailFromName, defaultLocale, defaultTheme, defaultSlicer } = settings;
 
   const editable = Object.values(settings).some((s) => s.source !== "env");
   const transport = mailTransport();
@@ -122,7 +135,6 @@ export default async function SettingsPage({
                 in <code className="font-mono text-[13px]">MAIL_FROM</code>.
               </>
             }
-            last
           >
             {mailFromName.source === "env" ? (
               <Locked>{mailFromName.value}</Locked>
@@ -142,6 +154,42 @@ export default async function SettingsPage({
               Mail goes out as <span className="font-bold text-ink">{sender}</span>
               {transport === "none" && " — once there is a transport; there is none yet."}
             </p>
+          </Field>
+
+          {/* For everyone who has not chosen on /me */}
+          <div className="mb-[17.6px] border-b-[3px] border-dashed border-ink-3 pb-[17.6px]">
+            <h2 className="m-0 mb-[4px] font-display text-[20px] text-ink">{t("title")}</h2>
+            <p className="m-0 max-w-[62ch] text-[14px] text-ink-2">{t("lead")}</p>
+          </div>
+
+          <Field title={t("language")} setting={defaultLocale} help={t("languageHelp")}>
+            <DefaultChoice
+              name="defaultLocale"
+              label={t("language")}
+              setting={defaultLocale}
+              builtIn={DEFAULT_LOCALE}
+              options={LOCALES.map((l) => [l, LOCALE_NAMES[l]])}
+            />
+          </Field>
+
+          <Field title={t("theme")} setting={defaultTheme} help={null}>
+            <DefaultChoice
+              name="defaultTheme"
+              label={t("theme")}
+              setting={defaultTheme}
+              builtIn={DEFAULT_THEME}
+              options={THEME_CHOICES.map((c) => [c, themes(THEME_KEY[c])])}
+            />
+          </Field>
+
+          <Field title={t("slicer")} setting={defaultSlicer} help={t("slicerHelp")} last>
+            <DefaultChoice
+              name="defaultSlicer"
+              label={t("slicer")}
+              setting={defaultSlicer}
+              builtIn={DEFAULT_SLICER}
+              options={SLICERS.map((s) => [s.id, slicerName(s.id) ?? t("otherSlicer")])}
+            />
           </Field>
 
           {editable ? (
@@ -250,7 +298,7 @@ function Field({
           )}
         </span>
       </legend>
-      <p className="m-0 mb-[11px] max-w-[62ch] text-[14px] text-ink-2">{help}</p>
+      {help && <p className="m-0 mb-[11px] max-w-[62ch] text-[14px] text-ink-2">{help}</p>}
       {setting.problem && (
         <div className="mb-[11px]">
           <Notice tone="warn">{setting.problem}</Notice>
@@ -258,6 +306,43 @@ function Field({
       )}
       {children}
     </fieldset>
+  );
+}
+
+/**
+ * A default chosen from a list. The built-in default's option sends an empty
+ * value, "back to the default" (`choiceFromForm` in src/lib/settings.ts), so
+ * an untouched form saves nothing; a saved value that no longer validates
+ * opens on the built-in one, which is what the app is using meanwhile.
+ */
+function DefaultChoice({
+  name,
+  label,
+  setting,
+  builtIn,
+  options,
+}: {
+  name: string;
+  label: string;
+  setting: Resolved<unknown>;
+  builtIn: string;
+  options: Array<readonly [string, string]>;
+}) {
+  const current = setting.source === "saved" && !setting.problem ? (setting.stored ?? "") : "";
+  return (
+    <select
+      id={name}
+      name={name}
+      aria-label={label}
+      defaultValue={current === builtIn ? "" : current}
+      className="w-full max-w-[420px] cursor-pointer rounded-card border-[3px] border-ink bg-cream-2 px-[15px] py-[11px] text-[16px] text-ink"
+    >
+      {options.map(([value, text]) => (
+        <option key={value} value={value === builtIn ? "" : value}>
+          {text}
+        </option>
+      ))}
+    </select>
   );
 }
 

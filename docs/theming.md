@@ -3,8 +3,10 @@
 The app is drawn in a palette of colour tokens, and a theme is another value
 for some of them. There are two: **the diner**, the default, and **diner after
 hours** — the same diner at night, a dark counter with the neon still lit.
-Nobody can choose one in the app yet; this page is how they work and how to
-add one.
+Each person picks one on their own page, `/me` — or *follow the system*,
+which is the diner by day and after hours in dark mode — and the printer owner
+sets the one everybody else gets at `/admin/settings`. This page is how they
+work and how to add one.
 
 ## What a theme is
 
@@ -21,9 +23,13 @@ add one.
   choice is a theme's id or `auto`.
 - **Which theme a request gets** is decided by `themeForRequest()` in the same
   file, and the root layout writes it into `<html data-theme="…">`, so the
-  first paint is already in it. Today it returns the default for everyone;
-  a person's preference and an instance default, when they exist, are read
-  there and nowhere else.
+  first paint is already in it. The order is `resolveTheme()`'s: the person's
+  own choice (`User.preferredTheme`, null until they pick), then the
+  instance's default (`defaultTheme` in `instanceSettings`), then the diner.
+  A signed-out page — sign-in, a reset link — has no person and gets the
+  instance's. A stored value naming a theme that has since been removed reads
+  as "not chosen" and falls through, rather than drawing a page with no
+  palette.
 - **`auto`** follows the system's light or dark setting: the diner by day,
   after hours by night. It is a media query in `after-hours.css`, not server
   code — the server never learns the setting, and the page follows it if it
@@ -98,7 +104,7 @@ failed — see below.
 `npm run shots` measures what each page actually renders — every element's
 text against the colour it sits on, nested fills and inherited ink included —
 and writes the pairs to `contrast.json` beside the screenshots. `SHOT_THEME`
-draws the pages in a theme nobody can choose yet, test-only.
+draws every page in one theme whatever the accounts chose, test-only.
 
 ### The table
 
@@ -150,6 +156,8 @@ the ring wants a token of its own for the band.
 1. A file in `src/app/themes/<id>.css` with a `@custom-variant <id>` and a
    `:root { @variant <id> { … } }` block of token values — copy
    `after-hours.css`. Import it at the top of `globals.css`.
-2. Its id, name and description in `THEMES`.
+2. Its id, name and description in `THEMES`, its key in `THEME_KEY`, and its
+   name in every `messages/*.json` under `themes` — that is what the choosers
+   on `/me` and `/admin/settings` show.
 3. `npm run check:contrast` until it passes, then `SHOT_THEME=<id> npm run shots`
    and look at every page.

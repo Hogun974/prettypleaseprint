@@ -1,8 +1,11 @@
 import { z } from "zod";
 import type { InstanceSettings } from "@prisma/client";
 
+import { DEFAULT_LOCALE, LOCALES, type Locale } from "@/i18n/locales";
 import { db } from "@/lib/db";
 import { enabledSources, type ImportSource } from "@/lib/import-source";
+import { DEFAULT_SLICER, SLICER_IDS, type SlicerId } from "@/lib/slicers";
+import { DEFAULT_THEME, THEME_CHOICES, type ThemeChoice } from "@/lib/theme";
 
 /**
  * Instance-wide settings: the few things the printer owner changes at
@@ -157,6 +160,36 @@ const mailFromNameSchema = z
     message: "A name only — no quotes, angle brackets, backslashes or line breaks. The address stays in MAIL_FROM.",
   });
 
+/**
+ * One of a list that lives in code — the languages, the themes, the slicers —
+ * refused by name otherwise, with the list, as an unknown import source is.
+ */
+function oneOf<T extends string>(choices: readonly T[], what: string) {
+  return z.string().transform((raw, ctx): T => {
+    const value = raw.trim();
+    if ((choices as readonly string[]).includes(value)) return value as T;
+    ctx.addIssue({
+      code: "custom",
+      message: `"${raw}" is not ${what} this version has. Known: ${choices.join(", ")}.`,
+    });
+    return z.NEVER;
+  });
+}
+
+/**
+ * A select on the form. Its first option, the built-in default's, sends an
+ * empty value, which is "back to the default" (null) — so an untouched form
+ * changes nothing and records nothing, and the row never holds a value that
+ * only restates the default.
+ */
+const choiceFromForm =
+  (name: SettingKey) =>
+  (form: FormData): string | null | undefined => {
+    if (!form.has(name)) return undefined;
+    const value = String(form.get(name) ?? "").trim();
+    return value === "" ? null : value;
+  };
+
 const spec = <K extends SettingKey, Value>(s: Spec<K, Value>) => s;
 
 export const SETTINGS = {
@@ -201,6 +234,39 @@ export const SETTINGS = {
       const name = String(form.get("mailFromName") ?? "").trim();
       return name === "" ? null : name;
     },
+  }),
+
+  // The three defaults for everyone who has not chosen on /me. No variable
+  // sets them: they are about how the app looks and speaks, which is the
+  // owner's call and not the operator's, and none of them changes what the
+  // server does. Each fallback is what everyone got before there was a choice.
+
+  defaultLocale: spec<"defaultLocale", Locale>({
+    label: "Default language",
+    schema: oneOf(LOCALES, "a language"),
+    store: (locale) => locale,
+    // Only for a browser that asks for no language the app speaks: one that
+    // asks for English or French gets it, before this (src/i18n/locales.ts).
+    fallback: () => DEFAULT_LOCALE,
+    fromForm: choiceFromForm("defaultLocale"),
+  }),
+
+  defaultTheme: spec<"defaultTheme", ThemeChoice>({
+    label: "Default theme",
+    schema: oneOf(THEME_CHOICES, "a theme"),
+    store: (theme) => theme,
+    fallback: () => DEFAULT_THEME,
+    fromForm: choiceFromForm("defaultTheme"),
+  }),
+
+  defaultSlicer: spec<"defaultSlicer", SlicerId>({
+    label: "Default slicer",
+    schema: oneOf(SLICER_IDS, "a slicer"),
+    store: (slicer) => slicer,
+    // It names the button and nothing else; the helper on each machine
+    // decides what opens (src/lib/slicers.ts).
+    fallback: () => DEFAULT_SLICER,
+    fromForm: choiceFromForm("defaultSlicer"),
   }),
   // `any` only because each entry has its own value type; `spec<K, Value>`
   // above has already checked every entry against its own.
