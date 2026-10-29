@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import type en from "../../messages/en.json";
 import { db } from "@/lib/db";
+import { getNotificationText } from "@/lib/notifications";
 import type { Actor } from "@/lib/scope";
 import { getRelativeTime } from "@/i18n/server";
 import { Brand } from "@/components/ui";
@@ -58,7 +59,7 @@ export async function AppHeader({
   user: Actor;
   active: string;
 }) {
-  const [notifications, passkeyCount, t, ago] = await Promise.all([
+  const [notifications, passkeyCount, t, ago, said] = await Promise.all([
     db.notification.findMany({
       where: { recipientId: user.id },
       orderBy: { createdAt: "desc" },
@@ -67,14 +68,14 @@ export async function AppHeader({
     db.passkey.count({ where: { userId: user.id } }),
     getTranslations("header"),
     getRelativeTime(),
+    getNotificationText(),
   ]);
 
-  // `text` is written once, in English, when the notification is created; it
-  // is a sentence, not a message key. So the feed stays English under a
-  // translated header until notifications store a key and its values instead.
+  // Each item is said from its key in the reader's language; one written
+  // before notifications kept a key shows the English it was stored with.
   const items: FeedItem[] = notifications.map((n) => ({
     id: n.id,
-    text: n.text,
+    text: said(n),
     when: ago(n.createdAt),
     read: n.read,
     storyId: n.storyId,

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { record } from "@/lib/audit";
 import type { Actor } from "@/lib/scope";
+import type { Spoken } from "@/i18n/spoken";
 
 /**
  * The "benefits" catalogue — the tips a requester can offer the printer owner,
@@ -19,22 +20,39 @@ import type { Actor } from "@/lib/scope";
  * deleting that history; `preferred` is what the upload form highlights.
  */
 
+/**
+ * A refusal the owner reads. `message` is English and is what every caller
+ * that is not a page gets; `spoken` is the key of the same sentence, for the
+ * page to say in the reader's language (src/i18n/spoken.ts).
+ */
 export class BenefitProblem extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly spoken?: Spoken,
+  ) {
     super(message);
     this.name = "BenefitProblem";
   }
 }
 
-const LabelSchema = z
-  .string()
-  .trim()
-  .min(1, "Give the benefit a name.")
-  .max(80, "Keep it short — under 80 characters.");
+const NO_NAME = "Give the benefit a name.";
+const TOO_LONG = "Keep it short — under 80 characters.";
+
+const LabelSchema = z.string().trim().min(1, NO_NAME).max(80, TOO_LONG);
+
+/** The schema's refusal, with the key of its sentence. */
+function labelProblem(issue: { message: string } | undefined): BenefitProblem {
+  if (!issue) return new BenefitProblem("Check the name.", { key: "problems.benefit.checkName" });
+  if (issue.message === NO_NAME) return new BenefitProblem(NO_NAME, { key: "problems.benefit.noName" });
+  if (issue.message === TOO_LONG) return new BenefitProblem(TOO_LONG, { key: "problems.benefit.tooLong" });
+  return new BenefitProblem(issue.message);
+}
 
 function assertAdmin(actor: Actor) {
   if (actor.role !== "admin") {
-    throw new BenefitProblem("Only the printer owner manages benefits.");
+    throw new BenefitProblem("Only the printer owner manages benefits.", {
+      key: "problems.benefit.ownerOnly",
+    });
   }
 }
 
@@ -93,7 +111,7 @@ export async function createBenefit(actor: Actor, rawLabel: unknown): Promise<Be
   assertAdmin(actor);
 
   const parsed = LabelSchema.safeParse(typeof rawLabel === "string" ? rawLabel : "");
-  if (!parsed.success) throw new BenefitProblem(parsed.error.issues[0]?.message ?? "Check the name.");
+  if (!parsed.success) throw labelProblem(parsed.error.issues[0]);
   const label = parsed.data;
 
   const last = await db.benefit.findFirst({ orderBy: { sortOrder: "desc" }, select: { sortOrder: true } });
@@ -107,7 +125,10 @@ export async function createBenefit(actor: Actor, rawLabel: unknown): Promise<Be
   } catch {
     // Unique violation on label, or anything else — either way the caller gets
     // a sentence rather than a stack.
-    throw new BenefitProblem(`“${label}” is already on the list.`);
+    throw new BenefitProblem(`“${label}” is already on the list.`, {
+      key: "problems.benefit.duplicate",
+      values: { label },
+    });
   }
 
   await record({ action: "benefit.created", actor, subject: label });
@@ -123,14 +144,16 @@ export async function updateBenefit(
   assertAdmin(actor);
 
   const existing = await db.benefit.findUnique({ where: { id }, select: SELECT });
-  if (!existing) throw new BenefitProblem("That benefit no longer exists.");
+  if (!existing) {
+    throw new BenefitProblem("That benefit no longer exists.", { key: "problems.benefit.gone" });
+  }
 
   const data: { label?: string; preferred?: boolean; active?: boolean } = {};
   const detail: Record<string, unknown> = {};
 
   if (patch.label !== undefined) {
     const parsed = LabelSchema.safeParse(typeof patch.label === "string" ? patch.label : "");
-    if (!parsed.success) throw new BenefitProblem(parsed.error.issues[0]?.message ?? "Check the name.");
+    if (!parsed.success) throw labelProblem(parsed.error.issues[0]);
     if (parsed.data !== existing.label) {
       data.label = parsed.data;
       detail.label = { from: existing.label, to: parsed.data };
@@ -151,7 +174,10 @@ export async function updateBenefit(
   try {
     updated = await db.benefit.update({ where: { id }, data, select: SELECT });
   } catch {
-    throw new BenefitProblem(`“${data.label}” is already on the list.`);
+    throw new BenefitProblem(`“${data.label}” is already on the list.`, {
+      key: "problems.benefit.duplicate",
+      values: { label: String(data.label) },
+    });
   }
 
   await record({ action: "benefit.updated", actor, subject: updated.label, detail });

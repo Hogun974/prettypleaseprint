@@ -9,7 +9,7 @@ import { ipSource } from "@/lib/client-ip";
 import { mailTransport } from "@/lib/email";
 import { IMPORT_SOURCES, SOURCE_LABEL } from "@/lib/import-source";
 import { sourceUrl } from "@/lib/runtime";
-import { SETTINGS, currentSettings, mailFromLine, type Resolved } from "@/lib/settings";
+import { currentSettings, mailFromLine, type Resolved } from "@/lib/settings";
 import { DEFAULT_SLICER, SLICERS, slicerName } from "@/lib/slicers";
 import { DEFAULT_THEME, THEME_CHOICES, THEME_KEY } from "@/lib/theme";
 import { AppHeader } from "@/components/app-header";
@@ -33,22 +33,24 @@ export const dynamic = "force-dynamic";
  * The lower panel never shows a secret or a connection string: it says
  * *whether* mail is configured and by which kind of transport, never where.
  *
- * The three defaults for people who have not chosen (language, theme, slicer)
- * are new, and so are in next-intl with French, as is the way back into the
- * first-run setup at the top; the rest of the page is not translated yet
- * (docs/i18n.md).
+ * The whole page speaks the reader's language. What stays as written: the
+ * names of environment variables and files, the import sources' names, and a
+ * stored value's own refusal (`setting.problem`), which is for whoever runs
+ * the host and names the variable to fix.
  */
 export default async function SettingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ toast?: string; error?: string }>;
 }) {
-  const [{ toast, error }, admin, t, themes, setup] = await Promise.all([
+  const [{ toast, error }, admin, t, themes, setup, page, notice] = await Promise.all([
     searchParams,
     requireAdmin(),
     getTranslations("settingsDefaults"),
     getTranslations("themes"),
     getTranslations("setup.revisit"),
+    getTranslations("admin.settings"),
+    getTranslations("setup.notice"),
   ]);
   const settings = await currentSettings();
   const { importSources, mailFromName, defaultLocale, defaultTheme, defaultSlicer } = settings;
@@ -66,16 +68,11 @@ export default async function SettingsPage({
       <AppHeader user={admin} active="/admin/settings" />
 
       <main className="mx-auto w-full max-w-[880px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Settings</Kicker>
+        <Kicker>{page("kicker")}</Kicker>
         <h1 className="m-0 mt-[6px] mb-[8px] font-display text-[30px] leading-[1.05] text-ink">
-          House rules
+          {page("title")}
         </h1>
-        <p className="m-0 mb-[22px] max-w-[62ch] text-[15px] text-ink-2">
-          The few things about this instance you can change without touching the
-          server. A save is in effect from the next request — no restart. Anything
-          set in the environment wins, and is shown here locked with the variable
-          that sets it.
-        </p>
+        <p className="m-0 mb-[22px] max-w-[62ch] text-[15px] text-ink-2">{page("lead")}</p>
 
         {/* The way back into the first-run setup once it is done: it only
             opens by itself while it is ahead of the instance (src/lib/setup.ts). */}
@@ -94,7 +91,7 @@ export default async function SettingsPage({
 
         {error && (
           <div className="mb-[17.6px]">
-            <Notice tone="warn">{error}</Notice>
+            <Notice tone="warn" label={notice("holdOn")}>{error}</Notice>
           </div>
         )}
 
@@ -104,21 +101,16 @@ export default async function SettingsPage({
         >
           {/* Import from a link */}
           <Field
-            title={SETTINGS.importSources.label}
+            title={page("importSources")}
             setting={importSources}
-            help={
-              <>
-                Lets a request start from a model&rsquo;s page instead of an upload.
-                The server then fetches the file itself, so it needs outbound HTTPS
-                to that site.
-              </>
-            }
+            setBy={page}
+            help={page("importSourcesHelp")}
           >
             {importSources.source === "env" ? (
               <Locked>
                 {importSources.value.length > 0
                   ? importSources.value.map((s) => SOURCE_LABEL[s]).join(", ")
-                  : "Off"}
+                  : page("off")}
               </Locked>
             ) : (
               <div className="flex flex-wrap gap-[8.8px]">
@@ -146,14 +138,12 @@ export default async function SettingsPage({
 
           {/* Sender name */}
           <Field
-            title={SETTINGS.mailFromName.label}
+            title={page("senderName")}
             setting={mailFromName}
-            help={
-              <>
-                The name invitations and reset links arrive from. The address stays
-                in <code className="font-mono text-[13px]">MAIL_FROM</code>.
-              </>
-            }
+            setBy={page}
+            help={page.rich("senderNameHelp", {
+              code: (chunks) => <code className="font-mono text-[13px]">{chunks}</code>,
+            })}
           >
             {mailFromName.source === "env" ? (
               <Locked>{mailFromName.value}</Locked>
@@ -161,17 +151,20 @@ export default async function SettingsPage({
               <input
                 id="mailFromName"
                 name="mailFromName"
-                aria-label={SETTINGS.mailFromName.label}
+                aria-label={page("senderName")}
                 defaultValue={mailFromName.source === "saved" ? (mailFromName.stored ?? "") : ""}
-                placeholder={mailFromName.value ?? "No name — just the address"}
+                placeholder={mailFromName.value ?? page("noName")}
                 maxLength={80}
                 autoComplete="off"
                 className="w-full rounded-card border-[3px] border-ink bg-cream-2 px-[15px] py-[11px] text-[16px] text-ink placeholder:text-ink-3"
               />
             )}
             <p className="m-0 mt-[8.8px] font-mono text-[12px] text-ink-2">
-              Mail goes out as <span className="font-bold text-ink">{sender}</span>
-              {transport === "none" && " — once there is a transport; there is none yet."}
+              {page.rich("goesOutAs", {
+                sender,
+                b: (chunks) => <span className="font-bold text-ink">{chunks}</span>,
+              })}
+              {transport === "none" && page("noTransportYet")}
             </p>
           </Field>
 
@@ -181,7 +174,7 @@ export default async function SettingsPage({
             <p className="m-0 max-w-[62ch] text-[14px] text-ink-2">{t("lead")}</p>
           </div>
 
-          <Field title={t("language")} setting={defaultLocale} help={t("languageHelp")}>
+          <Field title={t("language")} setting={defaultLocale} setBy={page} help={t("languageHelp")}>
             <DefaultChoice
               name="defaultLocale"
               label={t("language")}
@@ -191,7 +184,7 @@ export default async function SettingsPage({
             />
           </Field>
 
-          <Field title={t("theme")} setting={defaultTheme} help={null}>
+          <Field title={t("theme")} setting={defaultTheme} setBy={page} help={null}>
             <DefaultChoice
               name="defaultTheme"
               label={t("theme")}
@@ -201,7 +194,7 @@ export default async function SettingsPage({
             />
           </Field>
 
-          <Field title={t("slicer")} setting={defaultSlicer} help={t("slicerHelp")} last>
+          <Field title={t("slicer")} setting={defaultSlicer} setBy={page} help={t("slicerHelp")} last>
             <DefaultChoice
               name="defaultSlicer"
               label={t("slicer")}
@@ -217,67 +210,50 @@ export default async function SettingsPage({
                 type="submit"
                 className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[24px] py-[11px] text-[15px] font-bold text-cream hover:bg-cherry"
               >
-                Save
+                {page("save")}
               </button>
-              <span className="max-w-[48ch] text-[13px] text-ink-3">
-                Asks for your password or passkey again if you signed in more than
-                five minutes ago.
-              </span>
+              <span className="max-w-[48ch] text-[13px] text-ink-3">{page("reauth")}</span>
             </div>
           ) : (
             <p className="m-0 mt-[17.6px] font-mono text-[12px] uppercase tracking-[0.05em] text-ink-3">
-              Everything here is set by the environment.
+              {page("allFromEnv")}
             </p>
           )}
         </form>
 
         {/* What stays in the environment */}
         <section>
-          <h2 className="m-0 mb-[6px] font-display text-[20px] text-ink">Set in the environment</h2>
+          <h2 className="m-0 mb-[6px] font-display text-[20px] text-ink">{page("env.title")}</h2>
           <p className="m-0 mb-[13.2px] max-w-[62ch] text-[14px] text-ink-2">
-            Read-only. These are decided where the app is started, in{" "}
-            <code className="font-mono text-[13px]">.env.docker</code>, and change with a restart.
+            {page.rich("env.lead", {
+              code: (chunks) => <code className="font-mono text-[13px]">{chunks}</code>,
+            })}
           </p>
           <dl className="m-0 grid grid-cols-1 gap-x-[22px] gap-y-[13.2px] rounded-card border-[3px] border-ink bg-cream-2 p-[17.6px] sm:grid-cols-[minmax(0,200px)_1fr]">
-            <Row term="Sign-in">
-              Username and password · passkeys · API bearer tokens
+            <Row term={page("env.signIn")}>{page("env.signInHow")}</Row>
+            <Row term={page("env.breach")} env="HIBP_DISABLED">
+              {process.env.HIBP_DISABLED === "true" ? page("env.breachOff") : page("env.breachOn")}
             </Row>
-            <Row term="Breach check" env="HIBP_DISABLED">
-              {process.env.HIBP_DISABLED === "true"
-                ? "Off — passwords are not checked against known breaches"
-                : "On — passwords in a known breach are refused"}
-            </Row>
-            <Row term="Passkey name" env="PASSKEY_RP_NAME">
+            <Row term={page("env.passkeyName")} env="PASSKEY_RP_NAME">
               {PASSKEY_RP_NAME}
-              <Aside>
-                Stays in the environment: the passkey library reads it once, when
-                the app starts, and a passkey keeps the name it was made with.
-              </Aside>
+              <Aside>{page("env.passkeyNameWhy")}</Aside>
             </Row>
-            <Row term="Mail" env={transport === "resend" ? "RESEND_API_KEY" : "SMTP_URL"}>
-              {transport === "resend"
-                ? "Configured — Resend"
-                : transport === "smtp"
-                  ? "Configured — SMTP"
-                  : "Not configured — invitation and reset links are shown to you to hand over"}
+            <Row term={page("env.mail")} env={transport === "resend" ? "RESEND_API_KEY" : "SMTP_URL"}>
+              {page(`env.mailKind.${transport}`)}
             </Row>
-            <Row term="Client address" env="TRUST_PROXY_HEADERS">
-              {proxy === "cloudflare"
-                ? "From CF-Connecting-IP (Cloudflare)"
-                : proxy === "forwarded"
-                  ? "From the left-most X-Forwarded-For"
-                  : "Not trusted — the audit trail records no address"}
+            <Row term={page("env.clientAddress")} env="TRUST_PROXY_HEADERS">
+              {page(`env.proxy.${proxy}`)}
             </Row>
-            <Row term="Source" env="SOURCE_URL">
+            <Row term={page("env.source")} env="SOURCE_URL">
               <a href={sourceUrl()} className="break-all text-ink underline decoration-2 underline-offset-2">
                 {sourceUrl()}
               </a>
             </Row>
-            <Row term="Running" env="PPP_TAG">
+            <Row term={page("env.running")} env="PPP_TAG">
               {process.env.PPP_TAG ? (
                 <span className="font-mono">{process.env.PPP_TAG}</span>
               ) : (
-                "Not set"
+                page("env.notSet")
               )}
             </Row>
           </dl>
@@ -293,12 +269,15 @@ export default async function SettingsPage({
 function Field({
   title,
   setting,
+  setBy,
   help,
   children,
   last = false,
 }: {
   title: string;
   setting: Resolved<unknown>;
+  /** The page's translations, for the "set by VARIABLE" badge. */
+  setBy: Awaited<ReturnType<typeof getTranslations<"admin.settings">>>;
   help: ReactNode;
   children: ReactNode;
   last?: boolean;
@@ -312,7 +291,7 @@ function Field({
           <span className="font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-ink-2">{title}</span>
           {setting.source === "env" && (
             <span className="rounded-chip border-2 border-ink bg-sun px-[10px] py-[2px] font-mono text-[11px] font-bold text-ink">
-              set by <code>{setting.envName}</code>
+              {setBy.rich("setBy", { env: setting.envName ?? "", code: (chunks) => <code>{chunks}</code> })}
             </span>
           )}
         </span>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/authz";
@@ -22,17 +23,18 @@ const WHATEVER_STYLE = "linear-gradient(135deg, #e4322f 0%, #f6c945 20%, #43aa8b
 const Direction = z.enum(["up", "down"]);
 const Mode = z.enum(COLOR_MODES);
 
-function colorInput(formData: FormData) {
+async function colorInput(formData: FormData) {
+  const p = await getTranslations("problems.catalog");
   const parsedName = Name.safeParse(formData.get("name"));
-  if (!parsedName.success) back("error", "Give the colour a name between 1 and 40 characters.");
+  if (!parsedName.success) back("error", p("colourName"));
   const name = parsedName.data;
   const parsedMode = Mode.safeParse(formData.get("mode"));
-  if (!parsedMode.success) back("error", "Choose a valid swatch type.");
+  if (!parsedMode.success) back("error", p("swatch"));
   const mode = parsedMode.data;
   const parsedHex = mode === "whatever" ? null : Hex.safeParse(formData.get("hex"));
   const parsedHexTo = mode !== "gradient" ? null : Hex.safeParse(formData.get("hexTo"));
-  if (parsedHex && !parsedHex.success) back("error", "Choose a valid colour.");
-  if (parsedHexTo && !parsedHexTo.success) back("error", "Choose a valid second gradient colour.");
+  if (parsedHex && !parsedHex.success) back("error", p("colour"));
+  if (parsedHexTo && !parsedHexTo.success) back("error", p("secondColour"));
   const hex = mode === "whatever" ? WHATEVER_HEX : parsedHex!.data;
   const style = mode === "whatever"
     ? WHATEVER_STYLE
@@ -40,6 +42,14 @@ function colorInput(formData: FormData) {
       ? `linear-gradient(135deg, ${hex}, ${parsedHexTo!.data})`
       : hex;
   return { name, hex, style, mode };
+}
+
+/**
+ * The toast and the refusal travel in the query string as sentences, in the
+ * language of the request that made them — as they did in English before.
+ */
+function translators() {
+  return Promise.all([getTranslations("admin.catalog.done"), getTranslations("problems.catalog")]);
 }
 
 function back(kind: "toast" | "error", message: string): never {
@@ -52,8 +62,9 @@ function duplicate(error: unknown): boolean {
 
 export async function addMaterialAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const parsed = Name.safeParse(formData.get("name"));
-  if (!parsed.success) back("error", "Material names must be between 1 and 40 characters.");
+  if (!parsed.success) back("error", p("materialName"));
 
   const last = await db.catalogMaterial.aggregate({ _max: { sortOrder: true } });
   try {
@@ -61,20 +72,21 @@ export async function addMaterialAction(formData: FormData): Promise<void> {
       data: { name: parsed.data, sortOrder: (last._max.sortOrder ?? -1) + 1 },
     });
   } catch (error) {
-    if (duplicate(error)) back("error", `${parsed.data} is already in the catalog.`);
+    if (duplicate(error)) back("error", p("materialTaken", { name: parsed.data }));
     throw error;
   }
   await record({ action: "catalog.material_added", actor: admin, subject: parsed.data });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${parsed.data} added. Give it at least one colour to offer it.`);
+  back("toast", t("materialAdded", { name: parsed.data }));
 }
 
 export async function toggleMaterialAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const material = await db.catalogMaterial.findUnique({ where: { id } });
-  if (!material) back("error", "That material no longer exists.");
+  if (!material) back("error", p("materialGone"));
   const updated = await db.catalogMaterial.update({
     where: { id },
     data: { active: !material.active },
@@ -87,20 +99,21 @@ export async function toggleMaterialAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${material.name} is now ${updated.active ? "available" : "unavailable"}.`);
+  back("toast", t(updated.active ? "materialOn" : "materialOff", { name: material.name }));
 }
 
 export async function editMaterialAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const parsedName = Name.safeParse(formData.get("name"));
-  if (!parsedName.success) back("error", "Material names must be between 1 and 40 characters.");
+  if (!parsedName.success) back("error", p("materialName"));
   const material = await db.catalogMaterial.findUnique({ where: { id }, select: { name: true } });
-  if (!material) back("error", "That material no longer exists.");
+  if (!material) back("error", p("materialGone"));
   try {
     await db.catalogMaterial.update({ where: { id }, data: { name: parsedName.data } });
   } catch (error) {
-    if (duplicate(error)) back("error", `${parsedName.data} is already in the catalog.`);
+    if (duplicate(error)) back("error", p("materialTaken", { name: parsedName.data }));
     throw error;
   }
   await record({
@@ -111,17 +124,18 @@ export async function editMaterialAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${material.name} renamed to ${parsedName.data}.`);
+  back("toast", t("materialRenamed", { from: material.name, to: parsedName.data }));
 }
 
 export async function removeMaterialAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const material = await db.catalogMaterial.findUnique({
     where: { id },
     select: { name: true, _count: { select: { colors: true } } },
   });
-  if (!material) back("error", "That material no longer exists.");
+  if (!material) back("error", p("materialGone"));
   await db.catalogMaterial.delete({ where: { id } });
   await record({
     action: "catalog.material_removed",
@@ -131,23 +145,24 @@ export async function removeMaterialAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${material.name} and its colours were removed. Old tickets are unchanged.`);
+  back("toast", t("materialRemoved", { name: material.name }));
 }
 
 export async function moveMaterialAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const parsedDirection = Direction.safeParse(formData.get("direction"));
-  if (!parsedDirection.success) back("error", "Choose a valid direction.");
+  if (!parsedDirection.success) back("error", p("direction"));
 
   const materials = await db.catalogMaterial.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: { id: true, name: true },
   });
   const from = materials.findIndex((material) => material.id === id);
-  if (from < 0) back("error", "That material no longer exists.");
+  if (from < 0) back("error", p("materialGone"));
   const to = parsedDirection.data === "up" ? from - 1 : from + 1;
-  if (to < 0 || to >= materials.length) back("error", "That material is already at the end of the list.");
+  if (to < 0 || to >= materials.length) back("error", p("materialAtEnd"));
   [materials[from], materials[to]] = [materials[to], materials[from]];
   await db.$transaction(
     materials.map((material, sortOrder) => db.catalogMaterial.update({
@@ -163,26 +178,27 @@ export async function moveMaterialAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${materials[to].name} moved ${parsedDirection.data}.`);
+  back("toast", t(parsedDirection.data === "up" ? "materialUp" : "materialDown", { name: materials[to].name }));
 }
 
 export async function addColorAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const materialId = String(formData.get("materialId") ?? "");
-  const { name, hex, style, mode } = colorInput(formData);
+  const { name, hex, style, mode } = await colorInput(formData);
 
   const material = await db.catalogMaterial.findUnique({
     where: { id: materialId },
     include: { colors: { select: { sortOrder: true } } },
   });
-  if (!material) back("error", "That material no longer exists.");
+  if (!material) back("error", p("materialGone"));
   const sortOrder = material.colors.reduce((max, color) => Math.max(max, color.sortOrder), -1) + 1;
   try {
     await db.catalogColor.create({
       data: { materialId, name, hex, style, mode, sortOrder },
     });
   } catch (error) {
-    if (duplicate(error)) back("error", `${material.name} already has a colour named ${name}.`);
+    if (duplicate(error)) back("error", p("colourTaken", { material: material.name, name }));
     throw error;
   }
   await record({
@@ -193,22 +209,23 @@ export async function addColorAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${name} added to ${material.name}.`);
+  back("toast", t("colourAdded", { name, material: material.name }));
 }
 
 export async function editColorAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
-  const { name, hex, style, mode } = colorInput(formData);
+  const { name, hex, style, mode } = await colorInput(formData);
   const color = await db.catalogColor.findUnique({
     where: { id },
     include: { material: { select: { name: true } } },
   });
-  if (!color) back("error", "That colour no longer exists.");
+  if (!color) back("error", p("colourGone"));
   try {
     await db.catalogColor.update({ where: { id }, data: { name, hex, style, mode } });
   } catch (error) {
-    if (duplicate(error)) back("error", `${color.material.name} already has a colour named ${name}.`);
+    if (duplicate(error)) back("error", p("colourTaken", { material: color.material.name, name }));
     throw error;
   }
   await record({
@@ -219,17 +236,18 @@ export async function editColorAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${name} updated for ${color.material.name}.`);
+  back("toast", t("colourUpdated", { name, material: color.material.name }));
 }
 
 export async function toggleColorAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const color = await db.catalogColor.findUnique({
     where: { id },
     include: { material: { select: { name: true } } },
   });
-  if (!color) back("error", "That colour no longer exists.");
+  if (!color) back("error", p("colourGone"));
   const updated = await db.catalogColor.update({
     where: { id },
     data: { active: !color.active },
@@ -242,17 +260,18 @@ export async function toggleColorAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${color.name} is now ${updated.active ? "available" : "unavailable"} for ${color.material.name}.`);
+  back("toast", t(updated.active ? "colourOn" : "colourOff", { name: color.name, material: color.material.name }));
 }
 
 export async function removeColorAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const color = await db.catalogColor.findUnique({
     where: { id },
     include: { material: { select: { name: true } } },
   });
-  if (!color) back("error", "That colour no longer exists.");
+  if (!color) back("error", p("colourGone"));
   await db.catalogColor.delete({ where: { id } });
   await record({
     action: "catalog.color_removed",
@@ -262,20 +281,21 @@ export async function removeColorAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${color.name} was removed from ${color.material.name}. Old tickets are unchanged.`);
+  back("toast", t("colourRemoved", { name: color.name, material: color.material.name }));
 }
 
 export async function moveColorAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
+  const [t, p] = await translators();
   const id = String(formData.get("id") ?? "");
   const parsedDirection = Direction.safeParse(formData.get("direction"));
-  if (!parsedDirection.success) back("error", "Choose a valid direction.");
+  if (!parsedDirection.success) back("error", p("direction"));
 
   const selected = await db.catalogColor.findUnique({
     where: { id },
     select: { materialId: true, material: { select: { name: true } } },
   });
-  if (!selected) back("error", "That colour no longer exists.");
+  if (!selected) back("error", p("colourGone"));
   const colors = await db.catalogColor.findMany({
     where: { materialId: selected.materialId },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -283,7 +303,7 @@ export async function moveColorAction(formData: FormData): Promise<void> {
   });
   const from = colors.findIndex((color) => color.id === id);
   const to = parsedDirection.data === "up" ? from - 1 : from + 1;
-  if (from < 0 || to < 0 || to >= colors.length) back("error", "That colour is already at the end of the list.");
+  if (from < 0 || to < 0 || to >= colors.length) back("error", p("colourAtEnd"));
   [colors[from], colors[to]] = [colors[to], colors[from]];
   await db.$transaction(
     colors.map((color, sortOrder) => db.catalogColor.update({
@@ -299,5 +319,5 @@ export async function moveColorAction(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/catalog");
   revalidatePath("/upload");
-  back("toast", `${colors[to].name} moved ${parsedDirection.data} for ${selected.material.name}.`);
+  back("toast", t(parsedDirection.data === "up" ? "colourUp" : "colourDown", { name: colors[to].name, material: selected.material.name }));
 }

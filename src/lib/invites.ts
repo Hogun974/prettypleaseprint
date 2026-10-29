@@ -3,6 +3,7 @@ import { Prisma, type Invite, type Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { generateToken, hashToken } from "@/lib/tokens";
 import { inviteEmail, mailConfigured, sendMail } from "@/lib/email";
+import type { Spoken } from "@/i18n/spoken";
 
 export const INVITE_TTL_DAYS = 7;
 
@@ -70,10 +71,16 @@ export function pendingInviteFor(email: string) {
   });
 }
 
+/**
+ * `message` is English, for every caller that is not a page; `spoken` is the
+ * key of the same sentence, for the guest list to say in the reader's
+ * language (src/i18n/spoken.ts).
+ */
 export class InviteError extends Error {
   constructor(
     message: string,
     readonly code: "already_a_member" | "already_invited" | "not_found",
+    readonly spoken?: Spoken,
   ) {
     super(message);
   }
@@ -100,12 +107,16 @@ export async function createInvite(opts: {
   const email = normalizeEmail(opts.email);
 
   if (await db.user.findUnique({ where: { email } })) {
-    throw new InviteError(`${email} already has an account.`, "already_a_member");
+    throw new InviteError(`${email} already has an account.`, "already_a_member", {
+      key: "problems.invite.alreadyMember",
+      values: { email },
+    });
   }
   if (await pendingInviteFor(email)) {
     throw new InviteError(
       `${email} already has an invite that has not been used yet.`,
       "already_invited",
+      { key: "problems.invite.alreadyInvited", values: { email } },
     );
   }
 
@@ -145,7 +156,9 @@ export async function resendInvite(inviteId: string): Promise<CreatedInvite> {
     include: { invitedBy: { select: { name: true } } },
   });
   if (!existing || existing.acceptedAt || existing.revokedAt) {
-    throw new InviteError("That invite is no longer open.", "not_found");
+    throw new InviteError("That invite is no longer open.", "not_found", {
+      key: "problems.invite.notOpen",
+    });
   }
 
   const token = generateToken();

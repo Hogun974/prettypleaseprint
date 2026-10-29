@@ -21,4 +21,9 @@ export const CLIENT_GROUPS = [
   "header.account",
   "header.nudge",
   "setup.passkey",
+  // The owner's catalogue editors and guest-list controls. Owner-only words
+  // in every page's payload, like setup.passkey: none names a page or a link,
+  // so a client's page still carries nothing the suites look for.
+  "admin.catalogEdit",
+  "admin.guests",
 ] as const;

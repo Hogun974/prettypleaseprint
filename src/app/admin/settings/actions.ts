@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
+import { say } from "@/i18n/spoken";
 import { requireAdmin } from "@/lib/authz";
 import { requireFreshAuth } from "@/lib/reauth";
 import { SettingsProblem, saveSettings } from "@/lib/settings-admin";
@@ -28,13 +30,14 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
   // language, theme and slicer ride the same form and so the same gate; on
   // their own they would not need it (see the /me action, which has none).
   await requireFreshAuth("/admin/settings");
+  // The toast is the first-run setup's sentence, said the same way: one
+  // save, one wording, whichever door it came through.
+  const t = await getTranslations("setup.toast");
   try {
     const changed = await saveSettings(admin, formData);
-    back({
-      toast: changed.length > 0 ? "Saved — in effect from the next request" : "Nothing to change",
-    });
+    back({ toast: changed.length > 0 ? t("saved") : t("unchanged") });
   } catch (error) {
-    if (error instanceof SettingsProblem) back({ error: error.message });
+    if (error instanceof SettingsProblem) back({ error: await say(error) });
     throw error;
   }
 }

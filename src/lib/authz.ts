@@ -3,6 +3,7 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
+import type { Spoken } from "@/i18n/spoken";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { storyScope, type Actor } from "@/lib/scope";
@@ -132,12 +133,23 @@ export const printerName = cache(async (): Promise<string> => {
   return admin?.name.trim().split(/\s+/)[0] ?? "the printer owner";
 });
 
+/**
+ * Tell somebody something in their Activity feed.
+ *
+ * `text` is the sentence in English: it is stored as written, and it is what
+ * the JSON API returns. `message` is the same sentence as a key under
+ * `notifications.` in the catalogue, with its values, so the panel can say it
+ * in the reader's language when it is read — not in the writer's when it is
+ * written. The catalogue's English must say exactly `text`; `verify:queue`
+ * holds every key to it.
+ */
 export async function notify(opts: {
   recipientId: string;
   storyId?: number;
   /** A feature request this is about, for the 'frr' track. */
   featureId?: number;
   text: string;
+  message?: Spoken;
 }): Promise<void> {
   await db.notification.create({
     data: {
@@ -145,6 +157,8 @@ export async function notify(opts: {
       storyId: opts.storyId ?? null,
       featureId: opts.featureId ?? null,
       text: opts.text,
+      messageKey: opts.message?.key ?? null,
+      messageValues: opts.message?.values ?? undefined,
     },
   });
 }

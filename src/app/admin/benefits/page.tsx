@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { requireAdmin } from "@/lib/authz";
 import { listAllBenefits } from "@/lib/benefits";
 import { AppHeader } from "@/components/app-header";
@@ -25,7 +27,12 @@ export default async function BenefitsPage({
 }: {
   searchParams: Promise<{ toast?: string; error?: string }>;
 }) {
-  const [{ toast, error }, admin] = await Promise.all([searchParams, requireAdmin()]);
+  const [{ toast, error }, admin, t, notice] = await Promise.all([
+    searchParams,
+    requireAdmin(),
+    getTranslations("admin.benefits"),
+    getTranslations("setup.notice"),
+  ]);
   const benefits = await listAllBenefits();
 
   const live = benefits.filter((b) => b.active);
@@ -36,20 +43,15 @@ export default async function BenefitsPage({
       <AppHeader user={admin} active="/admin/benefits" />
 
       <main className="mx-auto w-full max-w-[880px] px-[26.4px] pb-[80px] pt-[35.2px]">
-        <Kicker>Benefits</Kicker>
+        <Kicker>{t("kicker")}</Kicker>
         <h1 className="m-0 mt-[6px] mb-[8px] font-display text-[30px] leading-[1.05] text-ink">
-          What&rsquo;s in it for you
+          {t("title")}
         </h1>
-        <p className="m-0 mb-[22px] max-w-[62ch] text-[15px] text-ink-2">
-          The tips people can offer when they ask for a print. Mark the ones you
-          currently prefer — those are starred on the upload form so people know
-          what you actually want. Retire one to take it off the list without
-          touching past requests that offered it.
-        </p>
+        <p className="m-0 mb-[22px] max-w-[62ch] text-[15px] text-ink-2">{t("lead")}</p>
 
         {error && (
           <div className="mb-[17.6px]">
-            <Notice tone="warn">{error}</Notice>
+            <Notice tone="warn" label={notice("holdOn")}>{error}</Notice>
           </div>
         )}
 
@@ -60,7 +62,7 @@ export default async function BenefitsPage({
         >
           <div className="flex-[1_1_240px]">
             <label htmlFor="new-benefit" className="mb-[6px] block font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-ink-2">
-              Add a benefit
+              {t("addLabel")}
             </label>
             <input
               id="new-benefit"
@@ -68,7 +70,7 @@ export default async function BenefitsPage({
               required
               maxLength={80}
               autoComplete="off"
-              placeholder="A round of coffees"
+              placeholder={t("addPlaceholder")}
               className="w-full rounded-card border-[3px] border-ink bg-porcelain px-[15px] py-[11px] text-[16px] text-ink placeholder:text-ink-3"
             />
           </div>
@@ -76,7 +78,7 @@ export default async function BenefitsPage({
             type="submit"
             className="stamp cursor-pointer rounded-chip border-[3px] border-ink bg-cherry-dk px-[22px] py-[11px] text-[15px] font-bold text-cream hover:bg-cherry"
           >
-            Add
+            {t("add")}
           </button>
         </form>
 
@@ -98,14 +100,14 @@ export default async function BenefitsPage({
                     name="label"
                     defaultValue={b.label}
                     maxLength={80}
-                    aria-label={`Rename ${b.label}`}
+                    aria-label={t("rename", { label: b.label })}
                     className="min-w-[140px] flex-1 rounded-[8px] border-[3px] border-ink bg-cream-2 px-[11px] py-[7px] font-bold text-[15px] text-ink"
                   />
                   <button
                     type="submit"
                     className="cursor-pointer rounded-chip border-2 border-ink bg-porcelain px-[12px] py-[6px] font-mono text-[11px] font-bold uppercase text-ink hover:bg-sun"
                   >
-                    Save
+                    {t("save")}
                   </button>
                 </form>
 
@@ -119,7 +121,7 @@ export default async function BenefitsPage({
                       b.preferred ? "bg-cherry-dk text-cream hover:bg-cherry" : "bg-porcelain text-ink hover:bg-sun"
                     }`}
                   >
-                    {b.preferred ? "★ Preferred" : "Mark preferred"}
+                    {b.preferred ? t("preferred") : t("markPreferred")}
                   </button>
                 </form>
 
@@ -131,7 +133,7 @@ export default async function BenefitsPage({
                     type="submit"
                     className="cursor-pointer rounded-chip border-2 border-ink bg-cream-2 px-[12px] py-[6px] font-mono text-[11px] font-bold uppercase text-ink-2 hover:bg-cherry-wash"
                   >
-                    Retire
+                    {t("retire")}
                   </button>
                 </form>
               </div>
@@ -139,7 +141,7 @@ export default async function BenefitsPage({
           ))}
           {live.length === 0 && (
             <p className="m-0 rounded-card border-[3px] border-dashed border-ink-3 bg-cream-2 px-[15px] py-[13.2px] font-mono text-[12px] uppercase tracking-[0.05em] text-ink-3">
-              No benefits on the list — add one above, or nobody can offer a tip.
+              {t("empty")}
             </p>
           )}
         </div>
@@ -147,7 +149,7 @@ export default async function BenefitsPage({
         {/* Retired */}
         {retired.length > 0 && (
           <section className="mt-[35.2px]">
-            <h2 className="m-0 mb-[13.2px] font-display text-[20px] text-ink">Retired</h2>
+            <h2 className="m-0 mb-[13.2px] font-display text-[20px] text-ink">{t("retired")}</h2>
             <div className="flex flex-col gap-[8.8px]">
               {retired.map((b) => (
                 <div
@@ -162,7 +164,7 @@ export default async function BenefitsPage({
                       type="submit"
                       className="cursor-pointer rounded-chip border-2 border-ink bg-porcelain px-[12px] py-[6px] font-mono text-[11px] font-bold uppercase text-ink hover:bg-mint-wash"
                     >
-                      Restore
+                      {t("restore")}
                     </button>
                   </form>
                 </div>

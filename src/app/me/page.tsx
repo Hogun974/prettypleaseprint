@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { getRelativeTime } from "@/i18n/server";
 import { db } from "@/lib/db";
 import { printerName, requireUser, storyScope } from "@/lib/authz";
 import { storyRef } from "@/lib/scope";
 import { formatBytes } from "@/lib/models";
-import { relativeTime } from "@/lib/catalog";
 import { AppHeader } from "@/components/app-header";
 import { Kicker, Notice, StatusChip } from "@/components/ui";
 import { ColorSwatch } from "@/components/color-swatch";
@@ -38,8 +38,8 @@ const PRINTED: StoryStatus[] = ["Delivery", "Done"];
  * belongs here, including the parts that did not happen.
  *
  * And where a person sets how the app speaks and looks to them, at the foot:
- * `PreferencesForm`. The rest of this page is not translated yet; that form
- * is, being new (docs/i18n.md).
+ * `PreferencesForm`. The page speaks the reader's language; what it lists —
+ * titles, file names, materials, the tip offered — is shown as it was written.
  */
 
 type Card = { value: string; label: string; skin: string };
@@ -49,10 +49,12 @@ export default async function ProfilePage({
 }: {
   searchParams: Promise<{ preferences?: string }>;
 }) {
-  const [user, { preferences }, t] = await Promise.all([
+  const [user, { preferences }, t, a, ago] = await Promise.all([
     requireUser("/me"),
     searchParams,
     getTranslations("preferences"),
+    getTranslations("account"),
+    getRelativeTime(),
   ]);
   const owner = await printerName();
   const isAdmin = user.role === "admin";
@@ -97,20 +99,20 @@ export default async function ProfilePage({
    */
   const cards: Card[] = isAdmin
     ? [
-        { value: String(finished), label: "Printed for the group", skin: "bg-aqua" },
-        { value: String(waiting), label: "Waiting on you", skin: "bg-sun" },
-        { value: formatBytes(bytes._sum.fileSize ?? 0), label: "Geometry off the plate", skin: "bg-cream-2" },
-        { value: String(beers), label: "Beers owed to you", skin: "bg-mint" },
+        { value: String(finished), label: a("cards.printedForGroup"), skin: "bg-aqua" },
+        { value: String(waiting), label: a("cards.waitingOnYou"), skin: "bg-sun" },
+        { value: formatBytes(bytes._sum.fileSize ?? 0), label: a("cards.geometry"), skin: "bg-cream-2" },
+        { value: String(beers), label: a("cards.beersOwedYou"), skin: "bg-mint" },
       ]
     : [
-        { value: String(stories.length), label: "Requests made", skin: "bg-aqua" },
+        { value: String(stories.length), label: a("cards.requestsMade"), skin: "bg-aqua" },
         {
           value: String(waitingToCollect > 0 ? waitingToCollect : inHand),
-          label: waitingToCollect > 0 ? "Ready to collect" : "In your hands",
+          label: waitingToCollect > 0 ? a("cards.readyToCollect") : a("cards.inYourHands"),
           skin: waitingToCollect > 0 ? "bg-cherry-wash" : "bg-mint",
         },
-        { value: String(beers), label: `Beers owed to ${owner}`, skin: "bg-sun" },
-        { value: usual, label: "Your usual material", skin: "bg-cream-2" },
+        { value: String(beers), label: a("cards.beersOwedTo", { owner }), skin: "bg-sun" },
+        { value: usual, label: a("cards.usualMaterial"), skin: "bg-cream-2" },
       ];
 
   return (
@@ -126,14 +128,12 @@ export default async function ProfilePage({
             {user.initials}
           </span>
           <div>
-            <Kicker>{isAdmin ? "Behind the counter" : "At the counter"}</Kicker>
+            <Kicker>{isAdmin ? a("kickerOwner") : a("kickerMember")}</Kicker>
             <h1 className="m-0 mb-[6px] text-[38px] leading-[1] text-ink">
               {user.name}
             </h1>
             <p className="m-0 text-[15.5px] text-ink-2">
-              {isAdmin
-                ? "Owns the printer, sees every ticket"
-                : `Invited by ${owner} · sees only their own tickets`}
+              {isAdmin ? a("roleOwner") : a("roleMember", { owner })}
             </p>
           </div>
         </div>
@@ -155,13 +155,13 @@ export default async function ProfilePage({
         </div>
 
         <h2 className="m-0 mb-[13.2px] font-display text-[26px] text-ink">
-          {isAdmin ? "Everything the group has sent you" : "Your orders"}
+          {isAdmin ? a("listOwner") : a("listMember")}
         </h2>
 
         <div className="overflow-hidden rounded-panel border-[3px] border-ink bg-porcelain shadow-stamp">
           {stories.length === 0 ? (
             <p className="m-0 p-[22px] font-mono text-[12px] uppercase tracking-[0.06em] text-ink-3">
-              {isAdmin ? "Nobody has sent you anything yet." : "No orders yet."}
+              {isAdmin ? a("emptyOwner") : a("emptyMember")}
             </p>
           ) : (
             stories.map((story, i) => (
@@ -186,13 +186,13 @@ export default async function ProfilePage({
                   <p className="m-0 mt-[3px] font-mono text-[11px] uppercase tracking-[0.04em] text-ink-3">
                     {storyRef(story.id)} · {story.filename}
                     {isAdmin ? ` · ${story.uploader.name}` : ""} ·{" "}
-                    {relativeTime(story.createdAt)}
+                    {ago(story.createdAt)}
                   </p>
                 </div>
                 <StatusChip status={story.status} />
                 {story.flagged && (
                   <span className="rounded-chip border-2 border-ink bg-cherry px-[9px] py-[2px] font-mono text-[10.5px] font-bold uppercase text-ink">
-                    needs a look
+                    {a("needsALook")}
                   </span>
                 )}
                 <span className="w-[120px] font-mono text-[11px] uppercase tracking-[0.04em] text-ink-3">
@@ -204,15 +204,14 @@ export default async function ProfilePage({
         </div>
 
         <p className="m-0 mt-[13.2px] font-mono text-[11px] uppercase tracking-[0.05em] text-ink-3">
-          Declined orders are listed here too — the rail only carries what is
-          still moving.
+          {a("declinedToo")}
         </p>
 
         <PreferencesForm
           notice={
             preferences === "refused" && (
               <div className="mb-[13.2px]">
-                <Notice tone="warn">{t("refused")}</Notice>
+                <Notice tone="warn" label={a("holdOn")}>{t("refused")}</Notice>
               </div>
             )
           }

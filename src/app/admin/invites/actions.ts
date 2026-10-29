@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
+
+import { say } from "@/i18n/spoken";
 
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/authz";
@@ -33,8 +36,10 @@ export type InviteFormState = {
   handoverUrl?: string;
 };
 
+const NOT_AN_EMAIL = "That does not look like an email address.";
+
 const InviteSchema = z.object({
-  email: z.email("That does not look like an email address."),
+  email: z.email(NOT_AN_EMAIL),
   name: z.string().trim().max(80).optional(),
 });
 
@@ -47,13 +52,18 @@ export async function sendInviteAction(
   // An invitation mints a whole new account, which outlives any stolen
   // session. Prove it is you.
   await requireFreshAuth("/admin/invites");
+  // What the owner reads comes back in their language; the English sentences
+  // are the catalogue's English, word for word.
+  const p = await getTranslations("problems.invite");
 
   const parsed = InviteSchema.safeParse({
     email: formData.get("email"),
     name: formData.get("name") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form." };
+    const issue = parsed.error.issues[0];
+    if (!issue) return { error: p("checkForm") };
+    return { error: issue.message === NOT_AN_EMAIL ? p("notAnEmail") : issue.message };
   }
 
   try {
@@ -75,15 +85,12 @@ export async function sendInviteAction(
     revalidatePath("/admin/invites");
     return { sent: invite.email, handoverUrl };
   } catch (e) {
-    if (e instanceof InviteError) return { error: e.message };
+    if (e instanceof InviteError) return { error: await say(e) };
     if (isUniqueViolation(e)) {
-      return { error: "That address already has an invite waiting." };
+      return { error: p("waiting") };
     }
     console.error("invite failed", e);
-    return {
-      error:
-        "The invite could not be sent. Check the mail transport and try again.",
-    };
+    return { error: p("notSent") };
   }
 }
 
@@ -134,13 +141,14 @@ export async function resetPasswordAction(
   // A reset link is the ability to become somebody else. This is the single
   // most valuable thing a captured admin session could be pointed at.
   await requireFreshAuth("/admin/invites");
+  const p = await getTranslations("problems.member");
   const userId = String(formData.get("userId") ?? "");
 
   const target = await db.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, name: true },
   });
-  if (!target) return { error: "No such member." };
+  if (!target) return { error: p("noSuchMember") };
 
   let url: string;
   try {
@@ -150,7 +158,7 @@ export async function resetPasswordAction(
     url = await issuePasswordSetupUrl(target.id);
   } catch (error) {
     console.error("password reset failed", error);
-    return { error: "That link could not be created. Try again." };
+    return { error: p("linkFailed") };
   }
 
   // A transport that refuses is treated as no transport: the link already
@@ -210,18 +218,19 @@ export async function setMemberAccessAction(
   await requireFreshAuth("/admin/invites");
   const userId = String(formData.get("userId") ?? "");
   const revoke = String(formData.get("revoke") ?? "") === "true";
+  const p = await getTranslations("problems.member");
 
   const target = await db.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, name: true, role: true, banned: true },
   });
-  if (!target) return { error: "No such member." };
+  if (!target) return { error: p("noSuchMember") };
 
   // The printer owner is the only way back into the admin surface. Suspending
   // them locks the app permanently, so the guard is here rather than only in
   // the UI, which renders no control for them anyway.
   if (target.role === "admin") {
-    return { error: "The printer owner cannot be suspended — that would lock the app." };
+    return { error: p("ownerStays") };
   }
 
   await db.user.update({

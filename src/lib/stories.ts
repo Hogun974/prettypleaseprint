@@ -377,6 +377,10 @@ export async function advanceStory(actor: Actor, id: number) {
     recipientId: story.uploaderId,
     storyId: story.id,
     text: `${firstName(actor.name)} moved “${story.title}” to ${next}.`,
+    message: {
+      key: "notifications.story.moved",
+      values: { name: firstName(actor.name), title: story.title, status: next },
+    },
   });
   await record({
     action: "story.status_changed",
@@ -415,6 +419,7 @@ export async function declineStory(actor: Actor, id: number) {
     recipientId: story.uploaderId,
     storyId: story.id,
     text: `${firstName(actor.name)} declined “${story.title}”.`,
+    message: { key: "notifications.story.declined", values: { name: firstName(actor.name), title: story.title } },
   });
   await record({
     action: "story.declined",
@@ -460,6 +465,10 @@ export async function flagStory(actor: Actor, id: number, rawReason: unknown) {
     recipientId: story.uploaderId,
     storyId: story.id,
     text: `${firstName(actor.name)} flagged “${story.title}”: ${reason}`,
+    message: {
+      key: "notifications.story.flagged",
+      values: { name: firstName(actor.name), title: story.title, reason },
+    },
   });
   await record({
     action: "story.flagged",
@@ -498,6 +507,7 @@ export async function clearFlag(actor: Actor, id: number) {
     recipientId: story.uploaderId,
     storyId: story.id,
     text: `${firstName(actor.name)} cleared the flag on “${story.title}”.`,
+    message: { key: "notifications.story.flagCleared", values: { name: firstName(actor.name), title: story.title } },
   });
   await record({
     action: "story.flag_cleared",
@@ -590,6 +600,7 @@ export async function withdrawStory(actor: Actor, id: number) {
     await notify({
       recipientId: owner.id,
       text: `${actor.name} withdrew ${ref} — “${story.title}”.`,
+      message: { key: "notifications.withdrew", values: { name: actor.name, ref, title: story.title } },
     });
   }
 
@@ -735,6 +746,7 @@ export async function requeueStory(
       recipientId: owner.id,
       storyId: created.id,
       text: `${actor.name} re-queued “${title}”.`,
+      message: { key: "notifications.story.requeued", values: { name: actor.name, title } },
     });
   }
 
@@ -811,6 +823,10 @@ export async function changeStoryPriority(actor: Actor, id: number, rawPriority:
       recipientId,
       storyId: story.id,
       text: `${firstName(actor.name)} set “${story.title}” to ${priority} priority.`,
+      message: {
+        key: "notifications.priority",
+        values: { name: firstName(actor.name), title: story.title, priority },
+      },
     });
   }
 
@@ -890,6 +906,7 @@ export async function addComment(actor: Actor, id: number, rawBody: unknown) {
       recipientId,
       storyId: story.id,
       text: `${firstName(actor.name)} commented on “${story.title}”.`,
+      message: { key: "notifications.commented", values: { name: firstName(actor.name), title: story.title } },
     });
   }
 
