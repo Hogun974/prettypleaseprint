@@ -128,6 +128,13 @@ Notable changes. Every entry names a released version; deployments pin
   code. A config with no `PPP_BASE` is reported the same way; it used to exit
   on stderr alone, which a protocol handler does not have.
 
+- **The slicer helper exited without a word when a response had no
+  `Content-Disposition`.** The filename is read from that header with a
+  `grep`; under `pipefail` a grep that finds nothing failed the assignment and
+  `set -e` ended the script, so the `model-<id>.stl` fallback written for that
+  case was never reached and the log stopped at "fetching". The app always
+  sends the header; a proxy that strips it is what would have hit this.
+
 ## v0.3.0
 
 2026-10-04.
