@@ -290,6 +290,16 @@ if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/d
   done
 fi
 
+t "the scripts people run directly are still executable in the index"
+# A file rewritten by an editor on another OS comes back 0644, and git records
+# that as a change like any other — the installer's own instruction,
+# ./scripts/install-slicer-handler.sh, then fails with "permission denied".
+if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  for f in scripts/prusa-open.sh scripts/install-slicer-handler.sh; do
+    eq "index mode of $f" "$(git -C "$REPO_ROOT" ls-files -s -- "$f" | cut -d' ' -f1)" "100755"
+  done
+fi
+
 t "across every case: no stub was asked for something it did not expect"
 [ -s "$BASE/all-logs" ] || no "no stub log was collected"
 eq "unexpected stub calls" "$(grep -c 'UNEXPECTED' "$BASE/all-logs")" "0"
