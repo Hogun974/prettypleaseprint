@@ -10,7 +10,8 @@
 > [Hogun974/prettypleaseprint](https://github.com/Hogun974/prettypleaseprint),
 > modified by Hogun974 from 28 October 2026 onwards, from
 > [danileau/prettypleaseprint](https://github.com/danileau/prettypleaseprint)
-> at `fcadf1c` (6 October 2026). What changed and when is in the git history and
+> at `fcadf1c` (6 October 2026), with its `main` merged in since, last at
+> `b878a4a` (4 November 2026). What changed and when is in the git history and
 > under *Unreleased* in the [CHANGELOG](CHANGELOG.md): the slicer helper's
 > profiles and Windows installer, instance settings, per-person preferences,
 > translation (the whole app in French), the "after hours" and "glass" themes,
