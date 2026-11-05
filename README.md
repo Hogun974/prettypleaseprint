@@ -11,12 +11,12 @@
 > modified by Hogun974 from 28 October 2026 onwards, from
 > [danileau/prettypleaseprint](https://github.com/danileau/prettypleaseprint)
 > at `fcadf1c` (6 October 2026), with its `main` merged in since, last at
-> `b878a4a` (4 November 2026). What changed and when is in the git history and
-> under *Unreleased* in the [CHANGELOG](CHANGELOG.md): the slicer helper's
-> profiles and Windows installer, instance settings, per-person preferences,
-> translation (the whole app in French), the "after hours" and "glass" themes,
-> a first-run setup, and a catalogue that can follow a spool inventory. The "glass" theme exists only in this fork. It is distributed under the
-> same licence, [AGPL-3.0-or-later](LICENSE).
+> `efd7b5b` (v0.4.0, 4 November 2026). What changed and when is in the git
+> history and under *Unreleased* in the [CHANGELOG](CHANGELOG.md): instance
+> settings, per-person preferences, translation (the whole app in French), the
+> "after hours" and "glass" themes, a first-run setup, and a catalogue that can
+> follow a spool inventory. The "glass" theme exists only in this fork. It is
+> distributed under the same licence, [AGPL-3.0-or-later](LICENSE).
 
 **Invite-only 3D print requests for a small office.** One person owns the
 printer. Everyone else uploads a model, says what they are hoping for, and
@@ -109,15 +109,16 @@ that: there is no multi-tenancy, no billing, and no queue theory.
   Swagger console at `/docs`. Same session, same scope, same audit trail as the
   UI; the rules live in one place, so the API cannot enforce less than the
   board does. See **[the API](docs/api.md)**.
-- **Open a model straight in PrusaSlicer** — one click on a ticket hands the
-  model to a slicer running on your own machine. A small helper the printer
+- **Open a model straight in the slicer** — one click on a ticket hands the
+  model to a slicer running on your own machine: PrusaSlicer by default, or
+  OrcaSlicer, ElegooSlicer, Bambu Studio or Cura. A small helper the printer
   owner installs once does the fetch, because PrusaSlicer's own deep link
-  refuses any host but Printables. The link carries its own short-lived
-  credential, so nothing secret sits in the helper's config. OrcaSlicer,
-  ElegooSlicer, Bambu Studio and Cura work too, and the button is named for the
-  one you pick on your page. See **[Open in PrusaSlicer](docs/prusaslicer.md)**.
+  refuses any host but Printables; it has an installer for Linux and one for
+  Windows. The link carries its own short-lived credential, so nothing secret
+  sits in the helper's config, and the button is named for the slicer you pick
+  on your page. See **[Open in PrusaSlicer](docs/prusaslicer.md)**.
 - **Or just take the file** — a plain download on every ticket, for a machine
-  without the helper, a phone, or a slicer that is not PrusaSlicer. Same
+  without the helper, a phone, or a slicer the helper does not know. Same
   permissions as the ticket, and recorded when the bytes go to somebody other
   than the person who uploaded them.
 
@@ -202,8 +203,8 @@ printer owner at `/admin/settings`; a variable that sets them still wins. See
 | `TRUST_PROXY_HEADERS` | | Which header carries the client address: `false` (trust nothing, the default), `true` (left-most `X-Forwarded-For`), or `cloudflare` (`CF-Connecting-IP`). See [the reasoning](docs/deployment.md#why-trust_proxy_headers-is-a-separate-switch). |
 | `HIBP_DISABLED` | | `true` disables the breach check. Only for a host with no outbound internet — it fails closed, so without it nobody could register. |
 | `IMPORT_SOURCES` | | `printables` lets a request start from a Printables link instead of an upload. **Off when unset**, unless switched on at `/admin/settings`; set here, it wins. Needs outbound HTTPS, and a misspelt value stops the app. See [Importing from a link](docs/deployment.md#importing-from-a-link). |
-| `SOURCE_URL` | | Where this instance's source lives, shown in the footer. **Change it if you modify the code** — see [Licence](#licence). Defaults to the upstream repository. |
-| `PPP_REGISTRY` / `PPP_TAG` | | Which published image to run. Pin `PPP_TAG` to a release (`v0.3.0`) or a commit SHA; either is also how you roll back. |
+| `SOURCE_URL` | | Where this instance's source lives, shown in the footer and on `/about`. **Change it if you modify the code** — see [Licence](#licence). Defaults to the upstream repository. |
+| `PPP_REGISTRY` / `PPP_TAG` | | Which published image to run. Pin `PPP_TAG` to a release (`v0.4.0`) or a commit SHA; either is also how you roll back. |
 | `CF_TUNNEL_TOKEN` | | Connector token for `docker-compose.tunnel.yml`, from Cloudflare Zero Trust. A credential: anything holding it can serve the hostnames routed to that tunnel. See [Deploying behind a Cloudflare Tunnel](docs/deployment.md#deploying-behind-a-cloudflare-tunnel). |
 
 ## Deploying
@@ -368,7 +369,7 @@ The published images are public, so this should not happen — check the tag
 exists before assuming it is an auth problem:
 
 ```bash
-docker manifest inspect ghcr.io/danileau/ppp-app:v0.3.0
+docker manifest inspect ghcr.io/danileau/ppp-app:v0.4.0
 ```
 
 On a **fork** with private packages you do need a credential, and it must be a
@@ -437,10 +438,10 @@ has no outbound internet, set `HIBP_DISABLED=true` — and only then.
 | **[Materials and colours](docs/material-catalog.md)** | the owner-managed catalogue behind the request form |
 | **[Feature requests](docs/feature-requests.md)** | the `/frr` track — file a request, triage it exactly like the print backlog |
 | **[The API](docs/api.md)** | the JSON surface, bearer tokens, the OpenAPI document and the console at `/docs` |
-| **[Open in PrusaSlicer](docs/prusaslicer.md)** | the one-click "send to the slicer" bridge, the helper, and why the deep link cannot be used |
+| **[Open in PrusaSlicer](docs/prusaslicer.md)** | the one-click "send to the slicer" bridge, the helper on Linux and Windows, other slicers, and why the deep link cannot be used |
 | **[Themes](docs/theming.md)** | the palette as tokens, "diner after hours", glass (fork only), and how the colour rule survives a dark counter |
-| **[Development](docs/development.md)** | stack, local setup, the verification suites, the full local run, CI, cutting a release |
-| **[Translation](docs/i18n.md)** | how the language is chosen, adding a key or a language, and the French glossary for the diner's words |
+| **[Development](docs/development.md)** | stack, local setup, the verification suites, the full local run, CI, crediting contributors, cutting a release |
+| **[Translation](docs/i18n.md)** | how the language is chosen, how the catalogue works, adding a key or a language, what the browser is sent, and the French glossary for the diner's words |
 | **[Security audit](docs/security-audit.md)** | the OWASP Top 10 assessment, findings, and residual risk accepted |
 | **[Security policy](SECURITY.md)** | how to report a vulnerability |
 | **[Contributing](CONTRIBUTING.md)** | the fourteen suites are the contract; what a good change looks like |

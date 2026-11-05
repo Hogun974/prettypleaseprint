@@ -3,10 +3,9 @@
 # Four independent gates, so branch protection can require them by name:
 #
 #   guard    — typecheck, the secret scanner over the whole tree, the
-#              documentation link checker and the translation checker.
-#              Cheap and first: a leaked
-#              credential should fail in seconds, not after a six-minute
-#              integration run.
+#              documentation link checker, the theme contrast checker and the
+#              translation checker. Cheap and first: a leaked credential
+#              should fail in seconds, not after a six-minute integration run.
 #   models   — the upload validator against hostile fixtures. Needs no
 #              server and no database, so it stays a fast gate of its own.
 #   verify   — raises the REAL compose stack from source and runs every
@@ -74,6 +73,8 @@ jobs:
       # change must not wait on a translator — but each one is printed as a
       # ::warning annotation, so the gap shows on the pull request. Broken
       # translations (placeholders, ICU quoting, malformed files) still fail.
+      # It also fails a client component that asks for a message group the
+      # browser is not sent.
       - name: Translations against English
         run: npm run check:messages
       # The wizards are shell, and nothing else in this job executes shell.

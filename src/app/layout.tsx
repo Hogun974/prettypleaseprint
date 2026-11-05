@@ -87,8 +87,10 @@ export default async function RootLayout({
       <body className="plate flex min-h-screen flex-col bg-cream text-ink antialiased">
         {/* Hands the locale and the messages to client components
             (`useTranslations` in the sign-in form, the header's menus) — only
-            the groups they use; getClientMessages says why. */}
-        <NextIntlClientProvider messages={clientMessages}>
+            the groups they use; getClientMessages says why. `timeZone` is set
+            so the server's own is not written into the page; nothing on the
+            client formats a date through next-intl. */}
+        <NextIntlClientProvider messages={clientMessages} timeZone="UTC">
           <div className="flex-1">{children}</div>
           {/* AGPL-3.0 section 13 wants the source offer in front of people using
               the app over a network. In the root layout it reaches every page,

@@ -1,0 +1,18 @@
+-- The language a person chooses (#103). One nullable column and nothing else:
+-- null is "no choice", which is every existing account. Nothing reads or
+-- writes it yet; the choice on /me will.
+--
+-- Additive on purpose: the deploy wizard rolls back to the previous image
+-- when a deploy fails its health check, and it does not undo migrations. That
+-- image's client names its columns, has never heard of this one, and reads
+-- and writes users exactly as before.
+--
+-- FORK CHANGE: `IF NOT EXISTS`, where upstream's migration has a plain ADD
+-- COLUMN. This fork added the same column earlier, in
+-- 20261030120000_preferences (with the theme and slicer beside it), and every
+-- deployment of the fork has already applied that one — so upstream's
+-- statement would fail there with "column already exists" and stop the deploy.
+-- On the fork, fresh or upgraded, the column always comes from 20261030120000
+-- and this is a no-op. Kept, under upstream's name, so that the fork's
+-- migration history stays in step with upstream's.
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "preferredLocale" TEXT;

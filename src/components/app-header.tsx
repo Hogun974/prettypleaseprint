@@ -101,17 +101,21 @@ export async function AppHeader({
               </span>
             </Link>
 
+            {/* The feed's title and the role label are picked here, on the
+                server, and handed down as props: `header.feedTitle` and
+                `header.role` are not client groups, so the owner's words are
+                never in a member's page source (src/i18n/client-groups.ts). */}
             <div className="ml-auto flex items-center gap-[8.8px] sm:gap-[13.2px]">
               <ActivityMenu
                 items={items}
                 unread={unread}
-                title={t(user.role === "admin" ? "activity.titleOwner" : "activity.titleMember")}
+                title={t(user.role === "admin" ? "feedTitle.owner" : "feedTitle.member")}
               />
               <UserMenu
                 name={user.name}
                 initials={user.initials}
                 email={user.email}
-                role={user.role}
+                roleLabel={t(user.role === "admin" ? "role.owner" : "role.member")}
                 passkeyCount={passkeyCount}
               />
             </div>

@@ -13,13 +13,15 @@ export function UserMenu({
   name,
   initials,
   email,
-  role,
+  roleLabel,
   passkeyCount,
 }: {
   name: string;
   initials: string;
   email: string;
-  role: "client" | "admin";
+  /** "Printer owner" or "Invited member", picked on the server so the
+   *  other one is never sent to this person's browser. */
+  roleLabel: string;
   passkeyCount: number;
 }) {
   const t = useTranslations("header.account");
@@ -58,7 +60,7 @@ export function UserMenu({
           <p className="m-0 font-display text-[17px] text-ink">{name}</p>
           <p className="m-0 mt-[2px] font-mono text-[11.5px] text-ink-3">{email}</p>
           <p className="m-0 mt-[8.8px] inline-block rounded-chip border-2 border-ink bg-cream-2 px-[8px] font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink">
-            {t(role === "admin" ? "owner" : "member")}
+            {roleLabel}
           </p>
           {/* How you sign in, and a way to change it. Without this the only
               passkey prompt in the whole app is the one at invite time. */}

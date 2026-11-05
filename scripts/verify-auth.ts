@@ -286,6 +286,13 @@ async function main() {
   const leaked = [home, homeFr].flatMap((html) => OWNER_ONLY.filter((w) => unescapeHtml(html).includes(w)));
   check(`nor any of the owner's control words (${OWNER_ONLY.length}), in English or French`,
         OWNER_ONLY.length > 20 && leaked.length === 0, leaked.join(" | "));
+  // Nor the header's words for the owner: the header's client menus are sent
+  // their words as messages, and the owner's role label and feed title are
+  // never among them — the server picks one and passes it as a prop.
+  const OWNER_HEADER = ["Printer owner", "New from the group", "Propriétaire de l’imprimante", "Du nouveau en salle"];
+  const headerLeaked = [home, homeFr].flatMap((html) => OWNER_HEADER.filter((w) => unescapeHtml(html).includes(w)));
+  check("and the owner's words are not in its source either, in English or French",
+        headerLeaked.length === 0, headerLeaked.join(" | "));
 
   const account = await db.user.findUnique({ where: { email: AYLA } });
   check("the account is stamped from the invite, not the request",
@@ -723,7 +730,9 @@ async function main() {
   // English is what every other check in every suite reads, so the first job
   // here is to pin it: the same words as before translation existed, whatever
   // a browser that is not asking for French sends. Then French, for the two
-  // screens that have it.
+  // screens that have it. (Upstream's version of this section, from #114, is
+  // English-only and asserts English for a French browser too; the fork serves
+  // French there, so those checks are turned into their French counterparts.)
   const signinIn = async (acceptLanguage?: string, query = "") => {
     const headers: Record<string, string> = acceptLanguage ? { "accept-language": acceptLanguage } : {};
     return (await new Browser().go(`${APP}/signin${query}`, { headers })).text();
@@ -746,10 +755,17 @@ async function main() {
   check("with no Accept-Language the page is English, word for word",
         missingEnglish.length === 0, `missing: ${missingEnglish.join(" | ")}`);
   check("and says so: <html lang=\"en\">", htmlLang(plain) === "en", `lang=${htmlLang(plain)}`);
-  for (const header of ["en-GB,en;q=0.9", "de-DE,de;q=0.9", "*", "fr;q=0, en"]) {
-    const text = visibleText(await signinIn(header));
-    check(`Accept-Language "${header}" renders exactly the same English text`,
-          text === plainText, firstDifference(plainText, text));
+  // The fork's root layout sends every page the client groups — the header's
+  // menus included — so "Sign out" and "Mark all read" do ride along in this
+  // page's source (src/i18n/client-groups.ts). What must not is anything only
+  // the owner sees: the role label, the feed title, the owner's navigation.
+  check("and its source carries none of the owner's header words — no owner's label, no owner's nav",
+        !["Printer owner", "New from the group", "Guest list"].some((s) => plain.includes(s)));
+  for (const header of ["en-GB,en;q=0.9", "de-DE,de;q=0.9", "*", "fr;q=0, en", "x-klingon"]) {
+    const page = await signinIn(header);
+    const text = visibleText(page);
+    check(`Accept-Language "${header}" renders exactly the same English text, under lang="en"`,
+          text === plainText && htmlLang(page) === "en", firstDifference(plainText, text));
   }
 
   const french = await signinIn("fr-FR,fr;q=0.9,en;q=0.8");
@@ -771,24 +787,39 @@ async function main() {
   check("an unknown code gets the generic sentence, even one that names a property",
         visibleText(await signinIn(undefined, "?error=toString"))
           .includes("That sign-in attempt did not go through."));
+  check("and so does __proto__, rather than an error page",
+        visibleText(await signinIn(undefined, "?error=__proto__"))
+          .includes("That sign-in attempt did not go through."));
+  check("and the French generic sentence to a French reader",
+        visibleText(await signinIn("fr", "?error=toString"))
+          .includes("Cette tentative de connexion n’a pas abouti."));
 
   // The header, as the printer owner: it carries most of the diner's words.
   const queueIn = async (acceptLanguage?: string) =>
     (await ownerIn.go(`${APP}/queue`, {
       headers: acceptLanguage ? { "accept-language": acceptLanguage } : {},
     })).text();
-  const ownerEnglish = visibleText(await queueIn());
+  const ownerEnglishHtml = await queueIn();
+  const ownerEnglish = visibleText(ownerEnglishHtml);
   check("the header's navigation is English by default",
-        ["The pass", "The rail", "The books", "Guest list", "Activity"].every((s) => ownerEnglish.includes(s)),
+        ["The pass", "The rail", "The books", "Materials", "By person", "Benefits", "Guest list", "Audit", "Activity"]
+          .every((s) => ownerEnglish.includes(s)),
         ownerEnglish.slice(0, 300));
+  check("and its labels for assistive technology too",
+        ownerEnglishHtml.includes('aria-label="Pretty Please Print, home"') &&
+          ownerEnglishHtml.includes(`aria-label="Account menu for ${admin.name}"`));
   const ownerFrenchHtml = await queueIn("fr");
   const ownerFrench = visibleText(ownerFrenchHtml);
   check("and French to a French reader",
         htmlLang(ownerFrenchHtml) === "fr" &&
-          ["Le passe", "Le rail", "La caisse", "Liste des invités", "Activité"].every((s) => ownerFrench.includes(s)),
+          ["Le passe", "Le rail", "La caisse", "Matières", "Par personne", "Pourboires", "Liste des invités", "Activité"]
+            .every((s) => ownerFrench.includes(s)),
         ownerFrench.slice(0, 300));
   check("with none of the English navigation left in it",
         !["The pass", "The rail", "The books", "Guest list"].some((s) => ownerFrench.includes(s)));
+  check("and its labels for assistive technology in French too",
+        ownerFrenchHtml.includes('aria-label="Pretty Please Print, accueil"') &&
+          ownerFrenchHtml.includes(`aria-label="Menu du compte de ${admin.name}"`));
 
   // The other side of section 3's "none of the owner's control words": the
   // owner's own guest list does carry them, in each language — so that check
@@ -894,8 +925,8 @@ async function passwordIsHashed(userId: string): Promise<boolean> {
 /**
  * What a reader sees: the markup without scripts, styles or tags, entities
  * decoded, whitespace collapsed. Scripts go first because the RSC payload in
- * them carries every message string, so a check on the raw HTML would find
- * English in a French page that shows none.
+ * them carries the messages sent to client components, so a check on the raw
+ * HTML would find English in a French page that shows none.
  */
 function visibleText(html: string): string {
   return unescapeHtml(

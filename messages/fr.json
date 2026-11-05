@@ -49,16 +49,16 @@
     },
     "activity": {
       "button": "Activité",
-      "titleOwner": "Du nouveau en salle",
-      "titleMember": "Où en sont vos impressions",
       "markAllRead": "Tout marquer comme lu",
       "empty": "Rien pour l’instant.",
       "unread": "non lu"
     },
+    "feedTitle": {
+      "owner": "Du nouveau en salle",
+      "member": "Où en sont vos impressions"
+    },
     "account": {
       "menuFor": "Menu du compte de {name}",
-      "owner": "Propriétaire de l’imprimante",
-      "member": "Membre invité",
       "withPassword": "Connexion par mot de passe",
       "passkeys": "{count, plural, one {# clé d’accès sur ce compte} other {# clés d’accès sur ce compte}}",
       "addFirst": "Ajouter une clé d’accès →",
@@ -66,6 +66,10 @@
       "docs": "API et documentation →",
       "docsHint": "Chaque point d’accès, et une console pour les appeler.",
       "signOut": "Se déconnecter"
+    },
+    "role": {
+      "owner": "Propriétaire de l’imprimante",
+      "member": "Membre invité"
     },
     "nudge": {
       "title": "Marre de taper votre mot de passe ?",
@@ -1076,7 +1080,19 @@
     "hint": "{filename} — le fichier tel qu’il a été envoyé."
   },
   "sourceLink": {
-    "label": "Code source · AGPL-3.0"
+    "label": "Code source · AGPL-3.0",
+    "about": "À propos · crédits"
+  },
+  "about": {
+    "kicker": "À propos de la maison",
+    "lead": "Un comptoir sur invitation pour l’imprimante 3D du bureau : déposez un modèle, demandez gentiment, et suivez-le du rail au passe, jusqu’entre vos mains.",
+    "licence": "C’est un logiciel libre, sous licence GNU Affero General Public License, version 3 ou ultérieure. Le code source que fait tourner cette instance se trouve ici : <link>{url}</link>.",
+    "whoTitle": "Qui l’a fait",
+    "whoLead": "Chaque personne dont le code s’y trouve, sous son nom GitHub. Merci.",
+    "maintainers": "Derrière le comptoir · mainteneur",
+    "contributors": "La brigade · contributeurs",
+    "nobodyYet": "Personne d’autre pour l’instant — la porte est ouverte.",
+    "since": "depuis {month}"
   },
   "history": {
     "kicker": "Historique",

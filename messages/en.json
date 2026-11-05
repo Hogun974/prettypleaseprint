@@ -49,16 +49,16 @@
     },
     "activity": {
       "button": "Activity",
-      "titleOwner": "New from the group",
-      "titleMember": "Updates on your prints",
       "markAllRead": "Mark all read",
       "empty": "Nothing yet.",
       "unread": "unread"
     },
+    "feedTitle": {
+      "owner": "New from the group",
+      "member": "Updates on your prints"
+    },
     "account": {
       "menuFor": "Account menu for {name}",
-      "owner": "Printer owner",
-      "member": "Invited member",
       "withPassword": "Signing in with a password",
       "passkeys": "{count, plural, one {# passkey on this account} other {# passkeys on this account}}",
       "addFirst": "Add a passkey →",
@@ -66,6 +66,10 @@
       "docs": "API & docs →",
       "docsHint": "Every endpoint, and a console to call them from.",
       "signOut": "Sign out"
+    },
+    "role": {
+      "owner": "Printer owner",
+      "member": "Invited member"
     },
     "nudge": {
       "title": "Tired of typing your password?",
@@ -1076,7 +1080,19 @@
     "hint": "{filename} — the file exactly as it was uploaded."
   },
   "sourceLink": {
-    "label": "Source · AGPL-3.0"
+    "label": "Source · AGPL-3.0",
+    "about": "About · credits"
+  },
+  "about": {
+    "kicker": "About the place",
+    "lead": "An invite-only counter for the office 3D printer: upload a model, ask nicely, and follow it from the order rail to the pass to your hands.",
+    "licence": "It is free software under the GNU Affero General Public License, version 3 or later. The source this instance runs is at <link>{url}</link>.",
+    "whoTitle": "Who made it",
+    "whoLead": "Everyone whose code is in it, by their GitHub name. Thank you.",
+    "maintainers": "Behind the counter · maintainer",
+    "contributors": "On the line · contributors",
+    "nobodyYet": "Nobody else yet — the door is open.",
+    "since": "since {month}"
   },
   "history": {
     "kicker": "History",
