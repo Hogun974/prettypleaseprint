@@ -64,7 +64,7 @@
     "fflate": "^0.8.3",
     "next": "15.5.29",
     "next-intl": "4.15.1",
-    "nodemailer": "10.5.0",
+    "nodemailer": "10.6.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "resend": "6.38.0",
@@ -89,6 +89,7 @@
   "overrides": {
     "postcss": "^8.5.26",
     "sharp": "^0.35.4",
-    "deepmerge-ts": "^8.0.2"
+    "deepmerge-ts": "^8.0.2",
+    "effect": "^3.22.5"
   }
 }

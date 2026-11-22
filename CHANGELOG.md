@@ -237,6 +237,17 @@ Notable changes. Every entry names a released version; deployments pin
   as upstream wrote it, it would stop the deploy with "column already exists".
   The fork's copy says `ADD COLUMN IF NOT EXISTS`.
 
+### Fixed
+
+- **Known vulnerabilities in dependencies and the image are patched** (fork,
+  from upstream #130). Prisma's `effect` is forced to 3.22.5
+  (GHSA-7589-6fvf-x4pw), and every image stage now runs `apk upgrade`, for
+  the fixes Alpine has published since the `node:22-alpine` base was built.
+  `nodemailer` 10.5.0 → 10.6.1 follows upstream; the three advisories #130
+  names for it were fixed in 10.1.4, so 10.5.0 was not affected by them.
+  #130's `next` 15.5.29 was already here, and what the fork had newer than
+  upstream stays as it was.
+
 ## v0.4.0
 
 2026-11-04.

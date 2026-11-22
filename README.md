@@ -13,7 +13,9 @@
 > at `fcadf1c` (6 October 2026), with its `main` merged in since, last at
 > `efd7b5b` (v0.4.0, 4 November 2026); on 16 November 2026, the dependency
 > updates of upstream pull request #127 (better-auth 1.7.22, next 15.5.29,
-> tailwindcss 4.3.5 and others). What changed and when is in the git
+> tailwindcss 4.3.5 and others); on 22 November 2026, the security patches of
+> upstream pull request #130 (nodemailer 10.6.1, effect 3.22.5, Alpine
+> packages upgraded in the images). What changed and when is in the git
 > history and under *Unreleased* in the [CHANGELOG](CHANGELOG.md): instance
 > settings, per-person preferences, translation (the whole app in French), the
 > "after hours" and "glass" themes, a first-run setup, and a catalogue that can
